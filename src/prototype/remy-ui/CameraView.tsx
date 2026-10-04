@@ -38,6 +38,7 @@ export function CameraView({ cam, primary = false, caption = 'What Remy sees', c
       <figcaption>
         <i className="cam-view__dot" aria-hidden />
         <span>{live ? caption : STATUS_TEXT[cam.status]}</span>
+        {live && cam.label && <small className="cam-view__label">{cam.label}</small>}
       </figcaption>
     </figure>
   )

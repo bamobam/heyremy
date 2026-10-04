@@ -7,6 +7,10 @@ import { RiggedRemy } from './RiggedRemy'
 import { RemyBadge } from './RemyBadge'
 import { CameraView } from './CameraView'
 import { useHatCam } from '../../camera/useHatCam'
+import { useAnyCam, USE_ANY_CAMERA } from './useAnyCam'
+
+// Chosen once at load, so the hook order never changes between renders.
+const useCamera = USE_ANY_CAMERA ? useAnyCam : useHatCam
 import './variantD.css'
 import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes'
 
@@ -40,7 +44,7 @@ export const SAY = {
 
 export function VariantD({ flow }: { flow: Flow }) {
   const f = FIELDS[flow.step % FIELDS.length]
-  const cam = useHatCam()
+  const cam = useCamera()
   const [ticked, setTicked] = useState<string[]>([])
   const tick = (p: string) => setTicked(t => t.includes(p) ? t.filter(x => x !== p) : [...t, p])
   return (

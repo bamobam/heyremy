@@ -13,3 +13,4 @@
 .is-error .cam-view__dot, .is-busy .cam-view__dot { background: #BE7463; }
 @keyframes cam-pulse { 70% { box-shadow: 0 0 0 8px rgba(123,211,137,0) } 100% { box-shadow: 0 0 0 0 rgba(123,211,137,0) } }
 @media (prefers-reduced-motion: reduce) { .cam-view__spinner, .is-live .cam-view__dot { animation: none; } }
+.cam-view__label { font-weight: 500; opacity: .7; max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
