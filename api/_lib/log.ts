@@ -12,14 +12,16 @@ export interface LogEntry {
   model?: string
   /** Gemini calls made; 2 means the fallback ran. */
   attempts?: number
+  /** /parse only: pasted text, or a fetched page's JSON-LD or visible text. Never the URL. */
+  source?: 'text' | 'json-ld' | 'page-text'
   /** /check only. */
   verdict?: Verdict['status']
 }
 
 /** Builds the line from known fields only, so stray data can't leak into logs. */
 export function formatLog(e: LogEntry): string {
-  const { route, status, latencyMs, modelMs, model, attempts, verdict } = e
-  return JSON.stringify({ route, status, latencyMs, modelMs, model, attempts, verdict })
+  const { route, status, latencyMs, modelMs, model, attempts, source, verdict } = e
+  return JSON.stringify({ route, status, latencyMs, modelMs, model, attempts, source, verdict })
 }
 
 export function log(e: LogEntry): void {

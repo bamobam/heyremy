@@ -3,15 +3,19 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProviderError, generateJson } from '../_lib/gemini.ts'
 import { synthesize } from '../_lib/elevenlabs.ts'
+import { FetchRecipeError, fetchRecipeText } from '../_lib/fetchRecipe.ts'
 import check from '../check.ts'
 import parse from '../parse.ts'
 import speak from '../speak.ts'
 
 vi.mock('../_lib/gemini.ts', async (orig) => ({ ...(await orig<typeof import('../_lib/gemini.ts')>()), generateJson: vi.fn() }))
 vi.mock('../_lib/elevenlabs.ts', () => ({ synthesize: vi.fn() }))
+// Keep the real isRecipeUrl and FetchRecipeError; only the network fetch is faked.
+vi.mock('../_lib/fetchRecipe.ts', async (orig) => ({ ...(await orig<typeof import('../_lib/fetchRecipe.ts')>()), fetchRecipeText: vi.fn() }))
 
 const gen = vi.mocked(generateJson)
 const synth = vi.mocked(synthesize)
+const fetchPage = vi.mocked(fetchRecipeText)
 
 function fakeRes() {
   const r = {
@@ -121,8 +125,55 @@ describe('/api/parse', () => {
     expect(args.retryOnTimeout).toBe(true)
     expect(args.maxOutputTokens).toBeGreaterThan(0)
     const line = oneLog()
-    expect(line).toMatchObject({ route: '/api/parse', status: 200, modelMs: 42, model: 'gemini-test', attempts: 1 })
+    expect(line).toMatchObject({ route: '/api/parse', status: 200, modelMs: 42, model: 'gemini-test', attempts: 1, source: 'text' })
     expect(JSON.stringify(line)).not.toContain('pancakes')
+    expect(fetchPage).not.toHaveBeenCalled()
+  })
+  it('fetches a lone recipe link and parses the page text, with the remaining budget', async () => {
+    const URL = 'https://example.com/secret-pancakes'
+    fetchPage.mockResolvedValue({ text: 'Pancakes\nIngredients:\n- 1 cup flour', source: 'json-ld' })
+    gen.mockResolvedValue({ data: RECIPE, modelMs: 42, model: 'gemini-test', attempts: 1 })
+    const res = await call(parse, { recipe: `  ${URL}  ` })
+    expect(res.statusCode).toBe(200)
+    expect(fetchPage).toHaveBeenCalledWith(URL)
+    const args = gen.mock.calls[0][0]
+    expect(args.parts[0]).toBe('<recipe>\nPancakes\nIngredients:\n- 1 cup flour\n</recipe>')
+    expect(args.timeoutMs).toBeLessThanOrEqual(18_000)
+    expect(args.firstAttemptMs).toBeLessThanOrEqual(args.timeoutMs)
+    const line = oneLog()
+    expect(line).toMatchObject({ status: 200, source: 'json-ld' })
+    expect(JSON.stringify(line)).not.toMatch(/example\.com|flour/)
+  })
+  it('treats text containing a link as a pasted recipe', async () => {
+    gen.mockResolvedValue({ data: RECIPE, modelMs: 1, model: 'gemini-test', attempts: 1 })
+    await call(parse, { recipe: 'From https://example.com: whisk 1 cup flour.' })
+    expect(fetchPage).not.toHaveBeenCalled()
+  })
+  it.each([
+    ['bad_request', 400],
+    ['unprocessable', 422],
+  ] as const)('maps a %s page error to %i without calling Gemini', async (kind, status) => {
+    fetchPage.mockRejectedValue(new FetchRecipeError(kind, 'nope'))
+    const res = await call(parse, { recipe: 'https://example.com/r' })
+    expect(res.statusCode).toBe(status)
+    expect(res.body).toEqual({ error: { kind, message: 'nope' } })
+    expect(gen).not.toHaveBeenCalled()
+    const line = oneLog()
+    expect(line.status).toBe(status)
+    expect(line.source).toBeUndefined()
+  })
+  it('gives up before Gemini when the fetch used too much of the budget', async () => {
+    const now = vi.spyOn(Date, 'now')
+    let t = 0
+    now.mockImplementation(() => t)
+    fetchPage.mockImplementation(async () => {
+      t += 13_000
+      return { text: 'x', source: 'page-text' as const }
+    })
+    const res = await call(parse, { recipe: 'https://example.com/slow' })
+    expect(res.statusCode).toBe(422)
+    expect(gen).not.toHaveBeenCalled()
+    now.mockRestore()
   })
   it('400 on a missing or too-long recipe', async () => {
     expect((await call(parse, {})).statusCode).toBe(400)
