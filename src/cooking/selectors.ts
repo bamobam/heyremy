@@ -69,10 +69,13 @@ export function scaledIngredients(s: CookingState): ScaledIngredient[] {
   })
 }
 
-/** Start cooking turns on once every step clip for the chosen servings is cached. */
+/**
+ * Start cooking turns on once every step clip for the chosen servings is cached.
+ * With no clips to make (no voice) there is nothing to wait for, so it is on straight away.
+ */
 export function canStart(s: CookingState): boolean {
   const { ready, total, servings } = s.voicing
-  return s.phase === 'prep' && total > 0 && servings === s.servings && ready.length >= total
+  return s.phase === 'prep' && servings === s.servings && ready.length >= total
 }
 
 /** A "ready" verdict's countdown has run out, so it is time to move on by itself. */

@@ -550,6 +550,15 @@ function stepClipId(step: Step, servings: number): string   // "step-3" or "step
 
 ### 6.8 `controller.ts`
 
+**Built so far (demo MVP): gestures, steps and checks, with no audio.** The controller is in `src/cooking/controller.ts` with its ports in `ports.ts`. It does the parse, servings, start, navigate, check and auto-advance flows below, and shows everything on screen. Differences from the spec that follows:
+
+- **No audio yet.** There is no `voiceFlow`, no clip cache and no spoken verdict. `canStart` is true as soon as nothing is left to voice, so Start is on straight away. The spec below describes where audio goes back in.
+- **The camera port is `{ grabForCheck(): Promise<{ blob }>, isHolding(): boolean }`**, not `grabFrame` plus `handVisible`. `grabForCheck` (from `useCamera`) already waits for the palm to leave the frame, so the controller does not.
+- **The ready countdown's pause is kept inside the controller.** While a gesture is being held, it tracks the time held and slides the deadline back by that much; the reducer has no action for it.
+- **Pausing gestures during a check is the provider's job**: pass `paused` to `useCamera` while `mode === 'checking'`.
+
+The spec:
+
 The controller subscribes to gesture events and dispatches actions. It owns an `AbortController` for the in-flight check, the auto-advance timer, and references to `grabFrame` and `handVisible`.
 
 ```ts
