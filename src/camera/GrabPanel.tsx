@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { grabFileName } from './grabFileName.ts'
 import { GrabError, type GrabResult } from './grabSharpestFrame.ts'
 
 /** The JPEG size the check endpoint is tuned for. */
@@ -10,6 +11,8 @@ interface GrabState {
   busy: 'now' | 'check' | null
   result: GrabResult | null
   url: string | null
+  /** File name to save the photo under. */
+  name: string | null
   error: string | null
 }
 
@@ -28,7 +31,7 @@ export function GrabPanel({
   /** Capture the way a check does: wait for the hand to leave first. */
   grabForCheck: () => Promise<GrabResult>
 }) {
-  const [state, setState] = useState<GrabState>({ busy: null, result: null, url: null, error: null })
+  const [state, setState] = useState<GrabState>({ busy: null, result: null, url: null, name: null, error: null })
   const urlRef = useRef<string | null>(null)
 
   useEffect(
@@ -45,14 +48,14 @@ export function GrabPanel({
       if (urlRef.current) URL.revokeObjectURL(urlRef.current)
       const url = URL.createObjectURL(result.blob)
       urlRef.current = url
-      setState({ busy: null, result, url, error: null })
+      setState({ busy: null, result, url, name: grabFileName(new Date()), error: null })
     } catch (error) {
       const message = error instanceof GrabError && error.kind === 'camera_unavailable' ? NOT_READY : FAILED
       setState((s) => ({ ...s, busy: null, error: message }))
     }
   }
 
-  const { result, url } = state
+  const { result, url, name } = state
   const kb = result ? Math.round(result.blob.size / 1024) : 0
   const inTarget = kb >= MIN_KB && kb <= MAX_KB
 
@@ -73,6 +76,9 @@ export function GrabPanel({
       {result && url && (
         <>
           <img className="camera-debug__grab" src={url} alt="Grabbed frame" />
+          <a className="camera-debug__download" href={url} download={name ?? 'hatcam.jpg'}>
+            Download JPEG
+          </a>
           <dl>
             <dt>Size</dt>
             <dd data-testid="grab-size">{inTarget ? `${kb} KB` : `${kb} KB, outside ${MIN_KB}-${MAX_KB} KB target`}</dd>

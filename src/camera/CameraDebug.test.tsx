@@ -269,6 +269,16 @@ describe('CameraDebug grab panel', () => {
     expect(screen.getByRole('button', { name: 'Grab after hand leaves' })).toBeDisabled()
   })
 
+  it('offers the grabbed photo as a download with a dated file name', async () => {
+    await liveWith(async () => grabResult())
+    expect(screen.queryByRole('link', { name: 'Download JPEG' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+    const link = await screen.findByRole('link', { name: 'Download JPEG' })
+    expect(link).toHaveAttribute('href', 'blob:grabbed')
+    expect(link.getAttribute('download')).toMatch(/^hatcam-\d{8}-\d{6}\.jpg$/)
+  })
+
   it('flags a JPEG outside the 80 to 150 KB target', async () => {
     await liveWith(async () => grabResult(300 * 1024))
     fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
