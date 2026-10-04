@@ -1,6 +1,6 @@
 # Remy system design
 
-Sources, newest first: `src/types.ts` (data shapes), `docs/design/remy-screens.html` (mockups), `docs/PLAN.md` (scope, owners, checkpoints), `docs/adr/0001-single-hat-cam.md`, `CONTEXT.md` (glossary), then `message.txt` and `LETUSCOOK.md`. Where they disagree, the newer source wins; open questions are listed in [Decisions to confirm](#decisions-to-confirm). Terms follow `CONTEXT.md`.
+Sources, newest first: `src/types.ts` (data shapes), `src/ui/` (the production UI, ported from `src/prototype/remy-ui/VariantD.tsx`), `docs/design/remy-screens.html` (mockups), `docs/PLAN.md` (scope, owners, checkpoints), `docs/adr/0001-single-hat-cam.md`, `CONTEXT.md` (glossary), then `message.txt` and `LETUSCOOK.md`. Where they disagree, the newer source wins; open questions are listed in [Decisions to confirm](#decisions-to-confirm). Terms follow `CONTEXT.md`.
 
 ## Contents
 
@@ -100,8 +100,8 @@ Design principles:
 ║  AUDIO + UI (Grace)            ▼                 │               │                   ║
 ║  ┌───────────────────────────────────────────┐   │  ┌────────────┴─────────────┐     ║
 ║  │ UI: RecipeInput · PrepReview ·            │   │  │ audio/player             │     ║
-║  │ CookingScreen · LookingOverlay ·          │   │  │  clipCache (blob URLs)   │     ║
-║  │ VerdictOverlay · DoneScreen ·             │   │  │  browserSpeech fallback  │     ║
+║  │ CookingScreen · StepCard · VerdictOverlay  │   │  │ clipCache (blob URLs)   │     ║
+║  │ DoneScreen ·                            │   │  │  browserSpeech fallback  │     ║
 ║  │ ServingsStepper · HoldPill · ErrorBanner  │   │  │  unlock (autoplay rule)  │     ║
 ║  └───────────────────────────────────────────┘   │  └──────────────────────────┘     ║
 ╚═══════════════════════════════════════════════════│══════════════════════════════════╝
@@ -742,11 +742,11 @@ The screens follow prototype D (`src/prototype/remy-ui/VariantD.tsx`, at `/proto
 | `--ink` / `--cream` | `#1D1B20` / `#FFF7EA` | Text, borders, hard shadows / page and light text on dark fields |
 | `--brand` | `#F4905F` | Primary buttons, welcome headline |
 | `--umber` / `--cocoa` | `#541B05` / `#73462F` | Welcome left panel, bold amounts / muted text, ticked checklist items |
-| `--sand` | `#EDCEBA` | Welcome right panel, chips, stepper, camera placeholder |
+| `--sand` / `--blush` | `#EDCEBA` / `#E3BEB2` | Welcome right panel, chips, stepper, camera placeholder / cocoa step accent |
 | `--apricot` / `--clay` / `--sage` / `--slate` | `#DE9762` / `#BE7463` / `#657167` / `#2F3341` | Step fields, checklist boxes, parsing field (slate), done field (sage) |
 | `--pink` | `#F6B3BC` | v5 accent: catch tag, welcome badge, scan line, ✋ when checkable, loader blob |
 | `--sparkle` | `#FFD84D` | `ready` burst, done badge, ✦ marks |
-| `--ready` / `--notyet` / `--unsure` | `--sage` / `--clay` / `#9F9593` | The three verdict fields |
+| `--ready` / `--notyet` / `--unsure` | `--sage` / `--clay` / `--stone` | The three verdict fields (`--stone` is `#9F9593`) |
 | Font | M PLUS 2 (400–900, Google Fonts) | Everything; headings 800, verdict feedback 900 |
 | `--spring` / `--bouncy` | M3 Expressive springs as CSS `linear()` | Movement (carousel, buttons) / hero pops (verdict, number badges, ticks) |
 
@@ -760,6 +760,8 @@ Step fields cycle every 6 steps; each has a card colour, a deeper page backdrop,
 | 4 | `#BE7463` | `#5E3127` | ink | cream |
 | 5 | `#73462F` | `#3A2317` | cream | `#E3BEB2` |
 | 6 | `#DE9762` | `#6E4325` | ink | `#541B05` |
+
+Two fields fail WCAG AA for large text: sage (#2.13:1) and cocoa (2.87:1), both with cream text, against the 3:1 the 38 px step text needs. Prototype D was tuned at arm's length and §9.4 says the cook reads from 2 m. `src/ui/fields.test.ts` records the measured ratios so they cannot drift further; darkening those cards is a palette decision and is not made here.
 
 Surfaces are flat with a 2 px ink border and a hard offset shadow (`4px 4px 0 var(--ink)`); buttons are pills that squash on press. Shapes (`shapes.ts`) are M3 Expressive clip-path polygons (cookie, clover, sunny, square, burst) that can morph into each other. A shield rule resets the Vite starter's global `h1`/`h2`/colour styles. `prefers-reduced-motion` turns off every animation and transition.
 
@@ -1034,7 +1036,7 @@ From `docs/PLAN.md` (10-hour hackathon). All tracks start at once against the sh
 | 0–0.5 | App deployed to Vercel, heyremy.tech pointed at it, hat rig taped up | Hat rig; hour-1 gesture test | Contract additions in `types.ts`; fixtures | Vercel deploy, domain | Gemini check of a lumpy and a smooth photo |
 | 0.5–3 | Each track works alone | `useHatCam`, `recognizer`, gestures logged | Reducer, `scaling`, controller with fakes | `RecipeInput`, `PrepReview`, `CookingScreen` with hardcoded steps | `/api/parse` returns JSON, `/api/check` judges a test photo, `/api/speak` |
 | 3 | Integration | Gestures move through steps | `parseFlow`, `voiceFlow` on real endpoints | ElevenLabs speaks steps; browser fallback | |
-| 5 | Full flow on the deployed URL: paste → steps → gesture → open palm → spoken verdict | `grabSharpestFrame`, `handPresence` | `checkFlow`, auto-advance | `LookingOverlay`, `VerdictOverlay`, `HoldPill` | |
+| 5 | Full flow on the deployed URL: paste → steps → gesture → open palm → spoken verdict | `grabSharpestFrame`, `handPresence` | `checkFlow`, auto-advance | `StepCard`, `VerdictOverlay`, `HoldPill` | |
 | 5–7.5 | Prompts tuned, UI polish, stretch if hour 5 landed on time, backup video | Framing and lighting | Error messages | Type sizes from 2 m, `DoneScreen` | Prompt tuning on 10+ photos and 5+ recipes |
 | 7.5 | Feature freeze, known-good build tagged | | | | |
 | 7.5–10 | Demo-path fixes only, README with AI disclosure, cooking footage | | | | |
@@ -1098,14 +1100,20 @@ src/
     mock.ts  fixtures/                # dev only
   audio/
     player.ts  clipCache.ts  browserSpeech.ts
-  screens/
+  ui/                                # §9 as built; see the open conflict below
     RecipeInput.tsx  PrepReview.tsx  CookingScreen.tsx  DoneScreen.tsx
-  components/
-    ServingsStepper.tsx  IngredientList.tsx  PrepChecklist.tsx
-    StepProgress.tsx  StepCard.tsx  CueChip.tsx  HeadsUpBanner.tsx
-    HoldPill.tsx  GestureLegend.tsx  CameraThumb.tsx
-    LookingOverlay.tsx  VerdictOverlay.tsx  ErrorBanner.tsx  VoicingProgress.tsx
+    tokens.css  base.css  components.css  steps.css  screens.css
+    shapes.ts  fields.ts  say.ts  ingredients.ts
+    Remy.tsx  CameraView.tsx  useAnyCam.ts
+    prep.tsx                         # ServingsStepper, IngredientList, PrepChecklist,
+                                    # CameraSetup, VoicingProgress, ErrorBanner,
+                                    # CueChip, HeadsUpBanner
+    cooking.tsx                      # StepProgress, StepCard, HoldPill, GestureLegend,
+                                    # VerdictOverlay
   test/                               # Vitest specs next to the pure modules
+```
+
+> **Open: `src/ui/` vs this section.** §9.2/§9.3 name the four screens and their components but say nothing about folders, and §9.5 says components read state through the hook rather than through props. T1 built them under `src/ui/`, one file per screen plus two files grouping the smaller components, which keeps the cooking modules free of presentational code. If you would rather have `src/screens/` and `src/components/` as first sketched, that is a mechanical move; it has not been made unilaterally.
 ```
 
 ## Decisions to confirm

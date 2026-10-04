@@ -1,0 +1,218 @@
+/* Shared pieces every screen uses: the page shell, top bar, logo, buttons, bubbles and the
+   enter/rise motions (§9.1, §9.4). */
+
+.ui {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--cream);
+}
+
+/* --- Motion. Every screen enters by rising; cooking mode rises further (§9.2). --- */
+.ui-enter {
+  animation: ui-enter 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes ui-enter {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+}
+
+.ui-rise {
+  flex: 1;
+  min-height: 0;
+  animation: ui-rise 0.7s cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+@keyframes ui-rise {
+  from {
+    opacity: 0;
+    transform: translateY(160px);
+  }
+}
+
+/* --- Top bar: the logo on the left, a chip or the step dots on the right. --- */
+.ui-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 36px;
+}
+
+.ui-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.ui-logo img {
+  width: 46px;
+}
+
+.ui-logo--light {
+  color: var(--cream);
+}
+
+.ui-chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--sand);
+  color: var(--umber);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* --- Buttons: pills with a hard shadow that squash on press. --- */
+.ui-btn {
+  padding: 14px 28px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 999px;
+  background: var(--brand);
+  box-shadow: var(--lift);
+  color: var(--ink);
+  cursor: pointer;
+  font: 800 20px var(--font);
+  transition:
+    transform 0.5s var(--spring),
+    box-shadow 0.3s,
+    border-radius 0.5s var(--spring),
+    background-color 0.2s;
+}
+
+.ui-btn:hover {
+  background-color: #f7a57d;
+}
+
+.ui-btn:active {
+  transform: scale(0.95);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition-duration: 0.12s;
+}
+
+.ui-btn--ghost {
+  background: #fff;
+}
+
+.ui-btn--ghost:hover {
+  background: var(--cream);
+}
+
+.ui-btn--cream {
+  background: var(--cream);
+}
+
+.ui-btn--wide {
+  width: 100%;
+  padding: 18px;
+  font-size: 24px;
+}
+
+.ui-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.ui-row {
+  display: flex;
+  gap: 14px;
+}
+
+/* Focus is never removed, only restyled (§9.4). */
+.ui-btn:focus-visible,
+.ui-stepper button:focus-visible,
+.ui-check:focus-within,
+.ui-btn--icon:focus-visible {
+  outline: 3px solid var(--slate);
+  outline-offset: 3px;
+}
+
+/* --- Speech: Remy's bubble, with its tail pointing back at him. --- */
+.ui-bubble {
+  position: relative;
+  max-width: 440px;
+  padding: 16px 22px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 24px 24px 24px 6px;
+  background: #fff;
+  box-shadow: var(--lift);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.ui-bubble--small {
+  padding: 10px 16px;
+  font-size: 17px;
+}
+
+.ui-bubble--tail::before {
+  position: absolute;
+  bottom: 14px;
+  left: -14px;
+  border: 8px solid transparent;
+  border-right: 12px solid var(--ink);
+  content: '';
+}
+
+.ui-bubble--tail.ui-bubble--small::before {
+  bottom: 12px;
+}
+
+.ui-bubble b {
+  color: var(--umber);
+}
+
+/* --- Remy standing beside his bubble, with a shadow that breathes under him. --- */
+.ui-remy-line {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.ui-remy-line img {
+  width: 84px;
+}
+
+.ui-remy-line--small img {
+  width: 70px;
+}
+
+.ui-bob {
+  animation: ui-bob 3s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes ui-bob {
+  50% {
+    transform: translateY(-8px) rotate(-2deg);
+  }
+}
+
+/* --- A full-bleed screen: welcome, parsing, done. --- */
+.ui-full {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  color: var(--cream);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui *,
+  .ui {
+    animation: none !important;
+    transition: none !important;
+  }
+}
