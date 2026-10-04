@@ -148,6 +148,7 @@ export function VariantD({ flow }: { flow: Flow }) {
                       {i === flow.step
                         ? <CameraView cam={cam} primary={flow.screen === 'cooking'} className="vd-step-cam" style={{ '--cam-bg': c.back, '--cam-fg': '#FFF7EA' } as React.CSSProperties} />
                         : <div className="vd-step-cam vd-step-cam--ghost" aria-hidden />}
+                      {i === flow.step && flow.check.kind !== 'looking' && s.checkable && <p className="vd-step-hint">Keep the bowl inside the picture, then show ✋.</p>}
                       {i === flow.step && flow.check.kind === 'looking' && (
                         <>
                           <i className="vd-scan" aria-hidden />

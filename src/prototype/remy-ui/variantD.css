@@ -143,14 +143,17 @@
 .vd-setup p { margin: 0; font-size: 16px; line-height: 1.5; color: #73462F; }
 .vd-prep-cam { width: 100%; outline-width: 2px; outline-offset: 4px; }
 
-/* Step card = text half + camera half. The feed bleeds to the card's edges and the card colour fades into it. */
+/* Step card = text half + camera half. The card colour fades into the camera half,
+   but the feed itself is shown whole (16:9, uncropped): it is exactly the frame Remy judges. */
 .vd-step { display: grid; grid-template-columns: minmax(0, 1fr) 44%; padding: 0; overflow: hidden; }
 .vd-step-text { display: flex; flex-direction: column; justify-content: center; gap: 18px; min-width: 0; padding: 40px 28px 40px 48px; position: relative; z-index: 1; }
-.vd-step-media { position: relative; overflow: hidden; }
-.vd-step-media::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 34%; z-index: 2; pointer-events: none; background: linear-gradient(90deg, var(--card), transparent); }
-.vd-step-cam { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; outline: none; }
-.vd-step-cam--ghost { background: repeating-linear-gradient(135deg, rgba(255,247,234,.05) 0 14px, transparent 14px 28px); }
-.vd-step-cam figcaption { padding-left: 28%; }
+.vd-step-media { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; padding: 44px 32px 0 8px; }
+.vd-step-media::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 40%; z-index: 0; pointer-events: none; background: linear-gradient(90deg, var(--card), transparent); }
+.vd-step-cam { position: relative; z-index: 1; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 22px; outline: none; }
+.vd-step-cam video { object-fit: contain; }
+.vd-step-cam figcaption { padding: 8px 12px; background: none; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.vd-step-cam--ghost { background: repeating-linear-gradient(135deg, rgba(255,247,234,.07) 0 14px, transparent 14px 28px); }
+.vd-step-hint { position: relative; z-index: 1; margin: 12px 4px 0; font-size: 15px; line-height: 1.4; opacity: .8; }
 
 /* Checking: the card's own camera becomes the stage. Text steps back, a scan sweeps the feed, Remy pops up in front. */
 .vd-step-text, .vd-step-media .vd-step-cam { transition: opacity .35s ease, filter .35s ease; }
@@ -158,7 +161,7 @@
 .vd-cook.checking .vd-step:not(.now) { opacity: .15; }
 .vd-scan { position: absolute; left: 0; right: 0; height: 4px; z-index: 3; background: #F6B3BC; box-shadow: 0 0 18px 4px rgba(246,179,188,.65); animation: vd-scan 1.1s ease-in-out infinite alternate; }
 @keyframes vd-scan { from { top: 6% } to { top: 92% } }
-.vd-peek { position: absolute; left: 8%; bottom: 0; width: 56%; z-index: 4; animation: vd-peek-up .45s var(--bouncy) both; }
+.vd-peek { position: absolute; left: 10%; bottom: 0; width: 38%; z-index: 4; animation: vd-peek-up .45s var(--bouncy) both; }
 @keyframes vd-peek-up { from { transform: translateY(60%) } }
 .vd-cook > .vd-full { z-index: 6; }
 .vd-prep-cam .cam-view__empty p { font-size: 13px; }
