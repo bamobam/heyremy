@@ -11,6 +11,7 @@ import { HandOverlay } from './HandOverlay.tsx'
 import type { DetectionDeps } from './useDetection.ts'
 import { useGestures } from './useGestures.ts'
 import { useHatCam } from './useHatCam.ts'
+import { useWakeLock } from './useWakeLock.ts'
 import './CameraDebug.css'
 
 /** How many fired gestures the log keeps. */
@@ -52,10 +53,11 @@ export default function CameraDebug({
   detectionDeps?: DetectionDeps
   grab?: (video: HTMLVideoElement) => Promise<GrabResult>
 }) {
-  const { attachVideo, video, status, error, label, stream } = useHatCam()
+  const { attachVideo, video, status, error, label, stream, reconnects, stalls } = useHatCam()
   const live = status === 'live'
   const [tally, setTally] = useState(emptyTally)
   const fps = useFrameRate(video, live)
+  const wake = useWakeLock(live)
   const settings = stream?.getVideoTracks()[0]?.getSettings()
 
   const [events, setEvents] = useState<GestureEvent[]>([])
@@ -110,6 +112,12 @@ export default function CameraDebug({
               <dd>{settings?.width ? `${settings.width} × ${settings.height}` : '—'}</dd>
               <dt>Frame rate</dt>
               <dd>{fps === null ? '—' : `${fps} fps`}</dd>
+              <dt>Reconnects</dt>
+              <dd data-testid="reconnects">{reconnects}</dd>
+              <dt>Freezes fixed</dt>
+              <dd data-testid="stalls">{stalls}</dd>
+              <dt>Screen kept awake</dt>
+              <dd data-testid="awake">{!wake.supported ? 'not supported' : wake.held ? 'yes' : 'no'}</dd>
             </dl>
             {error && <p className="camera-debug__error">{CAMERA_ERROR_MESSAGES[error]}</p>}
           </section>
