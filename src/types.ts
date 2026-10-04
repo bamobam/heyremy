@@ -60,45 +60,24 @@ export interface HoldProgress {
   progress: number
 }
 
-// ---------- Requests ----------
+// ---------- Requests to the backend ----------
 
-/** Body of POST /api/parse. */
-export interface ParseRequest {
-  recipe: string
-}
+/** POST /api/parse */
+export type ParseRequest = { recipe: string }
+/** POST /api/check. `image` is a base64 JPEG with no data: prefix. */
+export type CheckRequest = { image: string; cue: string; step: string }
+/** POST /api/speak. The response is audio/mpeg. */
+export type SpeakRequest = { text: string }
 
-/** Body of POST /api/check. */
-export interface CheckRequest {
-  /** Base64 JPEG, no data: prefix. */
-  image: string
-  cue: string
-  /** The step text with amounts filled in. */
-  step: string
-}
-
-/** Body of POST /api/speak. The response is audio/mpeg. */
-export interface SpeakRequest {
-  text: string
-}
-
-// ---------- API errors (client and server agree) ----------
+// ---------- API errors (the client and the server agree on these) ----------
 
 export type ApiErrorKind =
-  /** 400: input too large or malformed. */
-  | 'bad_request'
-  /** 422: model output could not be validated. */
-  | 'unprocessable'
-  /** 502: Gemini or ElevenLabs failed. */
-  | 'upstream'
-  /** 429 */
-  | 'rate_limited'
-  /** Client-side only. */
-  | 'timeout'
-  /** Client-side only. */
-  | 'aborted'
+  | 'bad_request' // 400: input too large or malformed
+  | 'unprocessable' // 422: model output could not be validated
+  | 'upstream' // 502: Gemini or ElevenLabs failed
+  | 'rate_limited' // 429
+  | 'timeout' // client side only
+  | 'aborted' // client side only
   | 'unknown'
 
-/** JSON body of every non-OK API response. */
-export interface ApiErrorBody {
-  error: { kind: ApiErrorKind; message: string }
-}
+export type ApiErrorBody = { error: { kind: ApiErrorKind; message: string } }

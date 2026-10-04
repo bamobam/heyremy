@@ -242,6 +242,43 @@ describe('CameraDebug grab panel', () => {
     await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:grabbed'))
   })
 
+  it('has a second button that waits for the hand to leave before grabbing, as a check does', async () => {
+    const grab = vi.fn(async () => grabResult())
+    installFakeMediaDevices([C270])
+    URL.createObjectURL = vi.fn(() => 'blob:grabbed')
+    URL.revokeObjectURL = vi.fn()
+    const fake = fakeDetection()
+    render(<CameraDebug detectionDeps={fake.deps} grab={grab} />)
+    await screen.findByText('Detection: ready')
+
+    fake.show(thumbsUp, 0) // a hand is in view
+    fireEvent.click(screen.getByRole('button', { name: 'Grab after hand leaves' }))
+    expect(await screen.findByRole('button', { name: 'Waiting for hand to leave...' })).toBeDisabled()
+    expect(grab).not.toHaveBeenCalled()
+
+    fake.holdFor(none, 67, 500) // the hand leaves
+    expect(await screen.findByAltText('Grabbed frame')).toBeInTheDocument()
+    expect(grab).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Grab after hand leaves' })).toBeEnabled()
+  })
+
+  it('disables the wait-for-hand button until the camera is live', async () => {
+    installFakeMediaDevices([MACBOOK, IPHONE])
+    render(<CameraDebug detectionDeps={fakeDetection().deps} grab={async () => grabResult()} />)
+    await screen.findByText(/Hat cam not found/)
+    expect(screen.getByRole('button', { name: 'Grab after hand leaves' })).toBeDisabled()
+  })
+
+  it('offers the grabbed photo as a download with a dated file name', async () => {
+    await liveWith(async () => grabResult())
+    expect(screen.queryByRole('link', { name: 'Download JPEG' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+    const link = await screen.findByRole('link', { name: 'Download JPEG' })
+    expect(link).toHaveAttribute('href', 'blob:grabbed')
+    expect(link.getAttribute('download')).toMatch(/^hatcam-\d{8}-\d{6}\.jpg$/)
+  })
+
   it('flags a JPEG outside the 80 to 150 KB target', async () => {
     await liveWith(async () => grabResult(300 * 1024))
     fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))

@@ -18,13 +18,21 @@ export interface Gestures {
   holdProgress: HoldProgress
   /** Whether a hand is in front of the camera (steadier than one frame's reading). */
   handVisible: boolean
+  /** The current value, for async code that outlives a render (e.g. waiting for a palm to leave the frame). */
+  isHandVisible: () => boolean
   status: DetectionStatus
   error: string | null
 }
 
 export interface GesturesOptions {
-  /** Turn gestures off, e.g. while a check is running. Anything half-held is forgotten. */
+  /** Turn gestures off entirely, e.g. camera not live. Detection stops and anything half-held is forgotten. */
   enabled?: boolean
+  /**
+   * Stop gestures from firing (e.g. while a check runs) but keep watching the hand,
+   * so the check can tell when the palm has left the frame. A gesture still held
+   * when this ends must be let go before it can fire again.
+   */
+  paused?: boolean
   /** Called once each time a gesture has been held long enough. */
   onGesture?: (event: GestureEvent) => void
   /** Called with every frame's reading, after it has been handled. */
@@ -40,7 +48,7 @@ export interface GesturesOptions {
  */
 export function useGestures(
   video: HTMLVideoElement | null,
-  { enabled = true, onGesture, onDetection, mapping = MAPPING, config = DEFAULT_FILTER_CONFIG, deps }: GesturesOptions = {},
+  { enabled = true, paused = false, onGesture, onDetection, mapping = MAPPING, config = DEFAULT_FILTER_CONFIG, deps }: GesturesOptions = {},
 ): Gestures {
   const [holdProgress, setHoldProgress] = useState<HoldProgress>(NO_PROGRESS)
   const [handVisible, setHandVisible] = useState(false)
@@ -52,10 +60,15 @@ export function useGestures(
   // Always call the latest callbacks without restarting detection when they change.
   const onGestureRef = useRef(onGesture)
   const onDetectionRef = useRef(onDetection)
+  const pausedRef = useRef(paused)
+  const enabledRef = useRef(enabled)
   useEffect(() => {
     onGestureRef.current = onGesture
     onDetectionRef.current = onDetection
+    pausedRef.current = paused
+    enabledRef.current = enabled
   })
+  const isHandVisible = useCallback(() => enabledRef.current && presence.current.visible, [])
 
   // A hold that was cut off must never carry over: forget it whenever gestures are switched off.
   useEffect(() => {
@@ -76,7 +89,21 @@ export function useGestures(
       presence.current = stepPresence(presence.current, detection.handPresent, t)
       setHandVisible(presence.current.visible)
 
-      const out = stepFilter(filter.current, { intent: mapDetection(detection, mapping), score: detection.score, t }, config)
+      const intent = mapDetection(detection, mapping)
+
+      if (pausedRef.current) {
+        // Keep watching the hand but never fire. A gesture held through the pause must be let go
+        // before it can fire again, so remember it as "waiting for release".
+        const held = intent !== null && detection.score >= config.minScore
+        if (held) filter.current = { kind: 'rearm', intent, misses: 0 }
+        else if (filter.current.kind === 'rearm') filter.current = stepFilter(filter.current, { intent: null, score: 0, t }, config).state
+        else filter.current = idleFilter
+        setHoldProgress((prev) => (prev === NO_PROGRESS || (prev.intent === null && prev.progress === 0) ? prev : NO_PROGRESS))
+        onDetectionRef.current?.(detection, t)
+        return
+      }
+
+      const out = stepFilter(filter.current, { intent, score: detection.score, t }, config)
       filter.current = out.state
       setHoldProgress((prev) =>
         prev.intent === out.progress.intent && prev.progress === out.progress.progress ? prev : out.progress,
@@ -94,6 +121,7 @@ export function useGestures(
     detection,
     holdProgress: enabled ? holdProgress : NO_PROGRESS,
     handVisible: enabled && handVisible,
+    isHandVisible,
     status,
     error,
   }

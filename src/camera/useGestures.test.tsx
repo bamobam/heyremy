@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
+import { useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import type { GestureEvent } from '../types.ts'
 import { FALLBACK_MAPPING, type Mapping } from './gestureMapper.ts'
@@ -47,11 +48,18 @@ interface Props {
   deps: DetectionDeps
   onGesture?: (e: GestureEvent) => void
   enabled?: boolean
+  paused?: boolean
   mapping?: Mapping
 }
 
-function Harness({ video, deps, onGesture, enabled, mapping }: Props) {
-  const g = useGestures(video, { enabled, onGesture, deps, mapping })
+/** The latest return value of the hook, for reading functions like isHandVisible. */
+let latest: ReturnType<typeof useGestures>
+
+function Harness({ video, deps, onGesture, enabled, paused, mapping }: Props) {
+  const g = useGestures(video, { enabled, paused, onGesture, deps, mapping })
+  useEffect(() => {
+    latest = g
+  })
   return (
     <>
       <p data-testid="status">{g.status}</p>
@@ -210,6 +218,74 @@ describe('useGestures', () => {
       expect(onGesture).not.toHaveBeenCalled()
       s.holdFor(1067, 1800, thumbsUp)
       expect(onGesture).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('paused', () => {
+    it('does not fire while paused, even for a gesture that is held', async () => {
+      const { s, onGesture } = await mount({ paused: true })
+      s.holdFor(0, 3000, thumbsUp)
+      expect(onGesture).not.toHaveBeenCalled()
+      expect(screen.getByTestId('progress')).toHaveTextContent('none:0.00')
+    })
+
+    it('still sees the hand while paused, so a check can wait for it to leave', async () => {
+      const { s } = await mount({ paused: true })
+      s.at(0, thumbsUp)
+      expect(screen.getByTestId('hand')).toHaveTextContent('true')
+      expect(latest.isHandVisible()).toBe(true)
+      s.holdFor(67, 500, none)
+      expect(screen.getByTestId('hand')).toHaveTextContent('false')
+      expect(latest.isHandVisible()).toBe(false)
+    })
+
+    it('does not fire on resume for a gesture that was already being held, until it is let go', async () => {
+      const { s, onGesture, el, view } = await mount()
+      s.holdFor(0, 600, openPalm)
+
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} paused />)
+      s.holdFor(667, 1500, openPalm) // palm still up during the pause
+
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} />)
+      s.holdFor(1567, 4000, openPalm) // and still up after it
+      expect(onGesture).not.toHaveBeenCalled()
+
+      s.holdFor(4067, 4400, none) // let go
+      s.holdFor(4467, 5600, openPalm) // a fresh hold
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent: 'check' }))
+    })
+
+    it('fires normally after resuming if the hand left during the pause', async () => {
+      const { s, onGesture, el, view } = await mount({ paused: true })
+      s.holdFor(0, 500, none)
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} />)
+      s.holdFor(567, 1700, thumbsUp)
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent: 'next' }))
+    })
+
+    it('does not restart detection when paused or resumed', async () => {
+      const { s, onGesture, el, view } = await mount()
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} paused />)
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} />)
+      expect(s.deps.createRecognizer).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('isHandVisible', () => {
+    it('reads the current value, not the one from the last render', async () => {
+      const { s } = await mount()
+      const read = latest.isHandVisible // an old reference, as an async flow would hold
+      s.at(0, thumbsUp)
+      expect(read()).toBe(true)
+      s.holdFor(67, 500, none)
+      expect(read()).toBe(false)
+    })
+
+    it('is false when gestures are disabled', async () => {
+      const { s, onGesture, el, view } = await mount()
+      s.at(0, thumbsUp)
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} enabled={false} />)
+      expect(latest.isHandVisible()).toBe(false)
     })
   })
 
