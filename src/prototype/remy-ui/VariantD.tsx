@@ -1,4 +1,5 @@
 // PROTOTYPE (throwaway) — Variant D "Best of A + B": B's palette, welcome split and prep→cook rise; A's prep dashboard, card carousel, bob and verdict pop.
+import { useState } from 'react'
 import type { Flow } from './useFlow'
 import { recipe, formatAmount, ingredientLook } from './data'
 import { HEAD, RemyLoader, IngredientArt } from './shared'
@@ -6,11 +7,6 @@ import { RiggedRemy } from './RiggedRemy'
 import './variantD.css'
 import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes'
 
-// Emphasized type: the first word (the action) gets the accent color and the heaviest weight.
-function Emph({ text, color }: { text: string; color: string }) {
-  const [first, ...rest] = text.split(' ')
-  return <><span className="vd-emph" style={{ color }}>{first}</span> {rest.join(' ')}</>
-}
 
 export const name = 'Best of A + B'
 
@@ -41,6 +37,8 @@ export const SAY = {
 
 export function VariantD({ flow }: { flow: Flow }) {
   const f = FIELDS[flow.step % FIELDS.length]
+  const [ticked, setTicked] = useState<string[]>([])
+  const tick = (p: string) => setTicked(t => t.includes(p) ? t.filter(x => x !== p) : [...t, p])
   return (
     <div className="vd">
       {flow.screen === 'paste' && (
@@ -56,7 +54,7 @@ export function VariantD({ flow }: { flow: Flow }) {
           </div>
           <div className="vd-paste-right">
             <div className="vd-meet">
-              <div className="vd-stand"><RiggedRemy pose="wave" className="vd-bob" /><i /></div>
+              <div className="vd-stand"><RiggedRemy pose="wave" /><i /></div>
               <div className="vd-bubble left"><b>{SAY.hello}</b><br />{SAY.ask}</div>
             </div>
             <textarea defaultValue={'Fluffy pancakes (serves 4)\n1 cup flour, 2 tbsp sugar, 2 tsp baking powder, ½ tsp salt, ¾ cup milk, 1 egg, 2 tbsp butter…'} />
@@ -74,13 +72,12 @@ export function VariantD({ flow }: { flow: Flow }) {
 
       {flow.screen === 'prep' && (
         <div className="vd-prep-page vd-enter">
-          <header className="vd-top"><div className="vd-logo"><img src={HEAD} alt="" />REMY</div><div className="vd-chip">6 steps · about 25 min</div></header>
+          <header className="vd-top"><div className="vd-logo"><img src={HEAD} alt="" />REMY</div><div className="vd-chip">6 steps, about 25 minutes</div></header>
           <div className="vd-prep">
             <section className="vd-card">
               <div className="vd-card-head">
                 <div className="vd-plate" style={{ clipPath: shape('cookie') }}><RiggedRemy pose="idle" width={104} /></div>
                 <div>
-                  <div className="vd-kicker">Tonight's recipe</div>
                   <h1>{recipe.title}</h1>
                   <div className="vd-stepper">
                     <button onClick={() => flow.setServings(Math.max(1, flow.servings - 1))}>−</button>
@@ -101,10 +98,16 @@ export function VariantD({ flow }: { flow: Flow }) {
             </section>
             <section className="vd-side">
               <div className="vd-before">
-                <div className="vd-kicker">Before you start</div>
-                {recipe.prep.map((p, i) => <div key={p} className="vd-before-item"><em style={{ background: PREP_DOTS[i], color: i === 0 ? '#1D1B20' : '#FFF7EA' }}>{i + 1}</em>{p}</div>)}
+                <h3>Before you start</h3>
+                {recipe.prep.map((p, i) => (
+                  <label key={p} className={`vd-before-item ${ticked.includes(p) ? 'done' : ''}`}>
+                    <input type="checkbox" checked={ticked.includes(p)} onChange={() => tick(p)} />
+                    <span className="vd-box" style={{ borderColor: PREP_DOTS[i], background: ticked.includes(p) ? PREP_DOTS[i] : 'transparent' }} />
+                    {p}
+                  </label>
+                ))}
               </div>
-              <div className="vd-remy-line"><img src={HEAD} alt="" className="vd-bob" /><div className="vd-bubble small left">{SAY.prep}</div></div>
+              <div className="vd-remy-line"><img src={HEAD} alt="" /><div className="vd-bubble small left">{SAY.prep}</div></div>
               <button className="vd-btn big" onClick={flow.start}>Remy, let's cook!</button>
             </section>
           </div>
@@ -124,15 +127,15 @@ export function VariantD({ flow }: { flow: Flow }) {
                 return (
                   <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg }}>
                     <div className="vd-num" style={{ background: c.accent, color: c.card, clipPath: shape(STEP_SHAPES[i % STEP_SHAPES.length], i * 20) }}>{i + 1}</div>
-                    <h2><Emph text={s.text} color={c.accent} /></h2>
-                    {s.headsUp && <div className="vd-heads" style={{ background: c.accent, color: c.card }}>🔥 Heads-up · {s.headsUp}</div>}
+                    <h2>{s.text}</h2>
+                    {s.headsUp && <div className="vd-heads" style={{ background: c.accent, color: c.card }}>🔥 {s.headsUp}</div>}
                     {s.cue && <div className="vd-cue">✋ Ready when: <b>{s.cue}</b></div>}
                   </article>
                 )
               })}
             </div>
           </div>
-          <div className="vd-remy"><img src={HEAD} alt="" className="vd-bob" /><div className="vd-bubble small left">{flow.step === 0 && <b>{SAY.go} </b>}{flow.current.headsUp && <b>{SAY.headsUp} </b>}{flow.current.text}</div></div>
+          <div className="vd-remy"><img src={HEAD} alt="" /><div className="vd-bubble small left">{flow.step === 0 && <b>{SAY.go} </b>}{flow.current.headsUp && <b>{SAY.headsUp} </b>}{flow.current.text}</div></div>
           <div className="vd-legend"><div className="vd-group"><span>👎 back</span><span className={flow.current.checkable ? 'hot' : 'off'}>✋ is it ready?</span><span className="main">👍 next</span></div></div>
 
           {flow.check.kind === 'looking' && (
@@ -156,7 +159,7 @@ export function VariantD({ flow }: { flow: Flow }) {
       {flow.screen === 'done' && (
         <div className="vd-full vd-enter" style={{ background: '#657167' }}>
           <div className="vd-meet">
-            <div className="vd-stand big"><RiggedRemy pose="cheer" className="vd-bob" /><i /></div>
+            <div className="vd-stand big"><RiggedRemy pose="cheer" /><i /></div>
             <div className="vd-bubble left"><b>{SAY.done}</b><br />Pancakes are done. You didn't touch the screen once.</div>
           </div>
           <button className="vd-btn light" onClick={flow.restart}>Let's cook something else!</button>
