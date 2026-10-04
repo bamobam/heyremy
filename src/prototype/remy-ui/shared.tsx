@@ -2,6 +2,8 @@
 import type { Flow } from './useFlow'
 import { ingredientLook } from './data'
 import './shared.css'
+import { injectShapeKeyframes } from './shapes'
+injectShapeKeyframes()
 
 export const MASCOT = '/prototype/remy-mascot.svg'
 export const HEAD = '/prototype/remy-head.svg'
@@ -11,7 +13,10 @@ export function RemyLoader({ size = 220, label }: { size?: number; label?: strin
   return (
     <div className="remy-loader" style={{ width: size }}>
       <div className="remy-loader__steam"><i /><i /><i /></div>
-      <img src={MASCOT} alt="" className="remy-loader__img" />
+      <div className="remy-loader__stage">
+        <div className="remy-loader__blob" />
+        <img src={MASCOT} alt="" className="remy-loader__img" />
+      </div>
       {label && <div className="remy-loader__label">{label}</div>}
     </div>
   )

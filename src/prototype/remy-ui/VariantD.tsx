@@ -3,6 +3,13 @@ import type { Flow } from './useFlow'
 import { recipe, formatAmount, ingredientLook } from './data'
 import { HEAD, MASCOT, RemyLoader, IngredientArt } from './shared'
 import './variantD.css'
+import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes'
+
+// Emphasized type: the first word (the action) gets the accent color and the heaviest weight.
+function Emph({ text, color }: { text: string; color: string }) {
+  const [first, ...rest] = text.split(' ')
+  return <><span className="vd-emph" style={{ color }}>{first}</span> {rest.join(' ')}</>
+}
 
 export const name = 'Best of A + B'
 
@@ -70,7 +77,7 @@ export function VariantD({ flow }: { flow: Flow }) {
           <div className="vd-prep">
             <section className="vd-card">
               <div className="vd-card-head">
-                <div className="vd-plate"><img src={MASCOT} alt="" /></div>
+                <div className="vd-plate" style={{ clipPath: shape('cookie') }}><img src={MASCOT} alt="" /></div>
                 <div>
                   <div className="vd-kicker">Tonight's recipe</div>
                   <h1>{recipe.title}</h1>
@@ -115,8 +122,8 @@ export function VariantD({ flow }: { flow: Flow }) {
                 const c = FIELDS[i % FIELDS.length]
                 return (
                   <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg }}>
-                    <div className="vd-num" style={{ color: c.accent }}>{String(i + 1).padStart(2, '0')}</div>
-                    <h2>{s.text}</h2>
+                    <div className="vd-num" style={{ background: c.accent, color: c.card, clipPath: shape(STEP_SHAPES[i % STEP_SHAPES.length], i * 20) }}>{i + 1}</div>
+                    <h2><Emph text={s.text} color={c.accent} /></h2>
                     {s.headsUp && <div className="vd-heads" style={{ background: c.accent, color: c.card }}>🔥 Heads-up · {s.headsUp}</div>}
                     {s.cue && <div className="vd-cue">✋ Ready when: <b>{s.cue}</b></div>}
                   </article>
@@ -125,15 +132,19 @@ export function VariantD({ flow }: { flow: Flow }) {
             </div>
           </div>
           <div className="vd-remy"><img src={HEAD} alt="" className="vd-bob" /><div className="vd-bubble small left">{flow.step === 0 && <b>{SAY.go} </b>}{flow.current.headsUp && <b>{SAY.headsUp} </b>}{flow.current.text}</div></div>
-          <div className="vd-legend"><span>👍 next</span><span>👎 back</span><span style={{ opacity: flow.current.checkable ? 1 : .35 }}>✋ is it ready?</span></div>
+          <div className="vd-legend"><div className="vd-group"><span>👎 back</span><span className={flow.current.checkable ? 'hot' : 'off'}>✋ is it ready?</span><span className="main">👍 next</span></div></div>
 
           {flow.check.kind === 'looking' && (
             <div className="vd-full vd-fade" style={{ background: 'rgba(29,27,32,.9)' }}><RemyLoader size={230} label={SAY.look} /></div>
           )}
           {flow.check.kind === 'verdict' && (
             <div className="vd-full vd-wipe" style={{ background: VERDICT[flow.check.verdict.status] }}>
-              <div className="vd-verdict">
-                <img src={MASCOT} alt="" />
+              <div className={`vd-verdict ${flow.check.verdict.status}`}>
+                <div className="vd-hero">
+                  <div className="vd-hero-shape" style={{ clipPath: shape(VERDICT_SHAPE[flow.check.verdict.status]) }} />
+                  {flow.check.verdict.status === 'ready' && <><i className="vd-spark s1">✦</i><i className="vd-spark s2">✦</i><i className="vd-spark s3">✦</i></>}
+                  <img src={MASCOT} alt="" />
+                </div>
                 <div><div className="vd-catchline">{SAY.verdict[flow.check.verdict.status]}</div><p>{flow.check.verdict.feedback}</p></div>
               </div>
             </div>

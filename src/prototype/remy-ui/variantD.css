@@ -1,5 +1,8 @@
 /* PROTOTYPE (throwaway) — Variant D: B's palette and prep→cook rise + A's dashboard, carousel and pops */
-.vd { --ink: #1D1B20; --cream: #FFF7EA; --brand: #F4905F; --cocoa: #73462F; --umber: #541B05;
+/* M3 Expressive springs (CSS linear() approximations): spatial = gentle overshoot for movement, bouncy = hero pops. */
+.vd { --spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001 85.9%, 1);
+  --bouncy: linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1);
+  --ink: #1D1B20; --cream: #FFF7EA; --brand: #F4905F; --cocoa: #73462F; --umber: #541B05;
   position: fixed; inset: 0; font-family: "M PLUS 2", system-ui, sans-serif; color: var(--ink); background: var(--cream); overflow: hidden; }
 .vd-enter { animation: vd-enter .55s cubic-bezier(.2,.8,.2,1); }
 @keyframes vd-enter { from { opacity: 0; transform: translateY(30px) } }
@@ -13,8 +16,10 @@
 .vd-top { display: flex; justify-content: space-between; align-items: center; padding: 18px 36px; position: relative; z-index: 2; }
 .vd-chip { font-size: 14px; font-weight: 700; background: #EDCEBA; color: var(--umber); padding: 8px 14px; border-radius: 999px; }
 .vd-row { display: flex; gap: 14px; }
-.vd-btn { font: 800 20px "M PLUS 2", sans-serif; border: 2px solid var(--ink); background: var(--brand); color: var(--ink); border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 4px 4px 0 var(--ink); transition: transform .15s, box-shadow .15s; }
-.vd-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+.vd-btn { font: 800 20px "M PLUS 2", sans-serif; border: 2px solid var(--ink); background: var(--brand); color: var(--ink); border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 4px 4px 0 var(--ink); transition: transform .5s var(--spring), box-shadow .3s, border-radius .5s var(--spring); }
+.vd-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); border-radius: 18px; }
+.vd-btn:active { transform: scale(.95); box-shadow: 2px 2px 0 var(--ink); border-radius: 12px; transition-duration: .12s; }
+.vd-btn.big { letter-spacing: .01em; }
 .vd-btn.ghost { background: #fff; }
 .vd-btn.big { width: 100%; font-size: 24px; padding: 18px; }
 .vd-btn.light { background: var(--cream); }
@@ -58,7 +63,7 @@
 .vd-prep { flex: 1; display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; padding: 0 36px 32px; min-height: 0; }
 .vd-card { background: #fff; border: 2px solid var(--ink); border-radius: 28px; box-shadow: 8px 8px 0 var(--ink); padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
 .vd-card-head { display: flex; gap: 20px; align-items: center; }
-.vd-plate { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #EDCEBA, #DE9762 70%, #BE7463); border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
+.vd-plate { width: 132px; height: 132px; background: radial-gradient(circle at 35% 35%, #F6B3BC, #DE9762 70%, #BE7463); display: flex; align-items: center; justify-content: center; flex: none; }
 .vd-plate img { width: 90px; }
 .vd-card h1 { font-size: 44px; margin: 4px 0 8px; line-height: 1; }
 .vd-stepper { display: inline-flex; align-items: center; gap: 12px; background: #EDCEBA; border-radius: 999px; padding: 4px; }
@@ -82,25 +87,42 @@
 .vd-dots i.n { width: 36px; }
 .vd-rise { flex: 1; animation: vd-rise .7s cubic-bezier(.7,0,.2,1); }
 @keyframes vd-rise { from { opacity: 0; transform: translateY(160px) } }
-.vd-track { display: flex; gap: 32px; padding-left: 16%; height: 76%; padding-top: 8px; transition: transform .6s cubic-bezier(.7,0,.2,1); }
-.vd-step { flex: none; width: 68%; border-radius: 34px; padding: 40px 48px; display: flex; flex-direction: column; gap: 18px; opacity: .4; transform: scale(.9); transition: opacity .5s, transform .6s cubic-bezier(.7,0,.2,1), box-shadow .5s; }
-.vd-step.now { opacity: 1; transform: none; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
-.vd-num { font-size: 96px; font-weight: 800; line-height: .8; }
-.vd-step h2 { font-size: 58px; line-height: 1.08; margin: 0; }
+.vd-track { display: flex; gap: 32px; padding-left: 16%; height: 76%; padding-top: 8px; transition: transform .8s var(--spring); }
+.vd-step { flex: none; width: 68%; border-radius: 34px; padding: 40px 48px; display: flex; flex-direction: column; gap: 18px; opacity: .4; transform: scale(.9); transition: opacity .5s, transform .8s var(--spring), box-shadow .5s, border-radius .8s var(--spring); }
+.vd-step.now { opacity: 1; transform: none; box-shadow: 0 24px 60px rgba(0,0,0,.35); border-radius: 48px 48px 48px 14px; }
+.vd-num { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; font-size: 52px; font-weight: 800; flex: none; transition: transform .7s var(--bouncy); transform: scale(.85) rotate(-20deg); }
+.vd-step.now .vd-num { transform: none; }
+.vd-emph { font-weight: 900; }
+.vd-step h2 { font-size: 58px; line-height: 1.08; margin: 0; font-weight: 700; }
 .vd-heads { font-size: 22px; font-weight: 800; padding: 14px 20px; border-radius: 14px; align-self: flex-start; animation: vd-pulse 1.6s ease-in-out infinite; }
 @keyframes vd-pulse { 50% { transform: scale(1.03) } }
 .vd-cue { font-size: 20px; opacity: .9; }
 .vd-remy { position: absolute; left: 36px; bottom: 70px; display: flex; align-items: flex-end; gap: 10px; }
 .vd-remy img { width: 84px; }
-.vd-legend { display: flex; justify-content: center; gap: 40px; padding: 16px; font-size: 18px; opacity: .85; }
+.vd-legend { display: flex; justify-content: flex-end; padding: 0 36px 22px; }
+.vd-group { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(0,0,0,.25); }
+.vd-group span { font-size: 18px; font-weight: 700; padding: 10px 18px; border-radius: 8px; background: rgba(255,247,234,.12); transition: border-radius .5s var(--spring); }
+.vd-group span:first-child { border-radius: 999px 8px 8px 999px; }
+.vd-group span.main { border-radius: 8px 999px 999px 8px; background: #FFF7EA; color: #1D1B20; }
+.vd-group span.hot { background: #F6B3BC; color: #1D1B20; }
+.vd-group span.off { opacity: .35; }
 .vd-wipe { animation: vd-wipe .5s cubic-bezier(.7,0,.2,1); }
 @keyframes vd-wipe { from { clip-path: circle(0% at 50% 60%) } to { clip-path: circle(150% at 50% 60%) } }
-.vd-verdict { display: flex; align-items: center; gap: 28px; animation: vd-pop .5s .15s cubic-bezier(.2,1.4,.4,1) backwards; }
-.vd-verdict img { width: 240px; animation: vd-bob 2s ease-in-out infinite; }
+.vd-verdict { display: flex; align-items: center; gap: 36px; animation: vd-pop .9s .1s var(--bouncy) backwards; }
+.vd-hero { position: relative; width: 300px; height: 300px; flex: none; display: flex; align-items: center; justify-content: center; }
+.vd-hero-shape { position: absolute; inset: 0; background: rgba(255,247,234,.22); animation: vd-spin 14s linear infinite; }
+.vd-verdict.ready .vd-hero-shape { background: #FFD84D; opacity: .9; }
+.vd-verdict.ready img { animation: vd-jump .9s var(--bouncy) 2; }
+.vd-hero img { position: relative; width: 230px; animation: vd-bob 2s ease-in-out infinite; }
+.vd-spark { position: absolute; color: #FFF7EA; font-style: normal; font-size: 34px; animation: vd-twinkle 1.4s ease-in-out infinite; }
+.vd-spark.s1 { top: 6%; right: 8%; } .vd-spark.s2 { top: 30%; left: 2%; font-size: 24px; animation-delay: .4s; } .vd-spark.s3 { bottom: 10%; right: 0; font-size: 28px; animation-delay: .8s; }
+@keyframes vd-spin { to { transform: rotate(360deg) } }
+@keyframes vd-jump { 40% { transform: translateY(-36px) rotate(-6deg) } }
+@keyframes vd-twinkle { 50% { transform: scale(1.4) rotate(20deg); opacity: .5 } }
 .vd-verdict > div { max-width: 600px; }
 .vd-catchline { font-size: 26px; font-weight: 800; color: var(--cream); }
 .vd-catchline::after { content: " ✦"; color: #FFD84D; }
-.vd-verdict p { font-size: 56px; font-weight: 800; margin: 8px 0 0; line-height: 1.1; color: var(--cream); }
+.vd-verdict p { font-size: 60px; font-weight: 900; letter-spacing: -.01em; margin: 8px 0 0; line-height: 1.1; color: var(--cream); }
 @keyframes vd-pop { from { opacity: 0; transform: scale(.8) } }
 
 @media (prefers-reduced-motion: reduce) {
