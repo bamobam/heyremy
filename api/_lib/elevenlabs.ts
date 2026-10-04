@@ -2,8 +2,8 @@
 
 import { ProviderError } from './gemini.ts'
 
-// Premade voice "Alice" (clear, British); free plans can't use library voices via the API. Not a secret.
-export const VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2'
+// Premade voice "Chris" (American male, friendly); free plans can't use library voices via the API. Not a secret.
+export const VOICE_ID = 'iP95p4xoKVk53GoZ742B'
 export const ELEVEN_MODEL = 'eleven_flash_v2_5'
 const TIMEOUT_MS = 5000
 
