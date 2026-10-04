@@ -10,9 +10,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cam:check": "node scripts/camCheck.ts"
+    "cam:check": "node scripts/camCheck.ts",
+    "postinstall": "node scripts/copyMediapipe.mjs"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
