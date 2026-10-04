@@ -18,7 +18,7 @@ export function DoneScreen({ stats, title, onRestart }: { stats: CookingStats; t
         <SpeechBubble>
           <b>{SAY.done}</b>
           <br />
-          {title} is done.
+          All done with the {title.toLowerCase()}.
         </SpeechBubble>
       </div>
       <p className="ui-done__stats">{statsLine(stats)}</p>
