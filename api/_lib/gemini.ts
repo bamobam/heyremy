@@ -3,8 +3,8 @@
 import type { ApiErrorKind } from '../../src/types.ts'
 import type { Part } from '../_prompts/check.ts'
 
-// Verify this is a current Flash model in Google AI Studio before the demo.
-export const GEMINI_MODEL = 'gemini-2.5-flash'
+// gemini-2.5-flash is closed to new users (404); the API recommends 3.8 Flash.
+export const GEMINI_MODEL = 'gemini-3.8-flash'
 
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
 
