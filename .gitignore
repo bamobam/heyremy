@@ -1,7 +1,10 @@
+# API keys live in env/. Only the example and the readme are tracked.
+env/*
+!env/.env.example
+!env/README.md
 .env
 .env.*
 .claude/settings.local.json
-!.env.example
 # Logs
 logs
 *.log

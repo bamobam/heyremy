@@ -5,6 +5,8 @@ import { devApi } from './scripts/devApi.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // API keys and flags live in env/ (copy env/.env.example to env/.env.local), not the project root.
+  envDir: 'env',
   // devApi serves the functions in api/ during `npm run dev`; it does nothing in a build.
   plugins: [react(), devApi()],
   test: {

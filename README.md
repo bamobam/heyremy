@@ -13,14 +13,14 @@ npm install
 npm run dev
 ```
 
-Copy `.env.example` to `.env.local` and add `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`. In production they live in Vercel environment variables only.
+Copy `env/.env.example` to `env/.env.local` and add `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`. In production they live in Vercel environment variables only.
 
 ## Try the real backend
 
 `npm run dev` also serves the functions in `api/` (a small Vite plugin, development only), so the app can talk to the real backend with no Vercel account.
 
-1. `cp .env.example .env.local`, then put your Gemini key after `GEMINI_API_KEY=` (from Google AI Studio). `ELEVENLABS_API_KEY` is not needed yet: only `/api/parse` and `/api/check` are tried here. The keys stay in the dev server; the browser never sees them.
-2. `npm run dev` (restart it after changing `.env.local`).
+1. `cp env/.env.example env/.env.local`, then put your Gemini key after `GEMINI_API_KEY=` (from Google AI Studio). `ELEVENLABS_API_KEY` is not needed yet: only `/api/parse` and `/api/check` are tried here. The keys stay in the dev server; the browser never sees them.
+2. `npm run dev` (restart it after changing `env/.env.local`).
 3. Open <http://localhost:5173/?debug=api> with the hat cam plugged in.
 4. **Parse recipe** sends the recipe text to `/api/parse`. **Check with a photo** takes a real photo from the hat cam and sends it to `/api/check`. Holding an open palm for 1 s and then taking your hand away does the same check.
 

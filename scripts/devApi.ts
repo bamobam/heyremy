@@ -1,6 +1,6 @@
 // A Vite plugin that serves the functions in api/ while `npm run dev` runs, so the
 // app can talk to the real backend locally with no Vercel account or CLI.
-// Keys come from .env.local and stay in the dev server's process: Vite only
+// Keys come from env/.env.local and stay in the dev server's process: Vite only
 // sends VITE_-prefixed variables to the browser, and these have no such prefix.
 
 import { existsSync } from 'node:fs'
@@ -17,14 +17,14 @@ export function devApi(): Plugin {
     apply: 'serve',
 
     config(_config, { mode }) {
-      const env = loadEnv(mode, process.cwd(), '')
+      const env = loadEnv(mode, join(process.cwd(), 'env'), '')
       for (const key of KEYS) if (env[key] && !process.env[key]) process.env[key] = env[key]
     },
 
     configureServer(server) {
       if (!process.env.GEMINI_API_KEY) {
         server.config.logger.warn(
-          '\n  /api/parse and /api/check will fail: GEMINI_API_KEY is not set.\n  Add it to .env.local and restart the dev server.\n',
+          '\n  /api/parse and /api/check will fail: GEMINI_API_KEY is not set.\n  Add it to env/.env.local and restart the dev server.\n',
         )
       }
 

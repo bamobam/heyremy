@@ -863,7 +863,7 @@ request ─► handler ─► _lib/http (guard) ─► _lib/limits ─► prompt
                                                                                   └─► _lib/log
 ```
 
-Environment variables, set in Vercel only (and `.env.local` for development): `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`. The ElevenLabs voice ID isn't secret and lives as a constant in `_lib/elevenlabs.ts`. Nothing with a key gets a `VITE_` prefix, since those are bundled into the browser.
+Environment variables, set in Vercel only (and `env/.env.local` for development): `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`. The ElevenLabs voice ID isn't secret and lives as a constant in `_lib/elevenlabs.ts`. Nothing with a key gets a `VITE_` prefix, since those are bundled into the browser.
 
 ### 10.1 `_lib/http.ts`
 
