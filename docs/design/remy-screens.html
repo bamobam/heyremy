@@ -1,0 +1,265 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Remy screens</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Remy mockups: light screens for prep (hands clean, at the laptop), dark screens for cooking mode (read from 2 m, no glare). */
+:root{
+  --paper:#F6F7F4; --card:#FFFFFF; --ink:#1B1F1D; --muted:#5E6661; --line:#DDE2DC;
+  --night:#121614; --night-2:#1C221F; --night-line:#2C3430; --on-night:#F3F5F2; --on-night-muted:#9BA59F;
+  --saffron:#F2B33D; --saffron-ink:#3A2A06;
+  --ready:#3CCB7F; --notyet:#FF7A59; --unsure:#9AA3AD;
+  --display:"Fraunces",Georgia,serif; --body:"DM Sans",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#E9ECE8;font-family:var(--body);width:1280px}
+.screen{flex:none;width:1280px;height:800px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.light{background:var(--paper);color:var(--ink)}
+.dark{background:var(--night);color:var(--on-night)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:28px 48px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:28px}
+.brand svg{width:34px;height:34px}
+.pill{font-size:15px;font-weight:500;padding:8px 14px;border-radius:999px;background:var(--night-2);color:var(--on-night-muted)}
+.light .pill{background:#E8ECE6;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:64px;padding:0 32px;border-radius:16px;background:var(--saffron);color:var(--saffron-ink);font-weight:700;font-size:22px}
+.btn.ghost{background:transparent;border:2px solid var(--line);color:var(--ink)}
+h1{font-family:var(--display);font-weight:700;margin:0;letter-spacing:-0.01em}
+.label{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.dark .label{color:var(--on-night-muted)}
+
+/* Paste */
+.paste{flex:1;display:grid;grid-template-columns:1fr 360px;gap:40px;padding:8px 48px 48px}
+.paste h1{font-size:52px;margin-bottom:10px}
+.paste p.sub{font-size:20px;color:var(--muted);margin:0 0 24px}
+.textarea{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:24px;font-size:18px;line-height:1.6;color:var(--ink);height:380px;overflow:hidden;white-space:pre-line}
+.paste .actions{display:flex;gap:16px;margin-top:24px}
+.howto{background:var(--night);color:var(--on-night);border-radius:22px;padding:28px;display:flex;flex-direction:column;gap:22px}
+.howto h2{font-family:var(--display);font-size:26px;margin:0}
+.g{display:flex;align-items:center;gap:16px;font-size:19px}
+.g .ico{width:56px;height:56px;border-radius:16px;background:var(--night-2);display:flex;align-items:center;justify-content:center;font-size:30px}
+.g b{display:block;font-size:20px}
+.g span{color:var(--on-night-muted);font-size:16px}
+
+/* Prep */
+.prep{flex:1;display:grid;grid-template-columns:1fr 1fr 380px;gap:28px;padding:0 48px 40px}
+.col{display:flex;flex-direction:column;gap:14px}
+.title-row{padding:0 48px 18px;display:flex;align-items:flex-end;justify-content:space-between}
+.title-row h1{font-size:46px}
+.stepper{display:flex;align-items:center;gap:14px;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:8px 10px}
+.stepper .b{width:44px;height:44px;border-radius:12px;background:#E8ECE6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700}
+.stepper .n{font-size:24px;font-weight:700;min-width:120px;text-align:center}
+.stepper .n small{display:block;font-size:13px;font-weight:500;color:var(--muted)}
+.list{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:8px 22px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);font-size:19px}
+.row:last-child{border-bottom:0}
+.row .amt{font-weight:700;white-space:nowrap}
+.row .amt.changed{color:#B7790F}
+.check{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);font-size:19px}
+.check:last-child{border-bottom:0}
+.box{width:26px;height:26px;border-radius:8px;border:2px solid #B9C1BA;flex:none}
+.box.on{background:var(--ready);border-color:var(--ready)}
+.note{font-size:15px;color:var(--muted)}
+.cam{background:var(--night);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;color:var(--on-night)}
+.feed{height:220px;border-radius:14px;background:#2A2520;position:relative;overflow:hidden}
+.feed svg{position:absolute;inset:0;width:100%;height:100%}
+.live{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--on-night-muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--ready)}
+
+/* Cooking */
+.progress{display:flex;gap:8px}
+.progress i{width:44px;height:8px;border-radius:4px;background:var(--night-line)}
+.progress i.done{background:var(--on-night-muted)}
+.progress i.now{background:var(--saffron)}
+.stage{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 96px;gap:28px}
+.stepno{font-size:22px;font-weight:700;color:var(--saffron);letter-spacing:.06em;text-transform:uppercase}
+.step{font-family:var(--display);font-weight:600;font-size:76px;line-height:1.08;letter-spacing:-0.015em;max-width:1000px}
+.cue{display:inline-flex;align-items:center;gap:14px;font-size:24px;color:var(--on-night-muted);background:var(--night-2);border:1px solid var(--night-line);padding:14px 20px;border-radius:14px;align-self:flex-start}
+.cue b{color:var(--on-night)}
+.headsup{display:flex;align-items:center;gap:16px;background:var(--saffron);color:var(--saffron-ink);padding:18px 24px;border-radius:16px;font-size:26px;font-weight:700;align-self:flex-start}
+.legend{display:flex;justify-content:center;gap:48px;padding:22px 48px 30px;border-top:1px solid var(--night-line);font-size:20px;color:var(--on-night-muted)}
+.legend b{color:var(--on-night);margin-right:6px}
+.thumb{position:absolute;right:40px;top:96px;width:200px;height:130px;border-radius:12px;overflow:hidden;background:#2A2520;border:2px solid var(--night-line)}
+.thumb svg{width:100%;height:100%}
+.hold{position:absolute;left:50%;bottom:110px;transform:translateX(-50%);display:flex;align-items:center;gap:18px;background:var(--night-2);border:1px solid var(--night-line);padding:14px 26px 14px 14px;border-radius:999px;font-size:24px;font-weight:700}
+.ring{width:64px;height:64px}
+
+/* Overlays */
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;text-align:center;padding:0 120px}
+.bigfeed{width:560px;height:340px;border-radius:22px;overflow:hidden;background:#2A2520;position:relative;border:3px solid var(--night-line)}
+.bigfeed svg{width:100%;height:100%}
+.scan{position:absolute;left:0;right:0;top:46%;height:3px;background:var(--saffron);opacity:.85}
+.say{font-family:var(--display);font-size:54px;font-weight:600}
+.verdict{width:880px;border-radius:28px;padding:44px 52px;display:flex;flex-direction:column;gap:16px;text-align:left}
+.verdict .tag{display:inline-flex;align-items:center;gap:12px;font-size:22px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.verdict .msg{font-family:var(--display);font-size:60px;font-weight:600;line-height:1.1}
+.verdict .next{font-size:22px;opacity:.85}
+.v-notyet{background:#3A1F18;border:3px solid var(--notyet)} .v-notyet .tag{color:var(--notyet)}
+.v-ready{background:#123322;border:3px solid var(--ready)} .v-ready .tag{color:var(--ready)}
+.v-unsure{background:#24292D;border:3px solid var(--unsure)} .v-unsure .tag{color:var(--unsure)}
+.bar{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar i{display:block;height:100%;width:60%;background:var(--ready)}
+.caption{position:absolute;left:48px;bottom:24px;font-size:14px;color:var(--on-night-muted)}
+.light .caption{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- reusable marks -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="hat" viewBox="0 0 64 64"><path d="M18 40c-7 0-12-5-12-12s6-12 12-11c2-6 8-10 14-10s12 4 14 10c6-1 12 4 12 11s-5 12-12 12v12H18z" fill="#F6F7F4" stroke="#1B1F1D" stroke-width="3" stroke-linejoin="round"/><path d="M18 46h28" stroke="#1B1F1D" stroke-width="3"/><circle cx="26" cy="31" r="2.5" fill="#1B1F1D"/><circle cx="38" cy="31" r="2.5" fill="#1B1F1D"/><path d="M29 36l3 2 3-2" stroke="#1B1F1D" stroke-width="2.5" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="bowl-lumpy" viewBox="0 0 560 340"><rect width="560" height="340" fill="#3A322A"/><ellipse cx="280" cy="180" rx="210" ry="140" fill="#D9D4CB"/><ellipse cx="280" cy="180" rx="180" ry="115" fill="#E9D7A8"/><circle cx="220" cy="150" r="14" fill="#F7F1E3"/><circle cx="300" cy="200" r="10" fill="#F7F1E3"/><circle cx="345" cy="140" r="16" fill="#F7F1E3"/><circle cx="250" cy="225" r="9" fill="#F7F1E3"/><path d="M190 185c30-10 60 8 95-4" stroke="#FBF6EA" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M300 165c25 4 45-6 70 2" stroke="#FBF6EA" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M430 40l-90 120" stroke="#8C9496" stroke-width="8" stroke-linecap="round"/></symbol>
+    <symbol id="bowl-smooth" viewBox="0 0 560 340"><rect width="560" height="340" fill="#3A322A"/><ellipse cx="280" cy="180" rx="210" ry="140" fill="#D9D4CB"/><ellipse cx="280" cy="180" rx="180" ry="115" fill="#E6CC8E"/><ellipse cx="240" cy="150" rx="60" ry="18" fill="#F0DCA8" opacity=".7"/><path d="M430 40l-90 120" stroke="#8C9496" stroke-width="8" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- 1. Paste -->
+<section class="screen light" data-name="1 Paste recipe">
+  <div class="topbar"><div class="brand"><svg viewBox="0 0 64 64" width="34" height="34"><path d="M18 40c-7 0-12-5-12-12s6-12 12-11c2-6 8-10 14-10s12 4 14 10c6-1 12 4 12 11s-5 12-12 12v12H18z" fill="#F6F7F4" stroke="#1B1F1D" stroke-width="3" stroke-linejoin="round"/><path d="M18 46h28" stroke="#1B1F1D" stroke-width="3"/><circle cx="26" cy="31" r="2.5" fill="#1B1F1D"/><circle cx="38" cy="31" r="2.5" fill="#1B1F1D"/><path d="M29 36l3 2 3-2" stroke="#1B1F1D" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>Remy</div><div class="pill">heyremy.tech</div></div>
+  <div class="paste">
+    <div>
+      <h1>What are we cooking?</h1>
+      <p class="sub">Paste any recipe. Remy moves the hidden prep to the front and splits it into steps you can cook from.</p>
+      <div class="textarea">Fluffy pancakes (serves 4)
+1 cup flour, 2 tbsp sugar, 2 tsp baking powder, ½ tsp salt
+¾ cup milk, 1 egg, 2 tbsp butter, melted
+
+Whisk the dry ingredients. Add milk, egg and butter and whisk until smooth. Let the batter rest 5 minutes. Heat a lightly oiled pan over medium heat. Pour ¼ cup batter per pancake. Cook until bubbles form, then flip…</div>
+      <div class="actions"><div class="btn">Make it cookable</div><div class="btn ghost">Use the demo recipe</div></div>
+    </div>
+    <div class="howto">
+      <h2>Cook without touching the screen</h2>
+      <div class="g"><div class="ico">👍</div><div><b>Next step</b><span>Hold for a second</span></div></div>
+      <div class="g"><div class="ico">👎</div><div><b>Go back</b><span>Or hear it again</span></div></div>
+      <div class="g"><div class="ico">✋</div><div><b>Is it ready?</b><span>Remy looks at your food</span></div></div>
+      <div class="note" style="color:var(--on-night-muted)">The hat cam sees your hands and your bowl. Nothing is recorded.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Prep -->
+<section class="screen light" data-name="2 Prep">
+  <div class="topbar"><div class="brand"><svg viewBox="0 0 64 64" width="34" height="34"><path d="M18 40c-7 0-12-5-12-12s6-12 12-11c2-6 8-10 14-10s12 4 14 10c6-1 12 4 12 11s-5 12-12 12v12H18z" fill="#F6F7F4" stroke="#1B1F1D" stroke-width="3" stroke-linejoin="round"/><path d="M18 46h28" stroke="#1B1F1D" stroke-width="3"/><circle cx="26" cy="31" r="2.5" fill="#1B1F1D"/><circle cx="38" cy="31" r="2.5" fill="#1B1F1D"/><path d="M29 36l3 2 3-2" stroke="#1B1F1D" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>Remy</div><div class="pill">8 steps · about 25 min</div></div>
+  <div class="title-row">
+    <h1>Fluffy pancakes</h1>
+    <div class="stepper"><div class="b">−</div><div class="n">2 servings<small>recipe makes 4</small></div><div class="b">+</div></div>
+  </div>
+  <div class="prep">
+    <div class="col">
+      <div class="label">Ingredients</div>
+      <div class="list">
+        <div class="row"><span>Flour</span><span class="amt changed">½ cup</span></div>
+        <div class="row"><span>Sugar</span><span class="amt changed">1 tbsp</span></div>
+        <div class="row"><span>Baking powder</span><span class="amt changed">1 tsp</span></div>
+        <div class="row"><span>Salt</span><span class="amt changed">¼ tsp</span></div>
+        <div class="row"><span>Milk</span><span class="amt changed">⅓ cup + 1 tbsp</span></div>
+        <div class="row"><span>Egg</span><span class="amt">1 small</span></div>
+        <div class="row"><span>Butter, melted</span><span class="amt changed">1 tbsp</span></div>
+      </div>
+      <div class="note">½ egg rounds to 1 small egg.</div>
+    </div>
+    <div class="col">
+      <div class="label">Before you start</div>
+      <div class="list">
+        <div class="check"><div class="box on"></div>Take the egg and milk out of the fridge</div>
+        <div class="check"><div class="box on"></div>Melt the butter</div>
+        <div class="check"><div class="box"></div>Get out a pan, whisk and ladle</div>
+        <div class="check"><div class="box"></div>Put on the hat</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="label">Hat cam</div>
+      <div class="cam">
+        <div class="feed"><svg viewBox="0 0 560 340" preserveAspectRatio="xMidYMid slice"><rect width="560" height="340" fill="#3A322A"/><ellipse cx="280" cy="180" rx="210" ry="140" fill="#D9D4CB"/><ellipse cx="280" cy="180" rx="180" ry="115" fill="#E9D7A8"/><circle cx="220" cy="150" r="14" fill="#F7F1E3"/><circle cx="300" cy="200" r="10" fill="#F7F1E3"/><circle cx="345" cy="140" r="16" fill="#F7F1E3"/><circle cx="250" cy="225" r="9" fill="#F7F1E3"/><path d="M190 185c30-10 60 8 95-4" stroke="#FBF6EA" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M300 165c25 4 45-6 70 2" stroke="#FBF6EA" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M430 40l-90 120" stroke="#8C9496" stroke-width="8" stroke-linecap="round"/></svg></div>
+        <div class="live"><span class="dot"></span>Connected · aim it at your bowl</div>
+      </div>
+      <div class="btn" style="width:100%">Start cooking</div>
+      <div class="note">After this, everything is hands-free.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Cooking: step -->
+<section class="screen dark" data-name="3 Cooking step">
+  <div class="topbar"><div class="brand" style="color:var(--on-night)"><svg viewBox="0 0 64 64" width="34" height="34"><path d="M18 40c-7 0-12-5-12-12s6-12 12-11c2-6 8-10 14-10s12 4 14 10c6-1 12 4 12 11s-5 12-12 12v12H18z" fill="#F6F7F4" stroke="#1B1F1D" stroke-width="3" stroke-linejoin="round"/><path d="M18 46h28" stroke="#1B1F1D" stroke-width="3"/><circle cx="26" cy="31" r="2.5" fill="#1B1F1D"/><circle cx="38" cy="31" r="2.5" fill="#1B1F1D"/><path d="M29 36l3 2 3-2" stroke="#1B1F1D" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>Remy</div><div class="progress"><i class="done"></i><i class="done"></i><i class="now"></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="thumb"><svg viewBox="0 0 560 340" preserveAspectRatio="xMidYMid slice"><rect width="560" height="340" fill="#3A322A"/><ellipse cx="280" cy="180" rx="210" ry="140" fill="#D9D4CB"/><ellipse cx="280" cy="180" rx="180" ry="115" fill="#E9D7A8"/><circle cx="220" cy="150" r="14" fill="#F7F1E3"/><circle cx="300" cy="200" r="10" fill="#F7F1E3"/><circle cx="345" cy="140" r="16" fill="#F7F1E3"/><circle cx="250" cy="225" r="9" fill="#F7F1E3"/><path d="M190 185c30-10 60 8 95-4" stroke="#FBF6EA" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M300 165c25 4 45-6 70 2" stroke="#FBF6EA" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M430 40l-90 120" stroke="#8C9496" stroke-width="8" stroke-linecap="round"/></svg></div>
+  <div class="stage">
+    <div class="stepno">Step 3 of 8</div>
+    <div class="step">Whisk in the milk, egg and butter until smooth.</div>
+    <div class="cue">✋ <span><b>Ready when</b> smooth, no dry flour streaks</span></div>
+  </div>
+  <div class="legend"><span><b>👍</b> next</span><span><b>👎</b> back</span><span><b>✋</b> check</span></div>
+</section>
+
+<!-- 4. Heads-up + gesture registering -->
+<section class="screen dark" data-name="4 Heads-up and gesture hold">
+  <div class="topbar"><div class="brand" style="color:var(--on-night)"><svg viewBox="0 0 64 64" width="34" height="34"><path d="M18 40c-7 0-12-5-12-12s6-12 12-11c2-6 8-10 14-10s12 4 14 10c6-1 12 4 12 11s-5 12-12 12v12H18z" fill="#F6F7F4" stroke="#1B1F1D" stroke-width="3" stroke-linejoin="round"/><path d="M18 46h28" stroke="#1B1F1D" stroke-width="3"/><circle cx="26" cy="31" r="2.5" fill="#1B1F1D"/><circle cx="38" cy="31" r="2.5" fill="#1B1F1D"/><path d="M29 36l3 2 3-2" stroke="#1B1F1D" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>Remy</div><div class="progress"><i class="done"></i><i class="done"></i><i class="done"></i><i class="now"></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="stage">
+    <div class="stepno">Step 4 of 8</div>
+    <div class="step">Let the batter rest for 5 minutes.</div>
+    <div class="headsup">🔥 Next step needs a hot pan. Turn it on to medium now.</div>
+  </div>
+  <div class="hold">
+    <svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" stroke="#2C3430" stroke-width="7" fill="none"/><circle cx="32" cy="32" r="27" stroke="#F2B33D" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="170" stroke-dashoffset="55" transform="rotate(-90 32 32)"/><text x="32" y="41" text-anchor="middle" font-size="24">👍</text></svg>
+    Keep holding… next step
+  </div>
+  <div class="legend"><span><b>👍</b> next</span><span><b>👎</b> back</span><span style="opacity:.4"><b>✋</b> no check on this step</span></div>
+</section>
+
+<!-- 5. Looking -->
+<section class="screen dark" data-name="5 Looking">
+  <div class="overlay">
+    <div class="bigfeed"><svg viewBox="0 0 560 340" preserveAspectRatio="xMidYMid slice"><rect width="560" height="340" fill="#3A322A"/><ellipse cx="280" cy="180" rx="210" ry="140" fill="#D9D4CB"/><ellipse cx="280" cy="180" rx="180" ry="115" fill="#E9D7A8"/><circle cx="220" cy="150" r="14" fill="#F7F1E3"/><circle cx="300" cy="200" r="10" fill="#F7F1E3"/><circle cx="345" cy="140" r="16" fill="#F7F1E3"/><circle cx="250" cy="225" r="9" fill="#F7F1E3"/><path d="M190 185c30-10 60 8 95-4" stroke="#FBF6EA" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M300 165c25 4 45-6 70 2" stroke="#FBF6EA" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M430 40l-90 120" stroke="#8C9496" stroke-width="8" stroke-linecap="round"/></svg><div class="scan"></div></div>
+    <div class="say">Hold still, let me look…</div>
+    <div class="cue" style="align-self:center">Checking for <b>&nbsp;smooth, no dry flour streaks</b></div>
+  </div>
+</section>
+
+<!-- 6. Verdict: not yet -->
+<section class="screen dark" data-name="6 Verdict not ready">
+  <div class="overlay">
+    <div class="verdict v-notyet">
+      <div class="tag">● Not yet</div>
+      <div class="msg">Still some dry flour streaks. Keep whisking.</div>
+      <div class="next">✋ check again whenever you like · 👍 move on anyway</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Verdict: ready -->
+<section class="screen dark" data-name="7 Verdict ready">
+  <div class="overlay">
+    <div class="verdict v-ready">
+      <div class="tag">● Ready</div>
+      <div class="msg">Smooth batter. On to the next step.</div>
+      <div class="bar"><i></i></div>
+      <div class="next">Moving on in 2 seconds · 👎 to stay</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Verdict: unsure -->
+<section class="screen dark" data-name="8 Verdict unsure">
+  <div class="overlay">
+    <div class="verdict v-unsure">
+      <div class="tag">● Couldn't see clearly</div>
+      <div class="msg">Look down at the bowl and hold still.</div>
+      <div class="next">✋ try again</div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Done -->
+<section class="screen dark" data-name="9 Done">
+  <div class="overlay">
+    <svg viewBox="0 0 64 64" width="120" height="120"><path d="M18 40c-7 0-12-5-12-12s6-12 12-11c2-6 8-10 14-10s12 4 14 10c6-1 12 4 12 11s-5 12-12 12v12H18z" fill="#F6F7F4" stroke="#1B1F1D" stroke-width="3" stroke-linejoin="round"/><path d="M18 46h28" stroke="#1B1F1D" stroke-width="3"/><circle cx="26" cy="31" r="2.5" fill="#1B1F1D"/><circle cx="38" cy="31" r="2.5" fill="#1B1F1D"/><path d="M29 36l3 2 3-2" stroke="#1B1F1D" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+    <div class="say" style="font-size:72px">Pancakes are done. Enjoy!</div>
+    <div class="cue" style="align-self:center">8 steps · 2 checks · 0 screen taps</div>
+    <div class="btn">Cook something else</div>
+  </div>
+</section>
+
+</body>
+</html>
