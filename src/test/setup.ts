@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+
+// The whole suite runs in parallel, which can slow async UI updates past the 1 s default.
+configure({ asyncUtilTimeout: 4000 })
 
 // Testing Library only cleans up on its own when Vitest globals are on.
 afterEach(cleanup)

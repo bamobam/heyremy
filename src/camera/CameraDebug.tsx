@@ -5,12 +5,11 @@ import { useEffect, useState } from 'react'
 import type { GestureEvent } from '../types.ts'
 import { CAMERA_ERROR_MESSAGES } from './cameraMessages.ts'
 import { emptyTally, stepTally } from './gestureTally.ts'
-import type { GrabResult } from './grabSharpestFrame.ts'
+import { GrabError, grabSharpestFrame, type GrabResult } from './grabSharpestFrame.ts'
 import { GrabPanel } from './GrabPanel.tsx'
 import { HandOverlay } from './HandOverlay.tsx'
 import type { DetectionDeps } from './useDetection.ts'
-import { useGestures } from './useGestures.ts'
-import { useHatCam } from './useHatCam.ts'
+import { useCamera } from './useCamera.ts'
 import { useWakeLock } from './useWakeLock.ts'
 import './CameraDebug.css'
 
@@ -53,27 +52,39 @@ export default function CameraDebug({
   detectionDeps?: DetectionDeps
   grab?: (video: HTMLVideoElement) => Promise<GrabResult>
 }) {
-  const { attachVideo, video, status, error, label, stream, reconnects, stalls } = useHatCam()
-  const live = status === 'live'
   const [tally, setTally] = useState(emptyTally)
+  const [events, setEvents] = useState<GestureEvent[]>([])
+
+  // The same hook the controller will use, so this page shows exactly what the app gets.
+  const camera = useCamera({
+    deps: { detection: detectionDeps, grab },
+    onGesture: (e) => setEvents((list) => [e, ...list].slice(0, MAX_EVENTS)),
+    onDetection: (d) => setTally((t) => stepTally(t, d)),
+  })
+  const {
+    attachVideo,
+    video,
+    status,
+    error,
+    label,
+    stream,
+    reconnects,
+    stalls,
+    detection,
+    holdProgress,
+    handVisible,
+    detectionStatus,
+    detectionError,
+  } = camera
+  const live = status === 'live'
   const fps = useFrameRate(video, live)
   const wake = useWakeLock(live)
   const settings = stream?.getVideoTracks()[0]?.getSettings()
 
-  const [events, setEvents] = useState<GestureEvent[]>([])
-
-  const {
-    detection,
-    holdProgress,
-    handVisible,
-    status: detectionStatus,
-    error: detectionError,
-  } = useGestures(video, {
-    enabled: live,
-    deps: detectionDeps,
-    onGesture: (e) => setEvents((list) => [e, ...list].slice(0, MAX_EVENTS)),
-    onDetection: (d) => setTally((t) => stepTally(t, d)),
-  })
+  const grabNow = async () => {
+    if (!video) throw new GrabError('camera_unavailable')
+    return (grab ?? grabSharpestFrame)(video)
+  }
 
   const tallied = [...new Set([...CONTROL_GESTURES, ...Object.keys(tally.hits)])]
   const gestureText =
@@ -176,7 +187,7 @@ export default function CameraDebug({
             </button>
           </section>
 
-          <GrabPanel video={video} live={live} grab={grab} />
+          <GrabPanel live={live} grabNow={grabNow} grabForCheck={camera.grabForCheck} />
         </div>
       </div>
     </main>

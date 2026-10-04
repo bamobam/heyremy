@@ -374,20 +374,34 @@ function grabSharpestFrame(video: HTMLVideoElement, opts?: { frames?: 6; spanMs?
 2. For each, convert to grayscale and compute the variance of a Laplacian (a standard sharpness score). Higher is sharper.
 3. Redraw the sharpest at the output size (long side 768 px) and encode as JPEG at quality 0.8, roughly 80–150 KB.
 
-### 5.8 `useGestures.ts` (glue hook)
+### 5.8 `useCamera.ts` (the one hook the controller uses)
 
-Combines 5.2–5.6 and exposes what the controller and UI need:
+`useCamera` is seam A. It combines the camera connection (5.1), detection and gestures (5.2 to 5.6, through `useGestures`) and the photo for a check (5.7):
 
 ```ts
-function useGestures(video: RefObject<HTMLVideoElement>, opts: {
-  enabled: boolean;
-  onGesture(e: GestureEvent): void;
+function useCamera(opts: {
+  enabled?: boolean;                    // turn gesture reading off; the camera stays connected
+  paused?: boolean;                     // set during a check: gestures cannot fire, the hand is still watched
+  onGesture?(e: GestureEvent): void;    // once per completed hold
 }): {
-  holdProgress: HoldProgress;
+  attachVideo: (el: HTMLVideoElement | null) => void;   // put on the <video> that shows the hat cam
+  status: 'connecting' | 'live' | 'reconnecting' | 'busy' | 'error';
+  holdProgress: HoldProgress;           // for the hold ring
   handVisible: boolean;
-  status: 'loading' | 'ready' | 'error';
+  ready: boolean;                       // camera live and gestures being read
+  grabForCheck(): Promise<GrabResult>;  // wait for the palm to leave, then the sharpest frame as a JPEG
+  // plus label, error, reconnects, stalls, detection, isHandVisible()
 }
 ```
+
+Rules the controller can rely on:
+
+- **Gestures only run while the camera is live.** If the cable drops, any half-held gesture is forgotten and a fresh hold is needed after reconnecting, so nothing fires by surprise.
+- **Pausing is not disabling.** While `paused`, no gesture fires, but the hand is still watched. A gesture still held when the pause ends has to be let go before it can fire again, so a palm held through a check does not start a second one.
+- **`grabForCheck`** waits up to 1.5 s for the hand to leave the frame, then captures. If the hand is still there it captures anyway (the check can answer "unsure"). It rejects with `camera_unavailable` if the camera is not live, or drops while waiting.
+- A gap of more than 500 ms between frames (hidden tab, stalled video) also starts a hold over.
+
+How the controller's check flow uses it: on a `check` gesture it sets `paused`, plays the "Hold still" clip, awaits `grabForCheck()`, sends the JPEG to `/api/check`, and clears `paused` when the verdict is shown.
 
 ### Hour-1 test
 
