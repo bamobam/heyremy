@@ -526,6 +526,8 @@ stepLabel(s): string              // "Step 3 of 8"
 scaledIngredients(s): { id; label: string; changed: boolean }[]   // for the prep list
 canStart(s): boolean              // phase 'prep' and every clip for s.servings is ready
 gesturesEnabled(s): boolean       // cooking and mode !== 'checking'
+currentClipId(s): string | null   // the audio clip for the step being cooked, at s.servings
+isAutoAdvanceDue(s, now): boolean // a "ready" verdict's 2 s countdown has run out
 ```
 
 ### 6.7 `scaling.ts` (pure)
@@ -543,6 +545,7 @@ function stepClipId(step: Step, servings: number): string   // "step-3" or "step
 - `describeIngredient(i, factor)` returns the screen text, the spoken text, the rounding note and whether the amount changed, in one go; `formatAmount` picks one form.
 - Whole items with no unit (eggs) round to whole numbers, never below 1, with a note when the rounding is big ("½ egg rounds to 1 small egg").
 - `amount: null` ("a pinch", "to taste") is never scaled.
+- Whole items take the singular or plural to match the count ("2 eggs" halved is "1 egg"), so the parse prompt can give a name in either form.
 - `{id}` fills in as amount + unit + name ("½ cup flour"). An unknown id is left as the bare name; the server rejects unknown ids, so this shouldn't happen.
 
 ### 6.8 `controller.ts`

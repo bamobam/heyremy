@@ -284,3 +284,47 @@ describe('describeIngredient across many amounts', () => {
     }
   })
 })
+
+describe('whole items: singular and plural', () => {
+  const item = (amount: number, name: string) => ing(amount, null, name, 'x')
+
+  it.each([
+    [2, 'eggs', 0.5, '1 egg', 'one egg'],
+    [1, 'egg', 3, '3 eggs', 'three eggs'],
+    [2, 'eggs', 1, '2 eggs', 'two eggs'],
+    [1, 'egg', 1, '1 egg', 'one egg'],
+    [2, 'tomatoes', 0.5, '1 tomato', 'one tomato'],
+    [1, 'tomato', 2, '2 tomatoes', 'two tomatoes'],
+    [3, 'cherries', 1 / 3, '1 cherry', 'one cherry'],
+    [1, 'cherry', 4, '4 cherries', 'four cherries'],
+    [2, 'peaches', 0.5, '1 peach', 'one peach'],
+    [1, 'peach', 2, '2 peaches', 'two peaches'],
+    [2, 'red onions', 0.5, '1 red onion', 'one red onion'],
+    [1, 'red onion', 3, '3 red onions', 'three red onions'],
+  ])('%f %s at factor %f shows "%s"', (amount, name, factor, screen, spoken) => {
+    const d = describeIngredient(item(amount, name), factor)
+    expect(d.screen).toBe(screen)
+    expect(d.spoken).toBe(spoken)
+  })
+
+  it('leaves a name that is the same either way alone', () => {
+    expect(describeIngredient(item(2, 'asparagus'), 1).screen).toBe('2 asparagus')
+    expect(describeIngredient(item(1, 'watercress'), 1).screen).toBe('1 watercress')
+  })
+
+  it('uses the right form in the rounding note', () => {
+    const d = describeIngredient(item(3, 'eggs'), 0.5)
+    expect(d.note).toBe('1½ eggs rounds to 2 eggs')
+    expect(describeIngredient(item(1, 'egg'), 0.5).note).toBe('½ egg rounds to 1 egg')
+  })
+
+  it('writes a fraction of an item in the singular and more than one in the plural', () => {
+    const onion = item(0.5, 'onions')
+    expect(describeIngredient(onion, 1).screen).toBe('½ onion')
+    expect(describeIngredient(onion, 3).screen).toBe('1½ onions')
+  })
+
+  it('does not touch the name of an ingredient with a unit', () => {
+    expect(describeIngredient(ing(2, 'cup', 'chopped walnuts'), 1 / 16).screen).toBe('2 tbsp chopped walnuts')
+  })
+})
