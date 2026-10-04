@@ -11,9 +11,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "cam:check": "node scripts/camCheck.ts",
-    "prototype": "vite --open /prototype"
+    "prototype": "vite --open /prototype",
+    "postinstall": "node scripts/copyMediapipe.mjs"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

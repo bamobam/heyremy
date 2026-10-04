@@ -28,3 +28,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Copied from node_modules by scripts/copyMediapipe.mjs
+public/wasm

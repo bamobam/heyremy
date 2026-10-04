@@ -8,8 +8,8 @@ Three things first, in this order: **live stream**, **detection** (MediaPipe han
 
 | # | Branch | What | Done when |
 | --- | --- | --- | --- |
-| 1 | `nam/camera-test-setup` | Vitest + jsdom, camera fakes, `npm run cam:check` | `npm test` green; `cam:check` sees the C270 |
-| 2 | `nam/hatcam-stream` | Pick the C270, open it, live preview on `/?debug=camera` | Preview shows the hat cam, never the MacBook or iPhone camera |
+| 1 | `nam/camera-test-setup` | Vitest + jsdom, camera fakes, `npm run cam:check` | `npm test` green; `cam:check` sees the hat cam (C270 or C920) |
+| 2 | `nam/hatcam-stream` | Pick the hat cam (C270 or C920), open it, live preview on `/?debug=camera` | Preview shows the hat cam, never the MacBook or iPhone camera |
 | 3 | `nam/hand-detection` | MediaPipe gesture recognizer on the live stream (frame loop + recognizer adapter), label, score and hand landmarks drawn on the debug page | Thumbs-up / thumbs-down / open palm show up live with their scores |
 | 4 | `nam/grab-frame` | Sharpest-of-6 JPEG capture, shown on the debug page | "Grab" button shows a sharp 80–150 KB JPEG |
 
@@ -17,17 +17,20 @@ Three things first, in this order: **live stream**, **detection** (MediaPipe han
 
 ## Hardware, as this Mac sees it
 
-Checked with `system_profiler SPCameraDataType` on 2026-10-03:
+Checked with `system_profiler SPCameraDataType` on 2026-10-03, once with each hat cam option plugged in:
 
-| Camera | macOS name | Notes |
-| --- | --- | --- |
-| **Hat cam** | `UVC Camera VendorID_1133 ProductID_2085` | Vendor `0x046d` (Logitech), product `0x0825` = **Logitech C270**, attached to the hat and connected to a Thunderbolt/USB-C port through an extension cable |
-| Built-in | `MacBook Air Camera` | Must never be picked |
-| iPhone | `Nam Anh's iPhone Camera` (Continuity Camera) | Must never be picked; macOS can make it the default camera |
+| Camera | macOS name | USB id | Notes |
+| --- | --- | --- | --- |
+| **Hat cam option 1: Logitech C270** | `UVC Camera VendorID_1133 ProductID_2085` | `046d:0825` | 1280×720 at 30 fps over USB 2.0 |
+| **Hat cam option 2: Logitech C920** | `HD Pro Webcam C920` (`UVC Camera VendorID_1133 ProductID_2194`) | `046d:0892` | Up to 1080p at 30 fps; the app still asks for 1280×720 |
+| Built-in | `MacBook Air Camera` | none | Must never be picked |
+| iPhone | `iPhone Camera` (Continuity Camera) | none | Must never be picked; macOS can make it the default camera |
 
-The design says "open the camera whose label contains Logitech", but macOS doesn't call it Logitech. Chrome usually adds the USB IDs to the label, e.g. `UVC Camera (046d:0825)`, so the selection rule matches on **`046d:0825`** first. Branch 2 confirms the label Chrome actually shows.
+Either option can be the hat cam. It is attached to the hat and connected to a Thunderbolt/USB-C port through an extension cable. Plug in one at a time: if both are connected, the app opens whichever Chrome lists first. Adding another camera is a one-line change in `selectHatCam.ts` and `camCheck.ts`.
 
-The C270 tops out at 1280×720 at 30 fps over USB 2.0. Constraints use `ideal` values, never `exact`, so a different mode doesn't throw `OverconstrainedError`.
+The design says "open the camera whose label contains Logitech", but neither camera is labelled that way. macOS calls the C270 "UVC Camera" and the C920 "HD Pro Webcam C920". Chrome usually appends the USB id to the label, e.g. `UVC Camera (046d:0825)`, so the selection rule matches on **`046d:0825` or `046d:0892`** first, then on the names Logitech, C270 and C920. Branch 2 confirms the label Chrome actually shows for each.
+
+Constraints ask for 1280×720 at 30 fps using `ideal` values, never `exact`, so a camera that offers a different mode doesn't throw `OverconstrainedError`.
 
 ### The extension cable
 
@@ -46,14 +49,14 @@ The camera rides on the cook's head and the cable runs down to the laptop, so ev
 
 | Threat | How it's caught | What happens |
 | --- | --- | --- |
-| Wrong camera opened (MacBook, iPhone) | `pickHatCam` only accepts `046d:0825` / Logitech / C270, and the stream is opened with `deviceId: { exact }` | Never opens anything else; shows "Hat cam not found" |
+| Wrong camera opened (MacBook, iPhone) | `pickHatCam` only accepts `046d:0825` / `046d:0892` or the names Logitech / C270 / C920, and the stream is opened with `deviceId: { exact }` | Never opens anything else; shows "Hat cam not found" |
 | Head turn tugs the extension cable; plug pulled or joint loosens | Track `ended` event and `devicechange` | Status `reconnecting`; reopens the **same** camera as soon as it reappears |
 | Stream freezes without ending (half-seated plug, USB hiccup) | No new frame for 2 s (`requestVideoFrameCallback`) | Stops the track and reopens it |
 | Rapid drop, reconnect, drop as the cable flexes | Watchdog sees repeated `ended` within seconds | Each reopen waits for the device to be listed again; no overlapping `getUserMedia` calls |
-| Brief `mute` from macOS | Track `mute`/`unmute` | Ignored if under 2 s; treated as a freeze after that |
+| Brief `mute` from macOS | The same frame check | Not tracked separately: a mute under 2 s changes nothing, and one that lasts 2 s means no frames, so the stream is restarted |
 | Another app holds the camera (Zoom, Photo Booth, FaceTime) | `NotReadableError` | "Camera busy. Close other camera apps." Retries every 2 s |
 | Laptop screen sleeps | Screen Wake Lock while cooking | Screen stays on; lock re-requested when the tab becomes visible again |
-| Tab in the background | Chrome throttles it | The demo tab stays in front; `frameLoop` pauses while hidden and resumes on return |
+| Tab in the background | Chrome sends no frames to it | The demo tab stays in front; `frameLoop` pauses while hidden and resumes on return, and the watchdog does not count a hidden tab as a freeze |
 | Permission denied | `NotAllowedError` | "Allow camera access in Chrome settings." No retry loop |
 
 Reconnecting to the **same** camera is not a backup path. It never switches to another camera, so it fits the "no fallbacks" rule in the system design. Section 5.1 currently says "plug in the hat cam and reload". Branch 3 updates it to "reconnects on its own".
@@ -69,7 +72,7 @@ Reconnecting to the **same** camera is not a backup path. It never switches to a
   - `FakeTrack`: `end()`, `mute()`, `unmute()`.
   - `FakeVideo`: frame callbacks.
 - **MediaPipe and canvas don't run in jsdom.** Their adapters are kept thin and tested on fixtures (recorded MediaPipe result JSON, synthetic pixel arrays). The real model and real canvas are checked on the debug page.
-- **A hardware check on the real C270 at `/?debug=camera`** closes every branch. It's short, written down, and done before opening the PR.
+- **A hardware check on the real hat cam (C270 or C920) at `/?debug=camera`** closes every branch. It's short, written down, and done before opening the PR.
 
 ## Branches
 
@@ -95,20 +98,20 @@ Branches 4, 5 and 6 don't depend on the camera, so they can be built while waiti
 - Dev dependencies: `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/jest-dom`. Scripts: `test`, `test:watch`.
 - `vite.config.ts`: a `test` block (`environment: 'jsdom'`, setup file).
 - `src/types.ts`: add `GestureIntent`, `GestureEvent`, `HoldProgress` (the contract additions in system design section 4).
-- `scripts/camCheck.ts` + `npm run cam:check`: runs `system_profiler SPCameraDataType` and prints ✅ "Hat cam (046d:0825) connected" or ❌ "not found, check the USB-C adapter". It runs before every demo and every hardware check.
+- `scripts/camCheck.ts` + `npm run cam:check`: runs `system_profiler SPCameraDataType` and prints "OK: Hat cam connected" or "FAIL: Hat cam not found, check the USB cable and adapter". It runs before every demo and every hardware check.
 - `src/test/fakes/`: `FakeMediaDevices`, `FakeTrack`, `FakeVideo`.
 
-**Done when:** `npm test` is green and `npm run cam:check` shows ✅ with the C270 plugged in and ❌ with it unplugged.
+**Done when:** `npm test` is green and `npm run cam:check` prints OK with the C270 or the C920 plugged in and FAIL with it unplugged.
 
 ### 2. `nam/hatcam-select` (about 45 min)
 
 **Tests first** (`camera/selectHatCam.test.ts`, `camera/openHatCam.test.ts`):
 - `pickHatCam` with real-shaped device lists:
-  - picks `UVC Camera (046d:0825)` from a list containing it, `MacBook Air Camera` and `iPhone Camera`
-  - also matches labels containing `Logitech` or `C270`, in case Chrome labels it differently
+  - picks `UVC Camera (046d:0825)` (C270) or `HD Pro Webcam C920 (046d:0892)` from a list containing it, `MacBook Air Camera` and `iPhone Camera`
+  - also matches labels containing `Logitech`, `C270` or `C920`, in case Chrome labels it differently
   - returns `null` when only the MacBook and iPhone are listed; **never** falls back to them
   - returns `null` when labels are empty (permission not granted yet)
-  - prefers the `046d:0825` match over a generic "Logitech" match
+  - prefers a USB id match over a generic "Logitech" match
 - `openHatCam` with `FakeMediaDevices`:
   - empty labels → requests access once, re-enumerates, then opens with `deviceId: { exact: id }`
   - constraints are `ideal` 1280×720 at 30 fps
@@ -116,7 +119,7 @@ Branches 4, 5 and 6 don't depend on the camera, so they can be built while waiti
 
 **Build:** `src/camera/selectHatCam.ts` (pure) and `src/camera/openHatCam.ts`.
 
-**Hardware check:** a temporary debug page shows the chosen label. Write down the exact label Chrome shows for the C270 (update the matcher test if it differs). Confirm it picks the C270 even with the iPhone nearby and Continuity Camera on.
+**Hardware check:** a temporary debug page shows the chosen label. Write down the exact label Chrome shows for each camera (update the matcher test if it differs). Confirm it picks the hat cam even with the iPhone nearby and Continuity Camera on.
 
 ### 3. `nam/hatcam-keepalive` (about 1.5 h, the core of "at all times")
 
@@ -231,7 +234,7 @@ Unplug-and-replug recovery and the tug test are never cut: with a cable running 
 
 ## Open questions
 
-1. **How long is the cable, in total?** The C270 lead plus the extension must stay under 5 m unless the extension is an active one. Do every hardware check with the exact cable used for the demo.
-2. **USB-C adapter or hub?** The C270 has a USB-A plug. A short, direct USB-C-to-A adapter is safer than a hub.
+1. **How long is the cable, in total?** The camera's own lead plus the extension must stay under 5 m unless the extension is an active one. Do every hardware check with the exact cable used for the demo.
+2. **USB-C adapter or hub?** Both cameras have a USB-A plug. A short, direct USB-C-to-A adapter is safer than a hub.
 3. **Continuity Camera.** The selection rule ignores the iPhone, but turning off Continuity Camera on the demo Mac removes one more surprise.
 4. **Power.** Keep the laptop plugged in during the demo, so macOS doesn't suspend USB devices to save battery.

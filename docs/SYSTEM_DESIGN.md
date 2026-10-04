@@ -255,15 +255,20 @@ useHatCam → frameLoop → recognizer → gestureMapper → gestureFilter → G
 
 ```ts
 function useHatCam(): {
-  videoRef: RefObject<HTMLVideoElement>;
-  status: 'requesting' | 'ready' | 'error';
+  attachVideo: (el: HTMLVideoElement | null) => void;   // callback ref for the <video>
+  status: 'connecting' | 'live' | 'reconnecting' | 'busy' | 'error';
+  error: 'denied' | 'not_found' | 'busy' | 'lost' | 'unknown' | null;
+  reconnects: number;
+  stalls: number;
 }
 ```
 
-- Lists cameras with `enumerateDevices()` and opens the one whose label contains "Logitech".
-- Requests `{ width: 1280, height: 720, frameRate: 30, deviceId }`.
-- If the camera is missing, denied or unplugged, `status` becomes `'error'` and the UI shows "Camera not found. Plug in the hat cam and reload."
+- Lists cameras with `enumerateDevices()` and opens the Logitech C270 or C920 by USB id (`046d:0825`, `046d:0892`), never any other camera.
+- Requests `{ width: 1280, height: 720, frameRate: 30 }` as ideal values.
+- **It keeps the camera alive.** If the cable is pulled, `status` becomes `'reconnecting'` and the same camera is reopened as soon as it is listed again (a device change event, backed up by a check every 2 s). If the stream freezes without ending (no frame for 2 s), it is restarted. If another app holds the camera, `status` is `'busy'` and it retries every 2 s. Only a refused camera permission is final (`'error'`).
+- A hidden tab is not treated as a freeze, since browsers send it no frames.
 - Stops all tracks on unmount. Needs a secure context (`localhost` or heyremy.tech).
+- The decisions are in the pure `watchdog.ts`; `keepHatCam.ts` runs them against the camera APIs.
 
 ### 5.2 `frameLoop.ts`
 
@@ -346,6 +351,8 @@ Transitions:
 | `cooldown` | `t ≥ until` | `idle` | |
 
 While the controller has gestures disabled (during a check), the filter stays `idle` and drops samples.
+
+**One fire per hold.** Without a further rule, a thumb kept up for 4 seconds would fire twice (hold, 2 s cooldown, hold again) and skip a step. So after a fire, the same gesture must be let go before it can fire again: more than 3 frames in a row without it, at any point after the fire, count as letting go. If it is still held when the cooldown ends, the filter waits (`rearm`) until it is released. A different gesture can start as soon as the cooldown ends. The code is `src/camera/gestureFilter.ts`.
 
 ### 5.6 `handPresence.ts` (pure)
 
