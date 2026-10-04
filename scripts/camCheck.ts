@@ -56,10 +56,10 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const cameras = parseCameras(output)
   const hatCam = findHatCam(cameras)
   if (hatCam) {
-    console.log(`✅ Hat cam connected: ${hatCam.name} (${hatCam.vendorId}:${hatCam.productId})`)
+    console.log(`OK: Hat cam connected: ${hatCam.name} (${hatCam.vendorId}:${hatCam.productId})`)
   } else {
     const wanted = HAT_CAMS.map((h) => `${h.name} ${h.vendorId}:${h.productId}`).join(' or ')
-    console.log(`❌ Hat cam (${wanted}) not found. Check the USB cable and adapter.`)
+    console.log(`FAIL: Hat cam (${wanted}) not found. Check the USB cable and adapter.`)
     console.log(`   Cameras macOS sees: ${cameras.map((c) => c.name).join(', ') || 'none'}`)
     process.exitCode = 1
   }
