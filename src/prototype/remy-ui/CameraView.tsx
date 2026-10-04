@@ -1,6 +1,6 @@
 // PROTOTYPE (throwaway): live hat-cam view for the prototype, built on Nam's useHatCam (src/camera).
 // One useHatCam() runs per screen tree; extra views just reuse its stream.
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 import type { HatCam } from '../../camera/useHatCam'
 import { CAMERA_ERROR_MESSAGES } from '../../camera/cameraMessages'
 import './camera.css'
@@ -14,7 +14,7 @@ const STATUS_TEXT: Record<HatCam['status'], string> = {
 }
 
 /** `primary` views register with the hook (it watches their frames for freezes); others just show the stream. */
-export function CameraView({ cam, primary = false, caption = 'What Remy sees', className = '' }: { cam: HatCam; primary?: boolean; caption?: string; className?: string }) {
+export function CameraView({ cam, primary = false, caption = "Remy's view", className = '', style }: { cam: HatCam; primary?: boolean; caption?: string; className?: string; style?: CSSProperties }) {
   const ref = useRef<HTMLVideoElement | null>(null)
   useEffect(() => {
     if (primary || !ref.current) return
@@ -23,7 +23,7 @@ export function CameraView({ cam, primary = false, caption = 'What Remy sees', c
   }, [cam.stream, primary])
   const live = cam.status === 'live' && cam.stream
   return (
-    <figure className={`cam-view is-${cam.status} ${className}`}>
+    <figure className={`cam-view is-${cam.status} ${className}`} style={style}>
       <video
         ref={el => { ref.current = el; if (primary) cam.attachVideo(el) }}
         muted playsInline autoPlay

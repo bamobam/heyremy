@@ -95,13 +95,13 @@
 .vd-dots i.n { width: 36px; }
 .vd-rise { flex: 1; animation: vd-rise .7s cubic-bezier(.7,0,.2,1); }
 @keyframes vd-rise { from { opacity: 0; transform: translateY(160px) } }
-.vd-track { display: flex; gap: 32px; padding-left: 7%; height: 76%; padding-top: 8px; transition: transform .8s var(--spring); }
-.vd-step { flex: none; width: 58%; border-radius: 34px; padding: 40px 48px; display: flex; flex-direction: column; gap: 18px; opacity: .4; transform: scale(.9); transition: opacity .5s, transform .8s var(--spring), box-shadow .5s, border-radius .8s var(--spring); }
+.vd-track { display: flex; gap: 32px; padding-left: 9%; height: 76%; padding-top: 8px; transition: transform .8s var(--spring); }
+.vd-step { flex: none; width: 70%; border-radius: 34px; padding: 40px 48px; display: flex; flex-direction: column; gap: 18px; opacity: .4; transform: scale(.9); transition: opacity .5s, transform .8s var(--spring), box-shadow .5s, border-radius .8s var(--spring); }
 .vd-step.now { opacity: 1; transform: none; box-shadow: 0 24px 60px rgba(0,0,0,.35); border-radius: 48px 48px 48px 14px; }
 .vd-num { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; font-size: 52px; font-weight: 800; flex: none; transition: transform .7s var(--bouncy); transform: scale(.85) rotate(-20deg); }
 .vd-step.now .vd-num { transform: none; }
 
-.vd-step h2 { font-size: 58px; line-height: 1.08; margin: 0; font-weight: 800; max-width: 22ch; }
+.vd-step h2 { font-size: 50px; line-height: 1.08; margin: 0; font-weight: 800; max-width: 16ch; }
 .vd-heads { font-size: 22px; font-weight: 800; padding: 14px 20px; border-radius: 14px; align-self: flex-start; }
 @keyframes vd-pulse { 50% { transform: scale(1.03) } }
 .vd-cue { font-size: 20px; opacity: .9; }
@@ -138,9 +138,15 @@
   .vd *, .vd { animation: none !important; transition: none !important; }
 }
 
-/* Live hat-cam views */
-.vd-prep-cam { width: 100%; }
-.vd-cook-cam { position: absolute; right: 36px; top: 84px; width: 300px; z-index: 3; }
-.vd-looking { flex-direction: row; gap: 48px; }
-.vd-look-cam { width: 560px; box-shadow: 10px 10px 0 #000; }
+/* Live hat-cam views: Remy's eye lives inside what it's watching */
+.vd-setup { display: grid; grid-template-columns: 250px 1fr; gap: 18px; align-items: center; margin-top: 10px; padding: 0 12px; }
+.vd-setup p { margin: 0; font-size: 16px; line-height: 1.5; color: #73462F; }
+.vd-prep-cam { width: 100%; outline-width: 2px; outline-offset: 4px; }
+.vd-step { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 36px; align-items: center; }
+.vd-step-text { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.vd-step-cam { width: 300px; aspect-ratio: 4 / 3; border-radius: 28px; outline: 3px solid transparent; outline-offset: 5px; }
+.vd-step-cam--ghost { opacity: .6; }
+.vd-looking { flex-direction: row; gap: 56px; }
+.vd-look-cam { width: 520px; outline-width: 4px; outline-offset: 8px; }
 .vd-cook > .vd-full { z-index: 6; }
+.vd-prep-cam .cam-view__empty p { font-size: 13px; }

@@ -114,8 +114,11 @@ export function VariantD({ flow }: { flow: Flow }) {
                     {p}
                   </label>
                 ))}
+                <div className="vd-setup">
+                  <CameraView cam={cam} primary={flow.screen === 'prep'} caption="Remy's view" className="vd-prep-cam" style={{ '--cam-ring': '#DE9762', '--cam-bg': '#EDCEBA', '--cam-fg': '#541B05' } as React.CSSProperties} />
+                  <p>Can Remy see your bowl? Look down at it and check it's in the window.</p>
+                </div>
               </div>
-              <CameraView cam={cam} primary={flow.screen === 'prep'} caption="Hat cam: aim it at your bowl" className="vd-prep-cam" />
               <div className="vd-remy-line"><img src={HEAD} alt="" /><div className="vd-bubble small left">{SAY.prep}</div></div>
               <button className="vd-btn big" onClick={flow.start}>Remy, let's cook!</button>
             </section>
@@ -130,26 +133,30 @@ export function VariantD({ flow }: { flow: Flow }) {
             <div className="vd-dots">{recipe.steps.map((_, i) => <i key={i} className={i < flow.step ? 'd' : i === flow.step ? 'n' : ''} style={i === flow.step ? { background: f.accent } : undefined} />)}</div>
           </header>
           <div className="vd-rise">
-            <div className="vd-track" style={{ transform: `translateX(calc(${-flow.step} * (58% + 32px)))` }}>
+            <div className="vd-track" style={{ transform: `translateX(calc(${-flow.step} * (70% + 32px)))` }}>
               {recipe.steps.map((s, i) => {
                 const c = FIELDS[i % FIELDS.length]
                 return (
                   <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg }}>
+                    <div className="vd-step-text">
                     <div className="vd-num" style={{ background: c.accent, color: c.card, clipPath: shape(STEP_SHAPES[i % STEP_SHAPES.length], i * 20) }}>{i + 1}</div>
                     <h2>{s.text}</h2>
                     {s.headsUp && <div className="vd-heads" style={{ background: c.accent, color: c.card }}>🔥 {s.headsUp}</div>}
                     {s.cue && <div className="vd-cue">✋ Ready when: <b>{s.cue}</b></div>}
+                    </div>
+                    {i === flow.step
+                      ? <CameraView cam={cam} primary={flow.screen === 'cooking'} className="vd-step-cam" style={{ '--cam-ring': c.accent, '--cam-bg': c.back, '--cam-fg': '#FFF7EA' } as React.CSSProperties} />
+                      : <div className="vd-step-cam vd-step-cam--ghost" style={{ background: c.back, outlineColor: c.accent }} aria-hidden />}
                   </article>
                 )
               })}
             </div>
           </div>
-          <CameraView cam={cam} primary={flow.screen === 'cooking'} className="vd-cook-cam" />
           <div className="vd-remy"><img src={HEAD} alt="" /><div className="vd-bubble small left">{flow.step === 0 && <b>{SAY.go} </b>}{flow.current.headsUp && <b>{SAY.headsUp} </b>}{flow.current.text}</div></div>
           <div className="vd-legend"><div className="vd-group"><span>👎 back</span><span className={flow.current.checkable ? 'hot' : 'off'}>✋ is it ready?</span><span className="main">👍 next</span></div></div>
 
           {flow.check.kind === 'looking' && (
-            <div className="vd-full vd-fade vd-looking" style={{ background: 'rgba(29,27,32,.92)' }}><CameraView cam={cam} caption="Remy is looking at this" className="vd-look-cam" /><RemyLoader size={200} label={SAY.look} /></div>
+            <div className="vd-full vd-fade vd-looking" style={{ background: 'rgba(29,27,32,.92)' }}><CameraView cam={cam} caption="Remy is looking at this" className="vd-look-cam" style={{ '--cam-ring': '#F6B3BC', '--cam-bg': '#2F3341' } as React.CSSProperties} /><RemyLoader size={200} label={SAY.look} /></div>
           )}
           {flow.check.kind === 'verdict' && (
             <div className="vd-full vd-wipe" style={{ background: VERDICT[flow.check.verdict.status] }}>
