@@ -31,7 +31,7 @@ export function useDetection(
     enabled = true,
     deps = defaultDeps,
     onDetection,
-  }: { enabled?: boolean; deps?: DetectionDeps; onDetection?: (detection: Detection) => void } = {},
+  }: { enabled?: boolean; deps?: DetectionDeps; onDetection?: (detection: Detection, t: number) => void } = {},
 ): DetectionState {
   const [state, setState] = useState<DetectionState>({ detection: null, status: 'loading', error: null })
 
@@ -60,7 +60,7 @@ export function useDetection(
           try {
             const detection = created.recognize(video, t)
             setState((s) => ({ ...s, detection, error: null }))
-            onDetectionRef.current?.(detection)
+            onDetectionRef.current?.(detection, t)
           } catch (error) {
             setState((s) => ({ ...s, error: String(error instanceof Error ? error.message : error) }))
           }

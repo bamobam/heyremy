@@ -12,6 +12,7 @@ afterEach(() => {
 
 const hand = Array.from({ length: 21 }, (_, i) => ({ x: 0.2 + i * 0.02, y: 0.3 + i * 0.01 }))
 const thumbsUp: Detection = { label: 'Thumb_Up', score: 0.93, handPresent: true, landmarks: hand }
+const thumbsDown: Detection = { label: 'Thumb_Down', score: 0.9, handPresent: true, landmarks: hand }
 const none: Detection = { label: 'None', score: 0, handPresent: false, landmarks: null }
 
 /** Fake MediaPipe + frame loop: tests push detections one frame at a time. */
@@ -28,9 +29,14 @@ function fakeDetection() {
   }
   return {
     deps,
-    show: (d: Detection) => {
+    show: (d: Detection, t = performance.now()) => {
       current = d
-      act(() => frame(performance.now()))
+      act(() => frame(t))
+    },
+    /** One frame every 67 ms (about 15 per second) of the same reading, from t0 to t1. */
+    holdFor: (d: Detection, t0: number, t1: number) => {
+      current = d
+      for (let t = t0; t <= t1; t += 67) act(() => frame(t))
     },
   }
 }
@@ -200,5 +206,58 @@ describe('CameraDebug grab panel', () => {
     await screen.findByAltText('Grabbed frame')
     expect(screen.getByTestId('grab-size')).toHaveTextContent('300 KB')
     expect(screen.getByTestId('grab-size')).toHaveTextContent('outside 80-150 KB')
+  })
+})
+
+describe('CameraDebug gestures panel', () => {
+  async function live() {
+    installFakeMediaDevices([C270])
+    const fake = fakeDetection()
+    render(<CameraDebug detectionDeps={fake.deps} />)
+    await screen.findByText('Detection: ready')
+    return fake
+  }
+
+  it('shows no events and no hold before anything happens', async () => {
+    await live()
+    expect(screen.getByTestId('hold-text')).toHaveTextContent('nothing held')
+    expect(screen.getByTestId('hand-visible')).toHaveTextContent('no')
+    expect(screen.getByText('No gestures fired yet')).toBeInTheDocument()
+  })
+
+  it('shows the gesture being held and how far along it is', async () => {
+    const fake = await live()
+    fake.show(thumbsUp, 0)
+    fake.show(thumbsUp, 500)
+    expect(screen.getByTestId('hold-text')).toHaveTextContent('next 50%')
+    expect(screen.getByTestId('hold')).toHaveAttribute('value', '0.5')
+    expect(screen.getByTestId('hand-visible')).toHaveTextContent('yes')
+  })
+
+  it('lists a gesture once it has been held long enough', async () => {
+    const fake = await live()
+    fake.holdFor(thumbsUp, 0, 1005)
+
+    const events = screen.getAllByTestId('gesture-event')
+    expect(events).toHaveLength(1)
+    expect(events[0]).toHaveTextContent('next')
+    expect(screen.queryByText('No gestures fired yet')).not.toBeInTheDocument()
+    expect(screen.getByTestId('hold-text')).toHaveTextContent('nothing held')
+  })
+
+  it('shows the newest events first and keeps only the last five', async () => {
+    const fake = await live()
+    let t = 0
+    // Alternate thumbs-down and thumbs-up with a break between, so each one fires.
+    for (let i = 0; i < 7; i++) {
+      fake.holdFor(i % 2 === 0 ? thumbsDown : thumbsUp, t, t + 1070)
+      t += 1070 + 67
+      fake.holdFor(none, t, t + 2200) // let go and wait out the cooldown
+      t += 2200 + 67
+    }
+    const events = screen.getAllByTestId('gesture-event')
+    expect(events).toHaveLength(5)
+    expect(events[0]).toHaveTextContent('back') // the 7th event was a thumbs-down
+    expect(events[1]).toHaveTextContent('next')
   })
 })
