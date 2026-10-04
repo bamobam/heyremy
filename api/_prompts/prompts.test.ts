@@ -1,7 +1,7 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { describe, expect, it } from 'vitest'
 import { validateRecipe } from '../_lib/schemas.js'
-import { buildCheckParts, CHECK_SYSTEM, CHECK_TEMPERATURE } from './check.js'
+import { buildCheckParts, CHECK_MAX_TOKENS, CHECK_SYSTEM, CHECK_TEMPERATURE } from './check.js'
 import { buildParseParts, PARSE_SYSTEM, PARSE_TEMPERATURE } from './parse.js'
 
 describe('parse prompt', () => {
@@ -55,5 +55,7 @@ describe('check prompt', () => {
     expect(CHECK_SYSTEM).toContain('Never guess "ready"')
     expect(CHECK_SYSTEM).toContain('under 15 words')
     expect(CHECK_TEMPERATURE).toBe(0.2)
+    // Thinking tokens count toward the cap, so it needs room well beyond the ~30-token verdict.
+    expect(CHECK_MAX_TOKENS).toBeGreaterThanOrEqual(2048)
   })
 })
