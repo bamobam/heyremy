@@ -127,7 +127,7 @@ export function VariantD({ flow }: { flow: Flow }) {
       )}
 
       {flow.screen === 'cooking' && (
-        <div className="vd-cook" style={{ background: f.back, color: f.fg }}>
+        <div className={`vd-cook ${flow.check.kind === 'looking' ? 'checking' : ''}`} style={{ background: f.back, color: f.fg }}>
           <header className="vd-top">
             <div className="vd-logo light"><img src={HEAD} alt="" />REMY</div>
             <div className="vd-dots">{recipe.steps.map((_, i) => <i key={i} className={i < flow.step ? 'd' : i === flow.step ? 'n' : ''} style={i === flow.step ? { background: f.accent } : undefined} />)}</div>
@@ -137,27 +137,32 @@ export function VariantD({ flow }: { flow: Flow }) {
               {recipe.steps.map((s, i) => {
                 const c = FIELDS[i % FIELDS.length]
                 return (
-                  <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg }}>
+                  <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg, '--card': c.card } as React.CSSProperties}>
                     <div className="vd-step-text">
                     <div className="vd-num" style={{ background: c.accent, color: c.card, clipPath: shape(STEP_SHAPES[i % STEP_SHAPES.length], i * 20) }}>{i + 1}</div>
                     <h2>{s.text}</h2>
                     {s.headsUp && <div className="vd-heads" style={{ background: c.accent, color: c.card }}>🔥 {s.headsUp}</div>}
                     {s.cue && <div className="vd-cue">✋ Ready when: <b>{s.cue}</b></div>}
                     </div>
-                    {i === flow.step
-                      ? <CameraView cam={cam} primary={flow.screen === 'cooking'} className="vd-step-cam" style={{ '--cam-ring': c.accent, '--cam-bg': c.back, '--cam-fg': '#FFF7EA' } as React.CSSProperties} />
-                      : <div className="vd-step-cam vd-step-cam--ghost" style={{ background: c.back, outlineColor: c.accent }} aria-hidden />}
+                    <div className="vd-step-media" style={{ background: c.back }}>
+                      {i === flow.step
+                        ? <CameraView cam={cam} primary={flow.screen === 'cooking'} className="vd-step-cam" style={{ '--cam-bg': c.back, '--cam-fg': '#FFF7EA' } as React.CSSProperties} />
+                        : <div className="vd-step-cam vd-step-cam--ghost" aria-hidden />}
+                      {i === flow.step && flow.check.kind === 'looking' && (
+                        <>
+                          <i className="vd-scan" aria-hidden />
+                          <div className="vd-peek"><RiggedRemy pose="stir" /></div>
+                        </>
+                      )}
+                    </div>
                   </article>
                 )
               })}
             </div>
           </div>
-          <div className="vd-remy"><img src={HEAD} alt="" /><div className="vd-bubble small left">{flow.step === 0 && <b>{SAY.go} </b>}{flow.current.headsUp && <b>{SAY.headsUp} </b>}{flow.current.text}</div></div>
+          <div className="vd-remy"><img src={HEAD} alt="" /><div className="vd-bubble small left">{flow.check.kind === 'looking' ? <b>{SAY.look}</b> : <>{flow.step === 0 && <b>{SAY.go} </b>}{flow.current.headsUp && <b>{SAY.headsUp} </b>}{flow.current.text}</>}</div></div>
           <div className="vd-legend"><div className="vd-group"><span>👎 back</span><span className={flow.current.checkable ? 'hot' : 'off'}>✋ is it ready?</span><span className="main">👍 next</span></div></div>
 
-          {flow.check.kind === 'looking' && (
-            <div className="vd-full vd-fade vd-looking" style={{ background: 'rgba(29,27,32,.92)' }}><CameraView cam={cam} caption="Remy is looking at this" className="vd-look-cam" style={{ '--cam-ring': '#F6B3BC', '--cam-bg': '#2F3341' } as React.CSSProperties} /><RemyLoader size={200} label={SAY.look} /></div>
-          )}
           {flow.check.kind === 'verdict' && (
             <div className="vd-full vd-wipe" style={{ background: VERDICT[flow.check.verdict.status] }}>
               <div className={`vd-verdict ${flow.check.verdict.status}`}>
