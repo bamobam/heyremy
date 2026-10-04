@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { C270, FakeMediaDevices, IPHONE, MACBOOK } from '../test/fakes/media.ts'
+import { C270, C920, FakeMediaDevices, IPHONE, MACBOOK } from '../test/fakes/media.ts'
 import { CameraError, openHatCam } from './openHatCam.ts'
 
 const asMedia = (fake: FakeMediaDevices) => fake as unknown as MediaDevices
@@ -13,6 +13,14 @@ describe('openHatCam', () => {
     expect(stream.getVideoTracks()[0].label).toBe(C270.label)
     expect(media.calls).toHaveLength(2)
     expect(media.calls[1].video).toMatchObject({ deviceId: { exact: 'c270' } })
+  })
+
+  it('opens the C920 by exact id too', async () => {
+    const media = new FakeMediaDevices([MACBOOK, C920, IPHONE])
+    const { stream, label } = await openHatCam(asMedia(media))
+    expect(label).toBe(C920.label)
+    expect(stream.getVideoTracks()[0].label).toBe(C920.label)
+    expect(media.calls.at(-1)?.video).toMatchObject({ deviceId: { exact: 'c920' } })
   })
 
   it('stops the permission stream so the default camera is not left open', async () => {

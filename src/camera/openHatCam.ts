@@ -48,7 +48,7 @@ export async function openHatCam(
     }
 
     const hatCam = pickHatCam(devices)
-    if (!hatCam) throw new CameraError('not_found', 'Hat cam (046d:0825) not found')
+    if (!hatCam) throw new CameraError('not_found', 'Hat cam (Logitech C270 or C920) not found')
 
     const stream = await media.getUserMedia({
       audio: false,

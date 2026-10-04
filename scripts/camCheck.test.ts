@@ -39,6 +39,15 @@ describe('findHatCam', () => {
     expect(hatCam?.name).toBe('USB Camera VID:1133 PID:2085')
   })
 
+  it('finds the Logitech C920 (046d:0892)', () => {
+    const cameras = parseCameras(fixture('cameras-c920.txt'))
+    expect(cameras.find((c) => c.name === 'HD Pro Webcam C920')).toMatchObject({
+      vendorId: '046d',
+      productId: '0892',
+    })
+    expect(findHatCam(cameras)?.name).toBe('HD Pro Webcam C920')
+  })
+
   it('returns null when only the built-in and iPhone cameras are connected', () => {
     expect(findHatCam(parseCameras(fixture('cameras-disconnected.txt')))).toBeNull()
   })

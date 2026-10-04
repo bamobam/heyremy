@@ -1,10 +1,14 @@
-// Checks that macOS sees the hat cam (Logitech C270, USB 046d:0825).
+// Checks that macOS sees the hat cam (a Logitech C270 or C920).
 // Run before testing or demoing: npm run cam:check
 
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
-export const HAT_CAM = { vendorId: '046d', productId: '0825' }
+/** USB ids of the cameras that can be the hat cam. */
+export const HAT_CAMS = [
+  { name: 'Logitech C270', vendorId: '046d', productId: '0825' },
+  { name: 'Logitech C920', vendorId: '046d', productId: '0892' },
+]
 
 export interface MacCamera {
   name: string
@@ -41,8 +45,9 @@ export function parseCameras(output: string): MacCamera[] {
 
 export function findHatCam(cameras: MacCamera[]): MacCamera | null {
   return (
-    cameras.find((c) => c.vendorId === HAT_CAM.vendorId && c.productId === HAT_CAM.productId) ??
-    null
+    cameras.find((c) =>
+      HAT_CAMS.some((h) => c.vendorId === h.vendorId && c.productId === h.productId),
+    ) ?? null
   )
 }
 
@@ -51,9 +56,10 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const cameras = parseCameras(output)
   const hatCam = findHatCam(cameras)
   if (hatCam) {
-    console.log(`✅ Hat cam connected: ${hatCam.name} (${HAT_CAM.vendorId}:${HAT_CAM.productId})`)
+    console.log(`✅ Hat cam connected: ${hatCam.name} (${hatCam.vendorId}:${hatCam.productId})`)
   } else {
-    console.log(`❌ Hat cam (${HAT_CAM.vendorId}:${HAT_CAM.productId}) not found. Check the USB cable and adapter.`)
+    const wanted = HAT_CAMS.map((h) => `${h.name} ${h.vendorId}:${h.productId}`).join(' or ')
+    console.log(`❌ Hat cam (${wanted}) not found. Check the USB cable and adapter.`)
     console.log(`   Cameras macOS sees: ${cameras.map((c) => c.name).join(', ') || 'none'}`)
     process.exitCode = 1
   }

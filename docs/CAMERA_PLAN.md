@@ -21,9 +21,11 @@ Checked with `system_profiler SPCameraDataType` on 2026-10-03:
 
 | Camera | macOS name | Notes |
 | --- | --- | --- |
-| **Hat cam** | `UVC Camera VendorID_1133 ProductID_2085` | Vendor `0x046d` (Logitech), product `0x0825` = **Logitech C270**, attached to the hat and connected to a Thunderbolt/USB-C port through an extension cable |
+| **Hat cam** (swapped to a C920 on 2026-10-03; see below) | `UVC Camera VendorID_1133 ProductID_2085` | Vendor `0x046d` (Logitech), product `0x0825` = **Logitech C270**, attached to the hat and connected to a Thunderbolt/USB-C port through an extension cable |
 | Built-in | `MacBook Air Camera` | Must never be picked |
 | iPhone | `Nam Anh's iPhone Camera` (Continuity Camera) | Must never be picked; macOS can make it the default camera |
+
+**Supported hat cams:** Logitech C270 (`046d:0825`) and C920 (`046d:0892`). The C920 shows up in macOS as "HD Pro Webcam C920"; it does 1080p at 30 fps, but the app still asks for 1280×720. Adding another camera is a one-line change in `selectHatCam.ts` and `camCheck.ts`.
 
 The design says "open the camera whose label contains Logitech", but macOS doesn't call it Logitech. Chrome usually adds the USB IDs to the label, e.g. `UVC Camera (046d:0825)`, so the selection rule matches on **`046d:0825`** first. Branch 2 confirms the label Chrome actually shows.
 

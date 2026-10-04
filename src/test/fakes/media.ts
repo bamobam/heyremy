@@ -117,3 +117,4 @@ export function installFakeMediaDevices(cameras: FakeCamera[]) {
 export const MACBOOK: FakeCamera = { deviceId: 'mac', label: 'MacBook Air Camera' }
 export const IPHONE: FakeCamera = { deviceId: 'iphone', label: 'iPhone Camera' }
 export const C270: FakeCamera = { deviceId: 'c270', label: 'UVC Camera (046d:0825)' }
+export const C920: FakeCamera = { deviceId: 'c920', label: 'HD Pro Webcam C920 (046d:0892)' }

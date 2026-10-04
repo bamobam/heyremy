@@ -1,9 +1,14 @@
-// The hat cam is a Logitech C270. macOS doesn't name it "Logitech"; Chrome
-// labels it with its USB ids instead, e.g. "UVC Camera (046d:0825)".
+// The hat cam is a Logitech webcam: the C270 or the C920. macOS and Chrome don't
+// always name them "Logitech"; Chrome appends the USB ids to the label, e.g.
+// "UVC Camera (046d:0825)" or "HD Pro Webcam C920 (046d:0892)".
 
-export const HAT_CAM_USB_ID = '046d:0825'
+/** USB vendor:product ids of the cameras that can be the hat cam. */
+export const HAT_CAM_USB_IDS = [
+  '046d:0825', // Logitech C270
+  '046d:0892', // Logitech C920
+]
 
-const NAMED_HAT_CAM = /logitech|c270/i
+const NAMED_HAT_CAM = /logitech|c270|c920/i
 
 /**
  * Picks the hat cam from enumerateDevices(). Returns null rather than any
@@ -13,7 +18,10 @@ const NAMED_HAT_CAM = /logitech|c270/i
 export function pickHatCam(devices: MediaDeviceInfo[]): MediaDeviceInfo | null {
   const cameras = devices.filter((d) => d.kind === 'videoinput')
   return (
-    cameras.find((d) => d.label.toLowerCase().includes(HAT_CAM_USB_ID)) ??
+    cameras.find((d) => {
+      const label = d.label.toLowerCase()
+      return HAT_CAM_USB_IDS.some((id) => label.includes(id))
+    }) ??
     cameras.find((d) => NAMED_HAT_CAM.test(d.label)) ??
     null
   )

@@ -13,6 +13,22 @@ describe('pickHatCam', () => {
     expect(pickHatCam([MACBOOK, C270, IPHONE])).toBe(C270)
   })
 
+  it('picks the Logitech C920 (046d:0892) too', () => {
+    const c920 = device('HD Pro Webcam C920 (046d:0892)')
+    expect(pickHatCam([MACBOOK, c920, IPHONE])).toBe(c920)
+  })
+
+  it('picks the C920 by name when the label has no USB id', () => {
+    const c920 = device('HD Pro Webcam C920')
+    expect(pickHatCam([MACBOOK, c920])).toBe(c920)
+  })
+
+  it('picks the C920 over a generic Logitech camera when both are plugged in', () => {
+    const c920 = device('HD Pro Webcam C920 (046d:0892)')
+    const otherLogitech = device('Logitech BRIO (046d:085e)')
+    expect(pickHatCam([otherLogitech, c920])).toBe(c920)
+  })
+
   it('matches the USB id in any letter case', () => {
     const upper = device('USB CAMERA (046D:0825)')
     expect(pickHatCam([MACBOOK, upper])).toBe(upper)
