@@ -168,3 +168,10 @@
   height: 8px;
   margin-top: 8px;
 }
+
+.camera-debug__download {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #4ade80;
+  font-size: 14px;
+}
