@@ -70,6 +70,8 @@
   color: #4ade80;
 }
 
+.camera-debug__status--reconnecting,
+.camera-debug__status--busy,
 .camera-debug__status--connecting {
   color: #facc15;
 }

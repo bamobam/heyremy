@@ -53,10 +53,10 @@ The camera rides on the cook's head and the cable runs down to the laptop, so ev
 | Head turn tugs the extension cable; plug pulled or joint loosens | Track `ended` event and `devicechange` | Status `reconnecting`; reopens the **same** camera as soon as it reappears |
 | Stream freezes without ending (half-seated plug, USB hiccup) | No new frame for 2 s (`requestVideoFrameCallback`) | Stops the track and reopens it |
 | Rapid drop, reconnect, drop as the cable flexes | Watchdog sees repeated `ended` within seconds | Each reopen waits for the device to be listed again; no overlapping `getUserMedia` calls |
-| Brief `mute` from macOS | Track `mute`/`unmute` | Ignored if under 2 s; treated as a freeze after that |
+| Brief `mute` from macOS | The same frame check | Not tracked separately: a mute under 2 s changes nothing, and one that lasts 2 s means no frames, so the stream is restarted |
 | Another app holds the camera (Zoom, Photo Booth, FaceTime) | `NotReadableError` | "Camera busy. Close other camera apps." Retries every 2 s |
 | Laptop screen sleeps | Screen Wake Lock while cooking | Screen stays on; lock re-requested when the tab becomes visible again |
-| Tab in the background | Chrome throttles it | The demo tab stays in front; `frameLoop` pauses while hidden and resumes on return |
+| Tab in the background | Chrome sends no frames to it | The demo tab stays in front; `frameLoop` pauses while hidden and resumes on return, and the watchdog does not count a hidden tab as a freeze |
 | Permission denied | `NotAllowedError` | "Allow camera access in Chrome settings." No retry loop |
 
 Reconnecting to the **same** camera is not a backup path. It never switches to another camera, so it fits the "no fallbacks" rule in the system design. Section 5.1 currently says "plug in the hat cam and reload". Branch 3 updates it to "reconnects on its own".

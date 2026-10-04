@@ -56,6 +56,7 @@ export class FakeMediaDevices extends EventTarget {
   /** Every getUserMedia call, in order. */
   readonly calls: MediaStreamConstraints[] = []
   private nextError: ErrorName | null = null
+  private readonly tracks: FakeTrack[] = []
 
   constructor(cameras: FakeCamera[]) {
     super()
@@ -88,7 +89,9 @@ export class FakeMediaDevices extends EventTarget {
     const camera = exact ? this.cameras.find((c) => c.deviceId === exact) : this.cameras[0]
     if (!camera) throw new DOMException('NotFoundError', 'NotFoundError')
     this.permissionGranted = true
-    return new FakeStream(new FakeTrack(camera, video)) as unknown as MediaStream
+    const track = new FakeTrack(camera, video)
+    this.tracks.push(track)
+    return new FakeStream(track) as unknown as MediaStream
   }
 
   /** The next getUserMedia call rejects with this error. */
@@ -101,8 +104,10 @@ export class FakeMediaDevices extends EventTarget {
     this.dispatchEvent(new Event('devicechange'))
   }
 
+  /** Removes the camera. Like real hardware, any stream from it ends. */
   unplug(deviceId: string) {
     this.cameras = this.cameras.filter((c) => c.deviceId !== deviceId)
+    for (const track of this.tracks) if (track.deviceId === deviceId && track.readyState === 'live') track.end()
     this.dispatchEvent(new Event('devicechange'))
   }
 }

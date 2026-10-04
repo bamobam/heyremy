@@ -57,7 +57,49 @@ describe('CameraDebug', () => {
     render(<CameraDebug detectionDeps={fakeDetection().deps} />)
 
     expect(await screen.findByText(/Hat cam not found/)).toBeInTheDocument()
-    expect(screen.getByText('error')).toBeInTheDocument()
+    expect(screen.getByText('reconnecting')).toBeInTheDocument()
+  })
+
+  it('connects by itself when the hat cam is plugged in later', async () => {
+    const media = installFakeMediaDevices([MACBOOK, IPHONE])
+    render(<CameraDebug detectionDeps={fakeDetection().deps} />)
+    await screen.findByText(/Hat cam not found/)
+
+    act(() => media.plug(C270))
+    expect(await screen.findByText('live')).toBeInTheDocument()
+    expect(screen.queryByText(/Hat cam not found/)).not.toBeInTheDocument()
+  })
+
+  it('shows whether the screen is being kept awake', async () => {
+    const lock = Object.assign(new EventTarget(), { release: async () => {} })
+    Object.defineProperty(navigator, 'wakeLock', { value: { request: async () => lock }, configurable: true })
+    installFakeMediaDevices([C270])
+    render(<CameraDebug detectionDeps={fakeDetection().deps} />)
+    await screen.findByText('live')
+    await waitFor(() => expect(screen.getByTestId('awake')).toHaveTextContent('yes'))
+    delete (navigator as { wakeLock?: unknown }).wakeLock
+  })
+
+  it('says so when the browser cannot keep the screen awake', async () => {
+    installFakeMediaDevices([C270])
+    render(<CameraDebug detectionDeps={fakeDetection().deps} />)
+    await screen.findByText('live')
+    expect(screen.getByTestId('awake')).toHaveTextContent('not supported')
+  })
+
+  it('counts reconnects when the cable is pulled and put back', async () => {
+    const media = installFakeMediaDevices([C270])
+    render(<CameraDebug detectionDeps={fakeDetection().deps} />)
+    await screen.findByText('live')
+    expect(screen.getByTestId('reconnects')).toHaveTextContent('0')
+
+    act(() => media.unplug('c270'))
+    expect(await screen.findByText('reconnecting')).toBeInTheDocument()
+    expect(screen.getByText(/Hat cam disconnected/)).toBeInTheDocument()
+
+    act(() => media.plug(C270))
+    expect(await screen.findByText('live')).toBeInTheDocument()
+    expect(screen.getByTestId('reconnects')).toHaveTextContent('1')
   })
 
   it('does not start detection until the camera is live', async () => {
