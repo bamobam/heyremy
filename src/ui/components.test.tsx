@@ -55,8 +55,9 @@ describe('CheckBadge', () => {
 
   it('says plainly that there is nothing to check, and that 👍 is all that is needed', () => {
     const { container } = render(<CheckBadge checkable={false} />)
-    expect(screen.getByText(/nothing to check/i).textContent).toMatch(/👍/)
-    expect(container.querySelector('.ui-checkbadge--no')).toBeTruthy()
+    const badge = container.querySelector('.ui-checkbadge--no')
+    expect(badge?.textContent).toMatch(/nothing to check/i)
+    expect(badge?.textContent).toMatch(/👍/)
     expect(screen.queryByText(/remy can check/i)).toBeNull()
   })
 })

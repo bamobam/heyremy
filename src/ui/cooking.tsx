@@ -29,13 +29,12 @@ export function StepProgress({ steps, index, accent }: { steps: FilledStep[]; in
  * with nothing to check says so plainly: there is no ✋ to make, only 👍 when the step is done.
  */
 export function CheckBadge({ checkable }: { checkable: boolean }) {
-  return checkable ? (
-    <div className="ui-checkbadge ui-checkbadge--yes" role="status">
-      <span aria-hidden>✋</span> Remy can check this
-    </div>
-  ) : (
-    <div className="ui-checkbadge ui-checkbadge--no" role="status">
-      <span aria-hidden>🚫</span> Nothing to check, just 👍
+  return (
+    <div className={`ui-checkbadge ${checkable ? 'ui-checkbadge--yes' : 'ui-checkbadge--no'}`} role="status">
+      <span className="ui-checkbadge__chip" aria-hidden>
+        {checkable ? '✋' : '👍'}
+      </span>
+      {checkable ? 'Remy can check this' : 'Nothing to check, just move on'}
     </div>
   )
 }
