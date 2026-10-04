@@ -6,6 +6,7 @@ import { installFakeMediaDevices, MACBOOK } from './test/fakes/media.ts'
 
 beforeEach(() => {
   installFakeMediaDevices([MACBOOK])
+  window.history.replaceState(null, '', '/?mock') // the stand-in backend: no network in tests
 })
 
 afterEach(cleanup)
@@ -31,7 +32,7 @@ describe('the app shell', () => {
     fireEvent.click(screen.getByRole('button', { name: /let'?s cook/i }))
 
     await screen.findByText(/before you start/i, undefined, { timeout: 15_000 })
-    expect(screen.getByText('1 cup')).toBeTruthy()
+    expect(screen.getAllByText('1 cup').length).toBeGreaterThan(0)
     expect(screen.getByText('flour')).toBeTruthy()
   }, 20_000)
 })

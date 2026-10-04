@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { FakeAudio, FakeObjectUrls, FakeSpeechSynthesis, FakeUtterance, voice } from '../test/fakes/audio.ts'
 import { createBrowserSpeech, type SpeechEngine } from './browserSpeech.ts'
 import { createClipCache } from './clipCache.ts'
-import { createAudioPlayer, silentClipUrl } from './player.ts'
+import { createAudioPlayer } from './player.ts'
+import { silentWavUrl } from './silence.ts'
 
 const blob = (s: string) => new Blob([s], { type: 'audio/mpeg' })
 const tick = () => new Promise((r) => setTimeout(r, 0))
@@ -23,9 +24,9 @@ function setup(speak: (text: string) => Promise<Blob> = async (text) => blob(tex
   return { player, audio, urls, cache, engine, speak: speakSpy, created, said }
 }
 
-describe('silentClipUrl', () => {
+describe('silentWavUrl', () => {
   it('is a WAV data URL', () => {
-    const url = silentClipUrl()
+    const url = silentWavUrl()
     expect(url.startsWith('data:audio/wav;base64,')).toBe(true)
     expect(atob(url.split(',')[1]).slice(0, 4)).toBe('RIFF')
   })
@@ -45,7 +46,7 @@ describe('AudioPlayer', () => {
     it('plays a silent clip and a silent utterance synchronously', async () => {
       const { player, audio, engine } = setup()
       const unlocked = player.unlock()
-      expect(audio.plays).toEqual([silentClipUrl()])
+      expect(audio.plays).toEqual([silentWavUrl()])
       expect(engine.spoken).toHaveLength(1)
       expect(engine.spoken[0].volume).toBe(0)
       await unlocked

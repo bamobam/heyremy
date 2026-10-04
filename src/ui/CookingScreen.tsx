@@ -1,7 +1,8 @@
 // CookingScreen (§9.2): the hands-free part. The page takes the step's colour field, the cards slide
 // along one track, and the check happens inside the current card. Every pointer down counts as a tap.
 import { useEffect, useState } from 'react'
-import { canCheck, currentStep, filledSteps, type FilledStep } from '../cooking/contract.ts'
+import { canCheck, currentStep, filledSteps } from '../cooking/contract.ts'
+import type { ShownStep } from '../cooking/selectors.ts'
 import { useCooking, useHoldProgress } from '../cooking/context.ts'
 import { GestureLegend, HoldPill, StepCard, StepProgress, VerdictOverlay } from './cooking.tsx'
 import { fieldFor } from './fields.ts'
@@ -10,7 +11,7 @@ import { SAY } from './say.ts'
 import { ErrorBanner } from './prep.tsx'
 
 /** What Remy says on the cooking screen, in priority order (§9.2). */
-function bubbleFor(step: FilledStep | null, index: number, checking: boolean) {
+function bubbleFor(step: ShownStep | null, index: number, checking: boolean) {
   if (checking) return <b>{SAY.look}</b>
   if (!step) return null
   return (

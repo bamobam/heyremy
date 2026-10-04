@@ -647,6 +647,8 @@ The pause matters because a 👎 hold takes 1 s of the 2 s window. Without it, t
 
 ### 6.9 `CookingProvider.tsx`
 
+**Built:** `src/cooking/CookingProvider.tsx` wires `cookingReducer`, `createController`, `useCamera` and `createApi()`. Nam's controller has no audio, so the provider adds Remy's voice around it: the voice flow (2 clips at a time, reusing cached ids), step clips that play when the step changes, "looking" and the spoken verdict when the mode changes, and a keyboard stand-in for gestures (N, B, Space). Screens read through `src/cooking/contract.ts`, which adds `filledSteps` and `scaledIngredients` (amount and name split) in `uiSelectors.ts`. `useCamera` takes an optional `source`, used for `?cam=any`.
+
 - Creates the reducer with `useReducer`, the controller once with `useMemo`, and wires `useGestures` to `controller.onGesture`.
 - Exposes `{ state, controller, holdProgress, camera }` through context, and the hooks `useCooking()` and `useHoldProgress()`.
 
