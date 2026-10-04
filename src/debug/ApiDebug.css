@@ -1,0 +1,77 @@
+.api-debug__column {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+.api-debug textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #111;
+  color: #eee;
+  font: 13px/1.4 ui-monospace, Menlo, monospace;
+  resize: vertical;
+}
+
+.api-debug select {
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 6px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #111;
+  color: #eee;
+  font: inherit;
+}
+
+.api-debug h3 {
+  margin: 12px 0 4px;
+  font-size: 16px;
+}
+
+.api-debug__result {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.api-debug__list {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.api-debug__badge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #17302f;
+  color: #4ade80;
+  font-size: 11px;
+}
+
+.api-debug__verdict {
+  display: inline-block;
+  margin: 0 0 6px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.api-debug__verdict--ready {
+  background: #17302f;
+  color: #4ade80;
+}
+
+.api-debug__verdict--not_ready {
+  background: #3a2a14;
+  color: #facc15;
+}
+
+.api-debug__verdict--unsure {
+  background: #2a2a2a;
+  color: #ccc;
+}
