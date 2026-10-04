@@ -1,0 +1,3 @@
+ink   #1d1b20
+cream #FFF7EA
+brand #F4905F
