@@ -2,14 +2,19 @@
 // Each camera branch adds a panel here so it can be checked on the real hat cam.
 
 import { useEffect, useState } from 'react'
+import type { GestureEvent } from '../types.ts'
 import { CAMERA_ERROR_MESSAGES } from './cameraMessages.ts'
 import { emptyTally, stepTally } from './gestureTally.ts'
 import type { GrabResult } from './grabSharpestFrame.ts'
 import { GrabPanel } from './GrabPanel.tsx'
 import { HandOverlay } from './HandOverlay.tsx'
-import { useDetection, type DetectionDeps } from './useDetection.ts'
+import type { DetectionDeps } from './useDetection.ts'
+import { useGestures } from './useGestures.ts'
 import { useHatCam } from './useHatCam.ts'
 import './CameraDebug.css'
+
+/** How many fired gestures the log keeps. */
+const MAX_EVENTS = 5
 
 /** The gestures that control cooking mode; always listed, even at zero. */
 const CONTROL_GESTURES = ['Thumb_Up', 'Thumb_Down', 'Open_Palm']
@@ -53,13 +58,18 @@ export default function CameraDebug({
   const fps = useFrameRate(video, live)
   const settings = stream?.getVideoTracks()[0]?.getSettings()
 
+  const [events, setEvents] = useState<GestureEvent[]>([])
+
   const {
     detection,
+    holdProgress,
+    handVisible,
     status: detectionStatus,
     error: detectionError,
-  } = useDetection(video, {
+  } = useGestures(video, {
     enabled: live,
     deps: detectionDeps,
+    onGesture: (e) => setEvents((list) => [e, ...list].slice(0, MAX_EVENTS)),
     onDetection: (d) => setTally((t) => stepTally(t, d)),
   })
 
@@ -117,6 +127,29 @@ export default function CameraDebug({
               <dd data-testid="hand">{detection?.handPresent ? 'yes' : 'no'}</dd>
             </dl>
             {detectionError && <p className="camera-debug__error">{detectionError}</p>}
+          </section>
+
+          <section className="camera-debug__panel">
+            <h2>Gestures</h2>
+            <p className="camera-debug__hint">Hold a gesture for 1 s to fire it. After a fire, let go before the next one.</p>
+            <dl>
+              <dt>Hand visible</dt>
+              <dd data-testid="hand-visible">{handVisible ? 'yes' : 'no'}</dd>
+              <dt>Hold</dt>
+              <dd data-testid="hold-text">
+                {holdProgress.intent ? `${holdProgress.intent} ${Math.round(holdProgress.progress * 100)}%` : 'nothing held'}
+              </dd>
+            </dl>
+            <progress data-testid="hold" className="camera-debug__hold" max={1} value={holdProgress.progress} />
+            {events.length === 0 ? (
+              <p className="camera-debug__hint">No gestures fired yet</p>
+            ) : (
+              <ol className="camera-debug__scores">
+                {events.map((e) => (
+                  <li key={e.at} data-testid="gesture-event">{`${e.intent} at ${(e.at / 1000).toFixed(1)} s`}</li>
+                ))}
+              </ol>
+            )}
           </section>
 
           <section className="camera-debug__panel">

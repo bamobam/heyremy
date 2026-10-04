@@ -77,11 +77,11 @@ describe('useDetection', () => {
 
     s.show(thumbsUp)
     s.tick(1)
-    expect(first).toHaveBeenCalledWith(thumbsUp)
+    expect(first).toHaveBeenCalledWith(thumbsUp, 1)
 
     rerender(<Harness video={el} deps={s.deps} onDetection={second} />)
     s.tick(2)
-    expect(second).toHaveBeenCalledWith(thumbsUp)
+    expect(second).toHaveBeenCalledWith(thumbsUp, 2)
     expect(first).toHaveBeenCalledTimes(1)
     expect(s.deps.createRecognizer).toHaveBeenCalledTimes(1)
   })
