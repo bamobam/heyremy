@@ -1,10 +1,11 @@
 // Counts gesture attempts on the debug page, for the hour-1 test: try each
 // gesture 20 times and see how many register.
 
+import { DEFAULT_FILTER_CONFIG } from './gestureFilter.ts'
 import type { Detection } from './recognizer.ts'
 
-/** Same threshold the gesture filter will use. */
-export const MIN_SCORE = 0.7
+/** Same threshold the gesture filter uses. */
+export const MIN_SCORE = DEFAULT_FILTER_CONFIG.minScore
 
 export interface Tally {
   /** Times each gesture was started: a held gesture counts once. */

@@ -347,6 +347,8 @@ Transitions:
 
 While the controller has gestures disabled (during a check), the filter stays `idle` and drops samples.
 
+**One fire per hold.** Without a further rule, a thumb kept up for 4 seconds would fire twice (hold, 2 s cooldown, hold again) and skip a step. So after a fire, the same gesture must be let go before it can fire again: more than 3 frames in a row without it, at any point after the fire, count as letting go. If it is still held when the cooldown ends, the filter waits (`rearm`) until it is released. A different gesture can start as soon as the cooldown ends. The code is `src/camera/gestureFilter.ts`.
+
 ### 5.6 `handPresence.ts` (pure)
 
 ```ts
