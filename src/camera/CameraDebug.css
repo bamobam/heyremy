@@ -138,3 +138,25 @@
   font: inherit;
   cursor: pointer;
 }
+
+.camera-debug__grab {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  border-radius: 6px;
+  background: #000;
+}
+
+.camera-debug__scores {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: #bbb;
+}
+
+.camera-debug__chosen {
+  color: #4ade80;
+  font-weight: 600;
+}
