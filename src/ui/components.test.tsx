@@ -5,6 +5,15 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { GestureLegend, HoldPill, VerdictOverlay } from './cooking.tsx'
 import { ErrorBanner, HeadsUpBanner, ServingsStepper, VoicingProgress } from './prep.tsx'
 import { SAY } from './say.ts'
+import { HoldProgressContext } from '../cooking/context.ts'
+import type { HoldProgress } from '../types.ts'
+
+const renderPill = (hold: HoldProgress) =>
+  render(
+    <HoldProgressContext.Provider value={hold}>
+      <HoldPill />
+    </HoldProgressContext.Provider>,
+  )
 
 afterEach(cleanup)
 
@@ -54,18 +63,18 @@ describe('VerdictOverlay', () => {
 
 describe('HoldPill', () => {
   it('stays hidden until a gesture is actually partway held', () => {
-    const { container } = render(<HoldPill hold={{ intent: null, progress: 0 }} />)
+    const { container } = renderPill({ intent: null, progress: 0 })
     expect(container.querySelector('.ui-hold')).toBeNull()
   })
 
   it('tells the cook to keep holding, and which way it is going', () => {
-    render(<HoldPill hold={{ intent: 'check', progress: 0.5 }} />)
+    renderPill({ intent: 'check', progress: 0.5 })
     expect(screen.getByText(/keep holding/i)).toBeTruthy()
     expect(screen.getByText(/is it ready\?/i)).toBeTruthy()
   })
 
   it('shows ✋ while checking, not a next arrow', () => {
-    render(<HoldPill hold={{ intent: 'check', progress: 0.5 }} />)
+    renderPill({ intent: 'check', progress: 0.5 })
     expect(screen.getByText('✋')).toBeTruthy()
   })
 })

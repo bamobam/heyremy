@@ -1,9 +1,7 @@
 // CookingScreen (§9.2): the hands-free part. The page takes the step's colour field, the cards slide
 // along one track, and the check happens inside the current card. Every pointer down counts as a tap.
 import { useEffect, useState } from 'react'
-import { canCheck, currentStep, filledSteps } from '../cooking/contract.ts'
-import type { ShownStep } from '../cooking/selectors.ts'
-import { useCooking, useHoldProgress } from '../cooking/context.ts'
+import { canCheck, currentStep, filledSteps, useCooking, type ShownStep } from '../cooking/contract.ts'
 import { GestureLegend, HoldPill, StepCard, StepProgress, VerdictOverlay } from './cooking.tsx'
 import { fieldFor } from './fields.ts'
 import { HEAD_SRC, SpeechBubble } from './Remy.tsx'
@@ -36,7 +34,6 @@ function useTicking(active: boolean, ms = 100): number {
 
 export function CookingScreen() {
   const { state, dispatch } = useCooking()
-  const hold = useHoldProgress()
   const steps = filledSteps(state)
   const field = fieldFor(state.stepIndex)
   const checking = state.mode === 'checking'
@@ -73,7 +70,7 @@ export function CookingScreen() {
       </div>
 
       <GestureLegend canCheck={canCheck(state)} />
-      <HoldPill hold={hold} />
+      <HoldPill />
 
       {state.mode === 'verdict' && state.verdict && (
         <VerdictOverlay verdict={state.verdict} autoAdvanceAt={state.autoAdvanceAt} now={now} />

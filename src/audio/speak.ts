@@ -1,14 +1,13 @@
 // Text → speech audio for the audio player: POST /api/speak (audio/mpeg). With the API mocked
-// (?mock or VITE_MOCK_API=1, as in api/index.ts) it returns silence, so the whole flow still runs.
+// (?mock or VITE_MOCK_API=1) it returns silence, so the whole flow still runs.
 import { ApiError, fromStatus } from '../api/errors.ts'
+import { isMockApi } from '../api/index.ts'
 import { silentWavBlob } from './silence.ts'
 
 const SPEAK_TIMEOUT_MS = 10_000
 
-const isMocked = () => new URLSearchParams(window.location.search).get('mock') !== null || import.meta.env.VITE_MOCK_API === '1'
-
 export async function speak(text: string): Promise<Blob> {
-  if (isMocked()) return silentWavBlob()
+  if (isMockApi()) return silentWavBlob()
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), SPEAK_TIMEOUT_MS)
   try {

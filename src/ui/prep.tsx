@@ -1,11 +1,10 @@
 // The prep screen's components (§9.3): the servings stepper, the ingredient grid, the before-you-start
 // checklist, the camera setup check, the voice progress and the error banner.
 import { useState } from 'react'
-import { MAX_SERVINGS, MIN_SERVINGS, type CookingError, type FilledStep, type ScaledIngredient } from '../cooking/contract.ts'
+import { MAX_SERVINGS, MIN_SERVINGS, useCooking, type CookingError, type FilledStep, type ScaledIngredient } from '../cooking/contract.ts'
 import { CameraView } from './CameraView.tsx'
 import { CHECKLIST_COLOURS } from './fields.ts'
 import { ingredientLook, ingredientTint, type IngredientShape } from './ingredients.ts'
-import { useCooking } from '../cooking/context.ts'
 
 /** − **n servings** + on sand. The number alone until the servings stretch goal is built. */
 export function ServingsStepper({ servings, original, onChange }: { servings: number; original: number; onChange: (n: number) => void }) {

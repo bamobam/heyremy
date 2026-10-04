@@ -1,8 +1,6 @@
 // PrepReview (§9.2): the recipe card with scaled amounts, what to do before starting, and the camera
 // setup check. The Start button only comes alive once every clip for the chosen servings is cached.
-import { useState } from 'react'
-import { canStart, scaledIngredients } from '../cooking/contract.ts'
-import { useCooking } from '../cooking/context.ts'
+import { canStart, scaledIngredients, useCooking } from '../cooking/contract.ts'
 import { HEAD_SRC, RemyBadge, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 import { CameraSetup, ErrorBanner, IngredientList, PrepChecklist, ServingsStepper, VoicingProgress } from './prep.tsx'
@@ -14,15 +12,8 @@ function timeChip(stepCount: number): string {
 }
 
 export function PrepReview() {
-  const { state, controller, dispatch } = useCooking()
+  const { state, controller, dispatch, voiceFailed } = useCooking()
   const recipe = state.recipe
-  const { ready, total } = state.voicing
-
-  // Sticky: dismissing the error banner must not take "Try again" away while the voice is unfinished.
-  const [voiceFailed, setVoiceFailed] = useState(false)
-  const failedNow = state.error?.kind === 'upstream' && total > 0 && ready.length < total
-  if (failedNow && !voiceFailed) setVoiceFailed(true)
-  if (voiceFailed && !failedNow && (total === 0 || ready.length >= total)) setVoiceFailed(false)
 
   if (!recipe) return null
 
@@ -61,7 +52,7 @@ export function PrepReview() {
           <button type="button" className="ui-btn ui-btn--wide" onClick={controller.start} disabled={!canStart(state)}>
             Remy, let's cook!
           </button>
-          <VoicingProgress ready={state.voicing.servings === state.servings ? state.voicing.ready.length : 0} total={state.voicing.total} failed={voiceFailed} onRetry={() => { setVoiceFailed(false); controller.retryVoicing() }} />
+          <VoicingProgress ready={state.voicing.servings === state.servings ? state.voicing.ready.length : 0} total={state.voicing.total} failed={voiceFailed} onRetry={controller.retryVoicing} />
         </section>
       </div>
     </div>

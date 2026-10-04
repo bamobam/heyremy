@@ -1,8 +1,7 @@
 // The cooking screen's components (§9.3): the step-card carousel, the hold pill, the gesture legend
 // and the verdict overlay. Remy is present here, so these are the pieces read at 2 m.
 import type { CSSProperties } from 'react'
-import { AUTO_ADVANCE_MS, type FilledStep, type HoldProgress } from '../cooking/contract.ts'
-import { useCooking } from '../cooking/context.ts'
+import { AUTO_ADVANCE_MS, useCooking, useHoldProgress, type FilledStep } from '../cooking/contract.ts'
 import { CameraView } from './CameraView.tsx'
 import { fieldFor, VERDICT_FIELDS } from './fields.ts'
 import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
@@ -79,7 +78,8 @@ export function StepCard({
 }
 
 /** The ring that fills while a gesture is held, so the cook can see the hold is counting. */
-export function HoldPill({ hold }: { hold: HoldProgress }) {
+export function HoldPill() {
+  const hold = useHoldProgress() // read here, so only the pill re-renders as the hold ticks
   if (!hold.intent || hold.progress <= 0) return null
   const icon = hold.intent === 'next' ? '👍' : hold.intent === 'back' ? '👎' : '✋'
   const label = hold.intent === 'check' ? 'Keep holding… is it ready?' : `Keep holding… ${hold.intent} step`

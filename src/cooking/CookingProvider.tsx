@@ -1,42 +1,34 @@
 // Wires Nam's pieces into one provider (§6.9): his reducer and controller, his useCamera, and the API
 // client. His controller has no audio, so Remy's voice (§8) is added here, around it: the voice flow
 // that caches the clips, and the clips that play as the state changes.
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { createApi } from '../api/index.ts'
 import { clipCache } from '../audio/clipCache.ts'
 import { createAudioPlayer } from '../audio/player.ts'
+import { DONE_CLIP, FIXED_LINES, LOOKING_CLIP } from '../audio/lines.ts'
 import { speak } from '../audio/speak.ts'
 import { useCamera } from '../camera/useCamera.ts'
-import { SAY } from '../ui/say.ts'
-import { USE_ANY_CAMERA, useAnyCam } from '../ui/useAnyCam.ts'
-import type { GestureEvent, ParsedRecipe } from '../types.ts'
+import type { HatCam } from '../camera/useHatCam.ts'
+import { USE_ANY_CAMERA, useAnyCam } from '../camera/useAnyCam.ts'
+import type { GestureEvent } from '../types.ts'
 import { createController, toAppError } from './controller.ts'
 import type { CameraPort } from './ports.ts'
-import { fillPlaceholders, scaleFactor, stepClipId } from './scaling.ts'
+import { stepClipId } from './scaling.ts'
 import { currentStep, gesturesEnabled } from './selectors.ts'
-import { cookingReducer, initialState, type Action } from './state.ts'
+import { cookingReducer, initialState, type Action, type CookingState } from './state.ts'
+import { filledSteps } from './uiSelectors.ts'
 import { CookingContext, HoldProgressContext } from './context.ts'
-import type { Controller, CookingContextValue, UiAction } from './contract.ts'
-
-/** Clips with no text of their own: the fixed lines are spoken from SAY when they play. */
-const FIXED_CLIPS = [
-  { id: 'looking', text: SAY.look },
-  { id: 'done', text: SAY.done },
-]
+import type { Controller, CookingContextValue } from './contract.ts'
 
 /** Changing servings waits this long before voicing again, so holding + doesn't start a run per click (§6.8). */
 const REVOICE_DEBOUNCE_MS = 600
 /** How many clips are made at once (§6.8). */
 const VOICE_CONCURRENCY = 2
 
-/** Every clip the recipe needs at these servings. */
-function wantedClips(recipe: ParsedRecipe, servings: number): { id: string; text: string }[] {
-  const factor = scaleFactor(servings, recipe.servings)
-  const steps = recipe.steps.map(step => ({
-    id: stepClipId(step, servings),
-    text: fillPlaceholders(step.spoken, recipe.ingredients, factor, 'spoken'),
-  }))
-  return [...FIXED_CLIPS, ...steps]
+/** Every clip the recipe needs at the chosen servings: the two fixed lines, then one per step. */
+function wantedClips(s: CookingState): { id: string; text: string }[] {
+  const steps = filledSteps(s).map((step, i) => ({ id: stepClipId(s.recipe!.steps[i], s.servings), text: step.spoken }))
+  return [{ id: LOOKING_CLIP, text: FIXED_LINES[LOOKING_CLIP] }, { id: DONE_CLIP, text: FIXED_LINES[DONE_CLIP] }, ...steps]
 }
 
 export function CookingProvider({ children }: { children: React.ReactNode }) {
@@ -82,25 +74,34 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   const voiceRun = useRef(0)
   const revoiceTimer = useRef<number | null>(null)
 
+  const [voiceFailed, setVoiceFailed] = useState(false)
+
   const voiceFlow = useCallback(async () => {
     const { recipe, servings } = stateRef.current
     if (!recipe) return
     const run = ++voiceRun.current
-    const clips = wantedClips(recipe, servings)
+    const current = () => run === voiceRun.current
+    const clips = wantedClips(stateRef.current)
+    setVoiceFailed(false)
     dispatch({ type: 'voicingStarted', servings, total: clips.length })
 
     const queue = [...clips]
     let failed = false
     const worker = async () => {
-      for (let clip = queue.shift(); clip && !failed; clip = queue.shift()) {
+      // A run that has been superseded stops at once, so it makes no more speech requests.
+      for (let clip = queue.shift(); clip && !failed && current(); clip = queue.shift()) {
         try {
           // A clip already made for these servings is reused: 4 → 2 → 4 costs nothing.
-          if (!clipCache.has(clip.id)) audio.preload(clip.id, await speak(clip.text))
-          if (run !== voiceRun.current) return
+          if (!clipCache.has(clip.id)) {
+            const blob = await speak(clip.text)
+            if (!current()) return // after a restart or a servings change the clip is not wanted
+            audio.preload(clip.id, blob)
+          }
           dispatch({ type: 'clipReady', id: clip.id, servings })
         } catch (error) {
-          if (run !== voiceRun.current) return
+          if (!current()) return
           failed = true
+          setVoiceFailed(true)
           dispatch({ type: 'voicingFailed', error: toAppError(error) })
         }
       }
@@ -133,6 +134,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
       },
 
       retryVoicing() {
+        if (revoiceTimer.current !== null) clearTimeout(revoiceTimer.current)
         dispatch({ type: 'errorDismissed' })
         void voiceFlow()
       },
@@ -144,11 +146,14 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
 
       async onGesture(e) {
         const before = stateRef.current
+        // Leaving a verdict by 👎 (or cancelling its countdown) cuts its speech off (§6.8 navigateFlow).
+        if (e.intent === 'back' && before.mode === 'verdict') audio.stop()
         await flow.onGesture(e)
-        // 👎 on the first step changes nothing, but the cook still wants it repeated (§6.8 navigateFlow).
+        // 👎 on the first step does not change the step, but the cook still wants it read again,
+        // unless the 👎 only cancelled a ready countdown (§6.5).
         const after = stateRef.current
-        if (e.intent === 'back' && after.phase === 'cooking' && after.stepIndex === 0 && after.stepIndex === before.stepIndex && before.mode === 'idle') {
-          void playStep()
+        if (e.intent === 'back' && before.phase === 'cooking' && after.stepIndex === 0 && before.stepIndex === 0 && before.autoAdvanceAt === null) {
+          playStep()
         }
       },
 
@@ -157,14 +162,21 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
         voiceRun.current++ // drops a voice run still in flight
         audio.stop()
         clipCache.clear()
+        setVoiceFailed(false)
         flow.restart()
       },
     }),
     [flow, voiceFlow, audio, playStep],
   )
-  useEffect(() => () => {
-    if (revoiceTimer.current !== null) clearTimeout(revoiceTimer.current)
-  }, [])
+  // On unmount: no pending re-voice, no run left dispatching, no voice left playing.
+  useEffect(
+    () => () => {
+      if (revoiceTimer.current !== null) clearTimeout(revoiceTimer.current)
+      voiceRun.current++
+      audio.stop()
+    },
+    [audio],
+  )
 
   // ---------- Voice: what plays as the state changes ----------
 
@@ -176,14 +188,19 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
       playStep()
     } else if (phase === 'done') {
       audio.stop()
-      void audio.play('done', SAY.done)
+      void audio.play(DONE_CLIP, FIXED_LINES[DONE_CLIP])
     }
   }, [phase, stepIndex, audio, playStep])
 
-  // A check: "hold still" while it looks, then the verdict in Remy's voice.
+  // A check: "hold still" while it looks, then the verdict in Remy's voice. A check that fails or is
+  // dropped cuts the "hold still" off rather than letting it finish.
+  const previousMode = useRef(mode)
   useEffect(() => {
-    if (mode === 'checking') void audio.play('looking', SAY.look)
+    const was = previousMode.current
+    previousMode.current = mode
+    if (mode === 'checking') void audio.play(LOOKING_CLIP, FIXED_LINES[LOOKING_CLIP])
     else if (mode === 'verdict' && verdict) void audio.speakLive(verdict.feedback)
+    else if (was === 'checking' && mode === 'idle') audio.stop()
   }, [mode, verdict, audio])
 
   // ---------- Gestures: the camera's, plus the keyboard as a stand-in (N next, B back, Space check) ----------
@@ -196,9 +213,12 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
     if (!keysOn) return
     const keys: Record<string, GestureEvent['intent']> = { n: 'next', b: 'back', ' ': 'check' }
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')) return
+      const target = e.target as HTMLElement | null
+      if (e.repeat || target?.closest?.('input, textarea, select, [contenteditable]')) return
       const intent = keys[e.key.toLowerCase()]
       if (!intent) return
+      // Space on a focused button is that button's own press, not a check.
+      if (e.key === ' ' && target?.closest?.('button, a, [role="button"]')) return
       e.preventDefault()
       gestureRef.current({ intent, at: performance.now() })
     }
@@ -206,11 +226,16 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [keysOn])
 
-  const uiDispatch = useCallback((action: UiAction) => dispatch(action), [dispatch])
+  // Only the fields CameraView reads, so the context holds still while the hold ring ticks.
+  const { attachVideo, video, status, error, label, stream, reconnects, stalls } = camera
+  const cameraSlice = useMemo<HatCam>(
+    () => ({ attachVideo, video, status, error, label, stream, reconnects, stalls }),
+    [attachVideo, video, status, error, label, stream, reconnects, stalls],
+  )
 
   const value = useMemo<CookingContextValue>(
-    () => ({ state, controller, dispatch: uiDispatch, camera }),
-    [state, controller, uiDispatch, camera],
+    () => ({ state, controller, dispatch, camera: cameraSlice, voiceFailed }),
+    [state, controller, dispatch, cameraSlice, voiceFailed],
   )
 
   return (

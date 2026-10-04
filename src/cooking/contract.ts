@@ -2,13 +2,14 @@
 //
 // The state, actions, reducer and selectors are Nam's (state.ts, selectors.ts); the controller is his
 // createController (controller.ts) plus the voice flow, wired in CookingProvider.tsx.
-import type { Camera } from '../camera/useCamera.ts'
+import type { HatCam } from '../camera/useHatCam.ts'
 import type { GestureEvent } from '../types.ts'
 import type { Controller as FlowController } from './controller.ts'
 import type { Action, CookingState } from './state.ts'
 
 export type { GestureEvent, GestureIntent, HoldProgress, Ingredient, ParsedRecipe, Step, Verdict } from '../types.ts'
-export type { Camera } from '../camera/useCamera.ts'
+export type { HatCam } from '../camera/useHatCam.ts'
+export type { ShownStep } from './selectors.ts'
 export type { Action, AppError as CookingError, CookMode, CookingState, Phase } from './state.ts'
 export { AUTO_ADVANCE_MS, MAX_SERVINGS, MIN_SERVINGS } from './state.ts'
 export type CookingStats = CookingState['stats']
@@ -33,8 +34,10 @@ export interface CookingContextValue {
   state: CookingState
   controller: Controller
   dispatch: (action: UiAction) => void
-  /** The single hat cam (or the default camera with ?cam=any). Pass it to <CameraView>. */
-  camera: Camera
+  /** The single hat cam (or the default camera with ?cam=any), for <CameraView>. Stable between renders, so hold ticks don't re-render screens. */
+  camera: HatCam
+  /** The voice could not be prepared (any error kind), so the prep screen offers "Try again". */
+  voiceFailed: boolean
 }
 
 export { CookingContext, HoldProgressContext, NO_HOLD, useCooking, useHoldProgress } from './context.ts'
