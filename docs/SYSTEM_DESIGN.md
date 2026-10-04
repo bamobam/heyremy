@@ -733,59 +733,88 @@ Rules:
 
 ## 9. UI (Grace)
 
-The screens follow `docs/design/remy-screens.html` (1280×800). Light screens are for prep, when the cook is at the laptop with clean hands. Dark screens are for cooking mode, read from 2 m with no glare.
+The screens follow prototype D (`src/prototype/remy-ui/VariantD.tsx`, at `/prototype`), which replaces `docs/design/remy-screens.html` for look, copy and motion. Production code ports it into `src/ui/` and never imports from `src/prototype/`. Welcome and prep are light (cream, sand) for the laptop with clean hands. Cooking mode uses deep per-step colour fields, read from 2 m with no glare.
 
-### 9.1 Visual tokens (from the mockups)
+### 9.1 Visual tokens (from prototype D)
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--paper` / `--ink` | `#F6F7F4` / `#1B1F1D` | Light screens |
-| `--night` / `--on-night` | `#121614` / `#F3F5F2` | Dark screens |
-| `--saffron` | `#F2B33D` | Brand accent, buttons, step number, heads-up banner, current progress segment |
-| `--ready` / `--notyet` / `--unsure` | `#3CCB7F` / `#FF7A59` / `#9AA3AD` | The three verdicts |
-| `--display` / `--body` | Fraunces / DM Sans | Step text and headings / everything else |
+| `--ink` / `--cream` | `#1D1B20` / `#FFF7EA` | Text, borders, hard shadows / page and light text on dark fields |
+| `--brand` | `#F4905F` | Primary buttons, welcome headline |
+| `--umber` / `--cocoa` | `#541B05` / `#73462F` | Welcome left panel, bold amounts / muted text, ticked checklist items |
+| `--sand` | `#EDCEBA` | Welcome right panel, chips, stepper, camera placeholder |
+| `--apricot` / `--clay` / `--sage` / `--slate` | `#DE9762` / `#BE7463` / `#657167` / `#2F3341` | Step fields, checklist boxes, parsing field (slate), done field (sage) |
+| `--pink` | `#F6B3BC` | v5 accent: catch tag, welcome badge, scan line, ✋ when checkable, loader blob |
+| `--sparkle` | `#FFD84D` | `ready` burst, done badge, ✦ marks |
+| `--ready` / `--notyet` / `--unsure` | `--sage` / `--clay` / `#9F9593` | The three verdict fields |
+| Font | M PLUS 2 (400–900, Google Fonts) | Everything; headings 800, verdict feedback 900 |
+| `--spring` / `--bouncy` | M3 Expressive springs as CSS `linear()` | Movement (carousel, buttons) / hero pops (verdict, number badges, ticks) |
+
+Step fields cycle every 6 steps; each has a card colour, a deeper page backdrop, text and accent:
+
+| # | Card | Backdrop | Text | Accent |
+| --- | --- | --- | --- | --- |
+| 1 | `#541B05` | `#2A0D02` | cream | `#DE9762` |
+| 2 | `#657167` | `#343B35` | cream | `#EDCEBA` |
+| 3 | `#2F3341` | `#181A22` | cream | `#F4905F` |
+| 4 | `#BE7463` | `#5E3127` | ink | cream |
+| 5 | `#73462F` | `#3A2317` | cream | `#E3BEB2` |
+| 6 | `#DE9762` | `#6E4325` | ink | `#541B05` |
+
+Surfaces are flat with a 2 px ink border and a hard offset shadow (`4px 4px 0 var(--ink)`); buttons are pills that squash on press. Shapes (`shapes.ts`) are M3 Expressive clip-path polygons (cookie, clover, sunny, square, burst) that can morph into each other. A shield rule resets the Vite starter's global `h1`/`h2`/colour styles. `prefers-reduced-motion` turns off every animation and transition.
 
 ### 9.2 Screens
 
 | Screen | Shown when | Contents |
 | --- | --- | --- |
-| `RecipeInput` (light) | `phase` is `input` or `parsing` | "What are we cooking?", textarea, **Make it cookable** and **Use the demo recipe** buttons, a dark how-to panel (👍 Next step · 👎 Go back, or hear it again · ✋ Is it ready?) with "Nothing is recorded", parsing spinner, `ErrorBanner` |
-| `PrepReview` (light) | `phase` is `prep` | Title with "8 steps · about 25 min", `ServingsStepper`, ingredient list with changed amounts highlighted, "Before you start" checklist (prep items plus "Put on the hat"), hat-cam preview ("Connected · aim it at your bowl"), **Start cooking** (on when `canStart`) with "After this, everything is hands-free." |
-| `CookingScreen` (dark) | `phase` is `cooking` | `StepProgress`, "Step 3 of 8", step text, `CueChip` or `HeadsUpBanner`, `HoldPill`, `GestureLegend`, `CameraThumb`, with `LookingOverlay` or `VerdictOverlay` on top |
-| `DoneScreen` (dark) | `phase` is `done` | "Pancakes are done. Enjoy!", "8 steps · 2 checks · 0 screen taps", **Cook something else** |
+| `RecipeInput` | `phase` is `input` or `parsing` | **Input:** two even panels. Left (umber): REMY logo, pink catch tag “Hey Remy, let's cook!”, headline "Cook it. Don't touch it.", one-line pitch, gesture hint chips (👍 next · 👎 back · ✋ is it ready?). Right (sand): `RemyBadge` (pink, sunny) with a bubble (`SAY.hello`, `SAY.ask`), textarea, **Let's cook!** and **Try the pancake demo**. **Parsing:** full slate field with `RemyLoader` (`SAY.reading`) and a three-line ticker (Finding ingredients · Moving hidden prep up front · Writing what "done" looks like). `ErrorBanner` |
+| `PrepReview` | `phase` is `prep` | Cream page, top bar with logo and a chip ("6 steps, about 25 minutes"). Left: white recipe card with `RemyBadge` (apricot, cookie), title, `ServingsStepper`, `IngredientList`. Right: "Before you start" `PrepChecklist`, then the camera setup check (`CameraView` "Remy's view" + "Can Remy see your bowl? Look down at it and check it's in the window."), Remy's head with a bubble (`SAY.prep`), full-width **Remy, let's cook!** (on when `canStart`), `VoicingProgress` |
+| `CookingScreen` | `phase` is `cooking` | Page backdrop is the current step's field, cross-fading 0.6 s; the content rises in from below on entry. Top bar: logo and `StepProgress`. A step-card carousel: every `StepCard` sits on one horizontal track (70vw cards, 32 px gap, 9vw lead) that slides on `--spring`; the current card is full size, the others 40 % opacity at 0.9 scale. Bottom left: Remy's head with a bubble (`SAY.go` on step 1, `SAY.headsUp` before a heads-up, then the step text; `SAY.look` while checking). Bottom right: `GestureLegend`. `HoldPill`, and `VerdictOverlay` on top. The check happens inside the current card; there is no separate looking overlay or camera thumbnail |
+| `DoneScreen` | `phase` is `done` | Sage field, `RemyBadge` (sparkle, burst) with a bubble (`SAY.done`, "Pancakes are done.", stats line from `state.stats`), cream **Let's cook something else!** |
 
 ### 9.3 Components
 
 | Component | Props | Notes |
 | --- | --- | --- |
-| `ServingsStepper` | `servings`, `original` | − n + with "recipe makes 4" underneath. Stretch 2: until then, show the number without buttons |
-| `IngredientList` | `scaledIngredients` | Amount in bold; amber when it differs from the recipe; rounding note below ("½ egg rounds to 1 small egg") |
-| `PrepChecklist` | `items` | Tickable on the laptop; ticks are local UI state only |
-| `StepProgress` | `index`, `total` | One dash per step: done, current (saffron), upcoming |
-| `StepCard` | `step`, `index`, `total` | 76 px Fraunces, saffron "STEP 3 OF 8" label |
-| `CueChip` | `cue` | "✋ Ready when **smooth, no dry flour streaks**"; only on checkable steps |
-| `HeadsUpBanner` | `text` | Saffron banner with 🔥; hidden when null |
+| `ServingsStepper` | `servings`, `original` | − **4 servings** + pill on sand, round white buttons. Stretch 2: until then, show the number without buttons |
+| `IngredientList` | `scaledIngredients` | Four-column grid of tiles: `IngredientArt` drawing on a tint of its colour, amount in bold umber, name below; tiles drop in staggered by 50 ms. Amounts that differ from the recipe get a `--brand` highlight; rounding note below ("½ egg rounds to 1 small egg") |
+| `PrepChecklist` | `items` | Tickable rows, each with a box in the next of apricot, clay, sage, slate; a tick fills the box with a bouncy tilt and strikes the row through. Ticks are local UI state only |
+| `CameraView` | `cam`, `primary`, `caption` | Live hat-cam window with a status dot and caption ("Remy's view", Connecting…, Reconnecting…, Hat cam offline) and the `cameraMessages` error text. One `useHatCam()` per tree (`useAnyCam` for `?cam=any`); only the `primary` view registers for freeze detection, others reuse the stream. 4:3 with an apricot ring in prep; 16:9 inside `StepCard` |
+| `StepProgress` | `index`, `total` | One dot per step: done (cream 60 %), current (36 px pill in the step accent), upcoming (cream 25 %) |
+| `StepCard` | `step`, `index`, `current`, `checking` | Card in its step field, 40 % text and 60 % camera. Text side: step number in a rotating M3 shape in the accent (it straightens when current), step text 38 px weight 800, `HeadsUpBanner`, `CueChip`. Camera side: the card colour fades into the current `CameraView`, whole and uncropped (exactly the frame Remy judges) inside a 7 px accent bezel, with "Keep the bowl inside the picture, then show ✋." on checkable steps. Other cards show a striped ghost window. **Checking:** text dims to 18 %, other cards to 15 %, a pink scan line sweeps inside the picture, and `RemyFlipbook pose="stir"` slides in beside the camera |
+| `CueChip` | `cue` | "✋ Ready when: **smooth, no dry flour streaks**"; only on checkable steps |
+| `HeadsUpBanner` | `text` | Block in the step accent with 🔥, inside the card; hidden when null |
 | `HoldPill` | `HoldProgress` | Ring plus "Keep holding… next step"; icon by intent; fades out when idle |
-| `GestureLegend` | `canCheck` | "👍 next · 👎 back · ✋ check", or "✋ no check on this step" |
-| `CameraThumb` | `videoRef` | 200×130 live view, top right, so the cook can see the framing |
-| `LookingOverlay` | | Big camera view with a scan line and "Hold still, let me look…"; shown in `checking` |
-| `VerdictOverlay` | `verdict`, `autoAdvanceAt` | Three variants, below; stays until the next gesture |
+| `GestureLegend` | `canCheck` | Segmented pill group "👎 back · ✋ is it ready? · 👍 next"; next is the solid cream segment; ✋ is pink when `canCheck`, 35 % opacity otherwise |
+| `SpeechBubble` | `children`, `small` | White bubble, ink border, hard shadow, tail pointing at Remy on the left; bold lines in umber |
+| `VerdictOverlay` | `verdict`, `autoAdvanceAt` | The verdict field wipes in as a circle growing from the camera window (0.5 s), then hero and text pop on `--bouncy`: a 300 px spinning shape with Remy, the catchline (`SAY.verdict`, with ✦) and the feedback at 60 px weight 900. Three variants, below; stays until the next gesture |
 | `ErrorBanner` | `error` | One line at the top with a dismiss button |
 | `VoicingProgress` | `ready`, `total` | "Preparing voice… 4/10" near the Start button, with a **Try again** button after `voicingFailed` |
 
 `VerdictOverlay` variants:
 
-| `status` | Tag and colour | Footer |
+| `status` | Field | Hero | Catchline | Footer |
+| --- | --- | --- | --- | --- |
+| `ready` | `--ready` | Sparkle burst, three twinkling ✦, `RemyFlipbook pose="cheer"` | "Oui, chef!" | "Moving on in 2 seconds · 👎 to stay", with a countdown bar |
+| `not_ready` | `--notyet` | Translucent clover, Remy's head rocking | "Almost, chef!" | "✋ check again whenever you like · 👍 move on anyway" |
+| `unsure` | `--unsure` | Translucent square, Remy's head rocking | "Hmm, my whiskers can't see that" | "✋ try again" |
+
+Remy appears in three forms (assets in `public/remy/`):
+
+| Form | What it is | Where |
 | --- | --- | --- |
-| `not_ready` | ● Not yet, `--notyet` | "✋ check again whenever you like · 👍 move on anyway" |
-| `ready` | ● Ready, `--ready` | "Moving on in 2 seconds · 👎 to stay", with a countdown bar |
-| `unsure` | ● Couldn't see clearly, `--unsure` | "✋ try again" |
+| `RemyBadge` | Head rocking (3.2 s) over a shape that breathes (2.4 s), so the two never sync | Wherever Remy is just present: welcome, prep card, done |
+| `RemyFlipbook` | Two-frame flipbook of the full mascot; `pose` (`idle`, `wave`, `stir`, `cheer`) sets the flip speed, `cheer` also hops | Only when Remy is doing something: stirring while checking, cheering on `ready`, inside `RemyLoader` |
+| Head image | Static head | Logo, bubble avatars, non-`ready` verdict heroes |
+
+Catchphrases live in one `SAY` table so speech can reuse them: `hello` "Hey, I'm Remy! Let's cook!", `ask` "What are we making today, chef?", `reading` "Sniffing out the steps…", `prep` "Mise en place, chef! Ready when you are.", `go` "Remy ready! Aprons on.", `look` "Whiskers on it… hold still!", `verdict` (above), `headsUp` "Psst, chef!", `done` "Bon appétit, chef!".
 
 ### 9.4 Design rules
 
 - One action per gesture, and the screen shows what the last gesture did within 100 ms.
-- Never more than one line of extra text besides the step; the cook is 2 m away with messy hands.
+- Never more than one line of extra text besides the step and Remy's bubble; the cook is 2 m away with messy hands.
 - States use colour **and** an icon or word, so they work in poor kitchen lighting.
+- The camera window is always the exact frame Remy judges: uncropped (`object-fit: contain`), and the scan stays inside it.
 - `CookingScreen` sends `screenTapped` on any pointer down, for the done-screen count.
 
 ### 9.5 Reading state
