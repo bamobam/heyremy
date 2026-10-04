@@ -652,6 +652,8 @@ The pause matters because a 👎 hold takes 1 s of the 2 s window. Without it, t
 
 ## 7. API client (Nam)
 
+**Built so far (demo MVP):** `src/api/` has `errors.ts`, `http.ts`, `guards.ts`, `base64.ts`, `client.ts` (`parseRecipe` and `checkStep`), `mock.ts` and `index.ts`. There is no `speak`, `speakMany` or queue, because audio is deferred. `createApi()` returns the real client, or the mock when the URL has `?mock` (`?mock=slow` makes every call take 6 s, `?mock=fail` makes every call fail) or `VITE_MOCK_API=1`. The mock gives the pancake recipe for any text, then verdicts in turn: not ready, unsure, ready. The response guards go a little further than the shapes: a recipe is rejected if a checkable step has no cue, or a step names an ingredient id the recipe does not have.
+
 The API client is the only code in the browser that talks to the backend. The controller sees typed functions, never `fetch`.
 
 ```
