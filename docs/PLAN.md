@@ -9,7 +9,11 @@ Must-have:
 4. ElevenLabs reads each step; browser speech if it fails
 5. Open palm → check → spoken verdict
 
-Stretch: auto-check (checks a checkable step every few seconds, speaks only when the cue is met).
+Stretch, in order:
+1. Auto-check: checks a checkable step every few seconds, speaks only when the cue is met.
+2. Servings: − / + on the prep screen scales every ingredient amount, in the list and in the steps. Scaling is plain code, not AI; round to kitchen fractions and whole eggs. About 1–1.5 h. If auto-check looks risky at hour 5, do this first.
+
+`api/parse` returns `servings` and `ingredients` from day one, so adding the servings control later needs no prompt or shape change.
 
 Cut: timers, ingredient scan, accounts, saved recipes.
 

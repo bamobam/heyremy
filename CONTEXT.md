@@ -8,6 +8,14 @@ Remy is a hands-free cooking buddy: it reads a recipe aloud one step at a time, 
 The text a cook pastes in, before Remy reorganizes it.
 _Avoid_: Original, input
 
+**Ingredient**:
+One item the recipe uses, with its amount at the recipe's original servings.
+_Avoid_: Item, component
+
+**Servings**:
+How many portions the recipe makes; the cook can change it during prep, and every ingredient amount scales with it.
+_Avoid_: Portion size, yield, batch
+
 **Prep**:
 A task that must happen before cooking starts, pulled out of wherever the recipe buried it (preheating, softening, taking things out of the fridge).
 _Avoid_: Setup, mise en place
