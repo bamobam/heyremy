@@ -25,6 +25,21 @@ export function StepProgress({ steps, index, accent }: { steps: FilledStep[]; in
 }
 
 /**
+ * Whether Remy can look at this step, said on the card so the cook knows before gesturing. A step
+ * with nothing to check says so plainly: there is no ✋ to make, only 👍 when the step is done.
+ */
+export function CheckBadge({ checkable }: { checkable: boolean }) {
+  return (
+    <div className={`ui-checkbadge ${checkable ? 'ui-checkbadge--yes' : 'ui-checkbadge--no'}`} role="status">
+      <span className="ui-checkbadge__chip" aria-hidden>
+        {checkable ? '✋' : '👍'}
+      </span>
+      {checkable ? 'Remy can check this' : 'Nothing to check, just move on'}
+    </div>
+  )
+}
+
+/**
  * One step on a card: the text on the left, the live camera on the right in an accent bezel, and
  * the whole uncropped picture — exactly the frame Remy judges. While checking, the text dims and a
  * scan sweeps the picture instead of a separate overlay.
@@ -48,8 +63,11 @@ export function StepCard({
   return (
     <article className={`ui-card ${current ? 'ui-card--now' : ''}`} style={cardVars} aria-current={current}>
       <div className="ui-card__text">
-        <div className="ui-card__num" style={{ clipPath: shape(STEP_SHAPES[n], index * 20) }}>
-          {index + 1}
+        <div className="ui-card__top">
+          <div className="ui-card__num" style={{ clipPath: shape(STEP_SHAPES[n], index * 20) }}>
+            {index + 1}
+          </div>
+          <CheckBadge checkable={step.checkable} />
         </div>
         <h2>{step.text}</h2>
         <HeadsUpBanner text={step.headsUp} />
