@@ -59,3 +59,25 @@ export interface HoldProgress {
   /** 0..1 */
   progress: number
 }
+
+// ---------- Requests to the backend ----------
+
+/** POST /api/parse */
+export type ParseRequest = { recipe: string }
+/** POST /api/check. `image` is a base64 JPEG with no data: prefix. */
+export type CheckRequest = { image: string; cue: string; step: string }
+/** POST /api/speak. The response is audio/mpeg. */
+export type SpeakRequest = { text: string }
+
+// ---------- API errors (the client and the server agree on these) ----------
+
+export type ApiErrorKind =
+  | 'bad_request' // 400: input too large or malformed
+  | 'unprocessable' // 422: model output could not be validated
+  | 'upstream' // 502: Gemini or ElevenLabs failed
+  | 'rate_limited' // 429
+  | 'timeout' // client side only
+  | 'aborted' // client side only
+  | 'unknown'
+
+export type ApiErrorBody = { error: { kind: ApiErrorKind; message: string } }
