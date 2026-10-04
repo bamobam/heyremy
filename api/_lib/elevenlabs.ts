@@ -1,6 +1,6 @@
 // ElevenLabs text-to-speech, one fixed voice (SYSTEM_DESIGN 10.5).
 
-import { ProviderError } from './gemini.ts'
+import { ProviderError } from './gemini.js'
 
 // Premade voice "Alice" (clear, British); free plans can't use library voices via the API. Not a secret.
 export const VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2'

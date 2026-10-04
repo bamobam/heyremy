@@ -1,13 +1,13 @@
 // POST /api/check { image, cue, step } → Verdict (SYSTEM_DESIGN 10.7).
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { Verdict } from '../src/types.ts'
-import { ProviderError, generateJson } from './_lib/gemini.ts'
-import { guard, sendError, sendJson } from './_lib/http.ts'
-import { MAX_CHECK_BODY_BYTES, MAX_CUE_CHARS, MAX_STEP_CHARS, checkJpegBase64, checkText } from './_lib/limits.ts'
-import { log } from './_lib/log.ts'
-import { ValidationError, validateVerdict, verdictSchema } from './_lib/schemas.ts'
-import { CHECK_MAX_TOKENS, CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.ts'
+import type { Verdict } from '../src/types.js'
+import { ProviderError, generateJson } from './_lib/gemini.js'
+import { guard, sendError, sendJson } from './_lib/http.js'
+import { MAX_CHECK_BODY_BYTES, MAX_CUE_CHARS, MAX_STEP_CHARS, checkJpegBase64, checkText } from './_lib/limits.js'
+import { log } from './_lib/log.js'
+import { ValidationError, validateVerdict, verdictSchema } from './_lib/schemas.js'
+import { CHECK_MAX_TOKENS, CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.js'
 
 // The client gives up at 8 s. No retry after a timeout: two slow attempts would outlast it,
 // but a fast 503/429 still gets one try on the fallback model.

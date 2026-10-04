@@ -1,6 +1,6 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { describe, expect, it } from 'vitest'
-import { checkJpegBase64, checkText, decodedSize, MAX_IMAGE_BYTES } from './limits.ts'
+import { checkJpegBase64, checkText, decodedSize, MAX_IMAGE_BYTES } from './limits.js'
 
 const jpeg = (bytes: number) => {
   const buf = Buffer.alloc(bytes)

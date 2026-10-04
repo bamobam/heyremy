@@ -1,7 +1,7 @@
 // Request guards and response helpers shared by every handler.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { ApiErrorBody, ApiErrorKind } from '../../src/types.ts'
+import type { ApiErrorBody, ApiErrorKind } from '../../src/types.js'
 
 const STATUS: Record<ApiErrorKind, number> = {
   bad_request: 400,

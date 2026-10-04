@@ -1,6 +1,6 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { describe, expect, it } from 'vitest'
-import { formatLog, type LogEntry } from './log.ts'
+import { formatLog, type LogEntry } from './log.js'
 
 describe('formatLog', () => {
   it('writes one JSON line with the known fields', () => {

@@ -1,7 +1,7 @@
 // Gemini REST call that returns parsed JSON (SYSTEM_DESIGN 10.4). Never logs the image or recipe.
 
-import type { ApiErrorKind } from '../../src/types.ts'
-import type { Part } from '../_prompts/check.ts'
+import type { ApiErrorKind } from '../../src/types.js'
+import type { Part } from '../_prompts/check.js'
 
 // gemini-2.5-flash is closed to new users (404); the API recommends 3.8 Flash.
 export const GEMINI_MODEL = 'gemini-3.8-flash'

@@ -1,13 +1,13 @@
 // POST /api/parse { recipe } → ParsedRecipe (SYSTEM_DESIGN 10.7). `recipe` is pasted text or a single recipe link.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { FetchRecipeError, fetchRecipeText, isRecipeUrl } from './_lib/fetchRecipe.ts'
-import { ProviderError, generateJson } from './_lib/gemini.ts'
-import { guard, sendError, sendJson } from './_lib/http.ts'
-import { MAX_RECIPE_CHARS, checkText } from './_lib/limits.ts'
-import { log } from './_lib/log.ts'
-import { ValidationError, recipeSchema, validateRecipe } from './_lib/schemas.ts'
-import { PARSE_MAX_TOKENS, PARSE_SYSTEM, PARSE_TEMPERATURE, buildParseParts } from './_prompts/parse.ts'
+import { FetchRecipeError, fetchRecipeText, isRecipeUrl } from './_lib/fetchRecipe.js'
+import { ProviderError, generateJson } from './_lib/gemini.js'
+import { guard, sendError, sendJson } from './_lib/http.js'
+import { MAX_RECIPE_CHARS, checkText } from './_lib/limits.js'
+import { log } from './_lib/log.js'
+import { ValidationError, recipeSchema, validateRecipe } from './_lib/schemas.js'
+import { PARSE_MAX_TOKENS, PARSE_SYSTEM, PARSE_TEMPERATURE, buildParseParts } from './_prompts/parse.js'
 
 const GEMINI_TIMEOUT_MS = 18_000 // the client gives up at 20 s
 // Parse normally takes 3–4 s; cut the first try at 9 s so the fallback still has ~8 s.

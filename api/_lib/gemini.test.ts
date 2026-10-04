@@ -1,6 +1,6 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { FALLBACK_MODEL, GEMINI_MODEL, ProviderError, generateJson, retry } from './gemini.ts'
+import { FALLBACK_MODEL, GEMINI_MODEL, ProviderError, generateJson, retry } from './gemini.js'
 
 const opts = {
   system: 'sys',

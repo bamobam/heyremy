@@ -1,7 +1,7 @@
 // Gemini response schemas and runtime validation of model output (SYSTEM_DESIGN 10.3).
 // Pure: values in, values out. Small issues are repaired; real problems throw ValidationError (422).
 
-import type { Ingredient, ParsedRecipe, Step, Verdict } from '../../src/types.ts'
+import type { Ingredient, ParsedRecipe, Step, Verdict } from '../../src/types.js'
 
 export const MAX_STEPS = 40
 export const MAX_FEEDBACK_WORDS = 15

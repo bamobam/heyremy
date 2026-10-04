@@ -1,11 +1,11 @@
 // POST /api/speak { text } → audio/mpeg (SYSTEM_DESIGN 10.7).
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { synthesize } from './_lib/elevenlabs.ts'
-import { ProviderError } from './_lib/gemini.ts'
-import { guard, sendAudio, sendError } from './_lib/http.ts'
-import { MAX_SPEAK_CHARS, checkText } from './_lib/limits.ts'
-import { log } from './_lib/log.ts'
+import { synthesize } from './_lib/elevenlabs.js'
+import { ProviderError } from './_lib/gemini.js'
+import { guard, sendAudio, sendError } from './_lib/http.js'
+import { MAX_SPEAK_CHARS, checkText } from './_lib/limits.js'
+import { log } from './_lib/log.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const started = Date.now()

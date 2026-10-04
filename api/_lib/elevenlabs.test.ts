@@ -1,7 +1,7 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ELEVEN_MODEL, VOICE_ID, synthesize } from './elevenlabs.ts'
-import { ProviderError } from './gemini.ts'
+import { ELEVEN_MODEL, VOICE_ID, synthesize } from './elevenlabs.js'
+import { ProviderError } from './gemini.js'
 
 async function kindOf(p: Promise<unknown>): Promise<string> {
   try {

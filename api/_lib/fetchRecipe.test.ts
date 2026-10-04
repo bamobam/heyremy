@@ -1,7 +1,7 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { lookup } from 'node:dns/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { FetchRecipeError, decodeEntities, fetchRecipeText, isBlockedIp, isRecipeUrl } from './fetchRecipe.ts'
+import { FetchRecipeError, decodeEntities, fetchRecipeText, isBlockedIp, isRecipeUrl } from './fetchRecipe.js'
 
 vi.mock('node:dns/promises', () => ({ lookup: vi.fn() }))
 const dns = vi.mocked(lookup) as unknown as ReturnType<typeof vi.fn>

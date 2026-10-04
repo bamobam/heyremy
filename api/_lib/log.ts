@@ -1,6 +1,6 @@
 // One JSON line per request. Never pass recipe text, images or keys here.
 
-import type { Verdict } from '../../src/types.ts'
+import type { Verdict } from '../../src/types.js'
 
 export interface LogEntry {
   route: string

@@ -3,7 +3,7 @@
 
 import { lookup } from 'node:dns/promises'
 import { isIP } from 'node:net'
-import { MAX_RECIPE_CHARS } from './limits.ts'
+import { MAX_RECIPE_CHARS } from './limits.js'
 
 const DEFAULT_TIMEOUT_MS = 6_000
 const MAX_REDIRECTS = 3

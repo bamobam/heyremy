@@ -1,17 +1,17 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ProviderError, generateJson } from '../_lib/gemini.ts'
-import { synthesize } from '../_lib/elevenlabs.ts'
-import { FetchRecipeError, fetchRecipeText } from '../_lib/fetchRecipe.ts'
-import check from '../check.ts'
-import parse from '../parse.ts'
-import speak from '../speak.ts'
+import { ProviderError, generateJson } from '../_lib/gemini.js'
+import { synthesize } from '../_lib/elevenlabs.js'
+import { FetchRecipeError, fetchRecipeText } from '../_lib/fetchRecipe.js'
+import check from '../check.js'
+import parse from '../parse.js'
+import speak from '../speak.js'
 
-vi.mock('../_lib/gemini.ts', async (orig) => ({ ...(await orig<typeof import('../_lib/gemini.ts')>()), generateJson: vi.fn() }))
-vi.mock('../_lib/elevenlabs.ts', () => ({ synthesize: vi.fn() }))
+vi.mock('../_lib/gemini.js', async (orig) => ({ ...(await orig<typeof import('../_lib/gemini.js')>()), generateJson: vi.fn() }))
+vi.mock('../_lib/elevenlabs.js', () => ({ synthesize: vi.fn() }))
 // Keep the real isRecipeUrl and FetchRecipeError; only the network fetch is faked.
-vi.mock('../_lib/fetchRecipe.ts', async (orig) => ({ ...(await orig<typeof import('../_lib/fetchRecipe.ts')>()), fetchRecipeText: vi.fn() }))
+vi.mock('../_lib/fetchRecipe.js', async (orig) => ({ ...(await orig<typeof import('../_lib/fetchRecipe.js')>()), fetchRecipeText: vi.fn() }))
 
 const gen = vi.mocked(generateJson)
 const synth = vi.mocked(synthesize)
