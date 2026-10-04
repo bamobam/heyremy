@@ -45,12 +45,15 @@ function setup({ recipe = pancakes }: { recipe?: ParsedRecipe } = {}) {
     isHolding: vi.fn(() => false),
   } satisfies CameraPort
 
-  const controller = createController({ getState: () => state, dispatch, api, camera, now: () => clock })
+  const voice = { isSpeaking: vi.fn(() => false) }
+
+  const controller = createController({ getState: () => state, dispatch, api, camera, now: () => clock, voice })
 
   return {
     controller,
     api,
     camera,
+    voice,
     get state() {
       return state
     },
@@ -366,6 +369,22 @@ describe('moving on by itself after a ready verdict', () => {
     await h.advance(500)
     expect(h.state.stepIndex).toBe(0)
     await h.advance(2500) // the deadline slid back by the time spent holding, then passes
+    expect(h.state.stepIndex).toBe(1)
+  })
+
+  it('waits for Remy to finish speaking the verdict, then counts its full 2 s', async () => {
+    const h = await afterReadyVerdict() // due at 3000
+    let speaking = true
+    h.voice.isSpeaking.mockImplementation(() => speaking)
+
+    await h.advance(3000) // the verdict is still being read out well past the deadline
+    expect(h.state.stepIndex).toBe(0)
+    expect(h.state.autoAdvanceAt).toBeGreaterThan(5000) // pushed back, so the on-screen countdown froze too
+
+    speaking = false
+    await h.advance(1500)
+    expect(h.state.stepIndex).toBe(0) // the countdown resumes where it paused, not from zero
+    await h.advance(1000)
     expect(h.state.stepIndex).toBe(1)
   })
 

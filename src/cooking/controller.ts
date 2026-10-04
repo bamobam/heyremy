@@ -17,6 +17,8 @@ export interface ControllerDeps {
   camera: CameraPort
   /** Milliseconds, on the same clock the "ready" countdown is set with. */
   now(): number
+  /** Remy's voice. A "ready" countdown waits while the verdict is still being spoken. */
+  voice?: { isSpeaking(): boolean }
 }
 
 export interface Controller {
@@ -47,7 +49,7 @@ export function toAppError(error: unknown): AppError {
   return { kind: 'unknown', message: 'Something went wrong.' }
 }
 
-export function createController({ getState, dispatch, api, camera, now }: ControllerDeps): Controller {
+export function createController({ getState, dispatch, api, camera, now, voice }: ControllerDeps): Controller {
   let checkAbort: AbortController | null = null
   let autoAdvance: ReturnType<typeof setInterval> | null = null
 
@@ -83,19 +85,20 @@ export function createController({ getState, dispatch, api, camera, now }: Contr
     dispatch({ type: intent === 'next' ? 'gestureNext' : 'gestureBack' })
   }
 
-  /** After a "ready" verdict, move on 2 s later, unless the cook gestures back, or is mid-gesture. */
+  /** After a "ready" verdict, move on 2 s later, unless the cook gestures back, is mid-gesture, or Remy is still talking. */
   function startAutoAdvance(id: number) {
     stopAutoAdvance()
-    let heldMs = 0
     autoAdvance = setInterval(() => {
       const s = getState()
       if (s.requestId !== id || s.mode !== 'verdict' || s.autoAdvanceAt === null) return stopAutoAdvance()
-      // A gesture being held pauses the countdown: a thumbs-down takes a second of the two.
-      if (camera.isHolding()) {
-        heldMs += TICK_MS
+      // Pausing pushes the deadline back, so the on-screen countdown freezes too. A held gesture pauses it
+      // (a thumbs-down takes a second of the two), and so does the verdict being spoken, which would
+      // otherwise be cut off mid-sentence by the next step.
+      if (camera.isHolding() || voice?.isSpeaking() === true) {
+        dispatch({ type: 'autoAdvanceDelayed', requestId: id, ms: TICK_MS })
         return
       }
-      if (isAutoAdvanceDue(s, now() - heldMs)) {
+      if (isAutoAdvanceDue(s, now())) {
         stopAutoAdvance()
         navigate('next')
       }

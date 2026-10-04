@@ -84,6 +84,8 @@ export type Action =
   | { type: 'checkStarted' }
   | { type: 'checkSucceeded'; requestId: number; verdict: Verdict; now: number }
   | { type: 'checkFailed'; requestId: number; error: AppError }
+  /** Pushes a running "ready" countdown back, e.g. while the verdict is still being spoken. */
+  | { type: 'autoAdvanceDelayed'; requestId: number; ms: number }
   | { type: 'screenTapped' }
   | { type: 'errorDismissed' }
   | { type: 'restart' }
@@ -207,6 +209,10 @@ export function cookingReducer(state: CookingState, action: Action): CookingStat
         verdict: action.verdict,
         autoAdvanceAt: action.verdict.status === 'ready' ? action.now + AUTO_ADVANCE_MS : null,
       }
+
+    case 'autoAdvanceDelayed':
+      if (state.mode !== 'verdict' || state.autoAdvanceAt === null || action.requestId !== state.requestId) return state
+      return { ...state, autoAdvanceAt: state.autoAdvanceAt + action.ms }
 
     case 'checkFailed':
       if (state.mode !== 'checking' || action.requestId !== state.requestId) return state

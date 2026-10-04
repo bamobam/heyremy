@@ -297,6 +297,14 @@ describe('checks', () => {
     expect(s).toMatchObject({ mode: 'verdict', verdict: ready, autoAdvanceAt: 10_000 + AUTO_ADVANCE_MS })
   })
 
+  it('pushes a running countdown back, but only for the current check', () => {
+    const s = run(checking(), { type: 'checkSucceeded', requestId: 1, verdict: ready, now: 10_000 })
+    expect(cookingReducer(s, { type: 'autoAdvanceDelayed', requestId: 1, ms: 100 }).autoAdvanceAt).toBe(10_000 + AUTO_ADVANCE_MS + 100)
+    expect(cookingReducer(s, { type: 'autoAdvanceDelayed', requestId: 0, ms: 100 })).toBe(s)
+    const notReadyState = run(checking(), { type: 'checkSucceeded', requestId: 1, verdict: notReady, now: 0 })
+    expect(cookingReducer(notReadyState, { type: 'autoAdvanceDelayed', requestId: 1, ms: 100 })).toBe(notReadyState)
+  })
+
   it.each([
     ['not ready', notReady],
     ['unsure', unsure],

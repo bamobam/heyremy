@@ -59,12 +59,22 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     cameraRef.current = camera
   })
+  // True while a verdict is being spoken (including fetching its audio), so a "ready" countdown waits for it.
+  const verdictSpeaking = useRef(false)
+  const verdictRun = useRef(0)
   const flow = useMemo(() => {
     const port: CameraPort = {
       grabForCheck: () => cameraRef.current.grabForCheck(),
       isHolding: () => cameraRef.current.holdProgress.intent !== null,
     }
-    return createController({ getState: () => stateRef.current, dispatch, api, camera: port, now: () => performance.now() })
+    return createController({
+      getState: () => stateRef.current,
+      dispatch,
+      api,
+      camera: port,
+      now: () => performance.now(),
+      voice: { isSpeaking: () => verdictSpeaking.current },
+    })
   }, [api, dispatch])
   useEffect(() => () => flow.dispose(), [flow])
 
@@ -201,7 +211,13 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
     const was = previousMode.current
     previousMode.current = mode
     if (mode === 'checking') void audio.play(LOOKING_CLIP, FIXED_LINES[LOOKING_CLIP])
-    else if (mode === 'verdict' && verdict) void audio.speakLive(verdict.feedback)
+    else if (mode === 'verdict' && verdict) {
+      const run = ++verdictRun.current
+      verdictSpeaking.current = true
+      void audio.speakLive(verdict.feedback).finally(() => {
+        if (run === verdictRun.current) verdictSpeaking.current = false
+      })
+    }
     else if (was === 'checking' && mode === 'idle') audio.stop()
   }, [mode, verdict, audio])
 
