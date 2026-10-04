@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ProviderError, generateJson } from './_lib/gemini.ts'
-import { synthesize } from './_lib/elevenlabs.ts'
-import check from './check.ts'
-import parse from './parse.ts'
-import speak from './speak.ts'
+import { ProviderError, generateJson } from '../_lib/gemini.ts'
+import { synthesize } from '../_lib/elevenlabs.ts'
+import check from '../check.ts'
+import parse from '../parse.ts'
+import speak from '../speak.ts'
 
-vi.mock('./_lib/gemini.ts', async (orig) => ({ ...(await orig<typeof import('./_lib/gemini.ts')>()), generateJson: vi.fn() }))
-vi.mock('./_lib/elevenlabs.ts', () => ({ synthesize: vi.fn() }))
+vi.mock('../_lib/gemini.ts', async (orig) => ({ ...(await orig<typeof import('../_lib/gemini.ts')>()), generateJson: vi.fn() }))
+vi.mock('../_lib/elevenlabs.ts', () => ({ synthesize: vi.fn() }))
 
 const gen = vi.mocked(generateJson)
 const synth = vi.mocked(synthesize)

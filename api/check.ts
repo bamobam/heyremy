@@ -7,7 +7,7 @@ import { guard, sendError, sendJson } from './_lib/http.ts'
 import { MAX_CHECK_BODY_BYTES, MAX_CUE_CHARS, MAX_STEP_CHARS, checkJpegBase64, checkText } from './_lib/limits.ts'
 import { log } from './_lib/log.ts'
 import { ValidationError, validateVerdict, verdictSchema } from './_lib/schemas.ts'
-import { CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './prompts/check.ts'
+import { CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.ts'
 
 const GEMINI_TIMEOUT_MS = 7_000 // the client gives up at 8 s
 

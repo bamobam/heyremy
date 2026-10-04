@@ -1,7 +1,7 @@
 // Gemini REST call that returns parsed JSON (SYSTEM_DESIGN 10.4). Never logs the image or recipe.
 
 import type { ApiErrorKind } from '../../src/types.ts'
-import type { Part } from '../prompts/check.ts'
+import type { Part } from '../_prompts/check.ts'
 
 // Verify this is a current Flash model in Google AI Studio before the demo.
 export const GEMINI_MODEL = 'gemini-2.5-flash'

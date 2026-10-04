@@ -6,7 +6,7 @@ import { guard, sendError, sendJson } from './_lib/http.ts'
 import { MAX_RECIPE_CHARS, checkText } from './_lib/limits.ts'
 import { log } from './_lib/log.ts'
 import { ValidationError, recipeSchema, validateRecipe } from './_lib/schemas.ts'
-import { PARSE_SYSTEM, PARSE_TEMPERATURE, buildParseParts } from './prompts/parse.ts'
+import { PARSE_SYSTEM, PARSE_TEMPERATURE, buildParseParts } from './_prompts/parse.ts'
 
 const GEMINI_TIMEOUT_MS = 18_000 // the client gives up at 20 s
 
