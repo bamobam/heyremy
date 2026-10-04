@@ -119,6 +119,30 @@ function volumePieces(tsp: number): Piece[] | 'pinch' {
   return smallPieces(t)
 }
 
+// ---------- Singular and plural for whole items ----------
+
+/** Words that read the same either way, such as watercress and asparagus. */
+const SAME_EITHER_WAY = /(ss|us|is)$/
+
+const looksPlural = (name: string) => name.endsWith('s') && !SAME_EITHER_WAY.test(name)
+
+function singular(name: string): string {
+  if (!looksPlural(name)) return name
+  if (/ies$/.test(name)) return `${name.slice(0, -3)}y`
+  if (/(oes|ches|shes|xes|sses)$/.test(name)) return name.slice(0, -2)
+  return name.slice(0, -1)
+}
+
+function plural(name: string): string {
+  if (looksPlural(name) || SAME_EITHER_WAY.test(name)) return name
+  if (/[^aeiou]y$/.test(name)) return `${name.slice(0, -1)}ies`
+  if (/(s|x|ch|sh|tomato|potato)$/.test(name)) return `${name}es`
+  return `${name}s`
+}
+
+/** The name of a whole item for this many of it: "1 egg", "2 eggs". Anything not above one is singular. */
+const nounFor = (name: string, count: number) => (count > 1 ? plural(name) : singular(name))
+
 // ---------- Words for units ----------
 
 const SPOKEN_UNITS: Record<string, string> = {
@@ -160,8 +184,8 @@ function render(i: Ingredient, factor: number): Rendered {
     if (!Number.isInteger(i.amount)) {
       // A fraction to begin with, such as half an onion: keep it a fraction.
       return {
-        screen: `${formatQuantity(scaled, 'screen')} ${i.name}`,
-        spoken: `${formatQuantity(scaled, 'spoken')} ${i.name}`,
+        screen: `${formatQuantity(scaled, 'screen')} ${nounFor(i.name, scaled)}`,
+        spoken: `${formatQuantity(scaled, 'spoken')} ${nounFor(i.name, scaled)}`,
         note: null,
       }
     }
@@ -169,9 +193,10 @@ function render(i: Ingredient, factor: number): Rendered {
     const rounded = Math.max(1, Math.round(scaled))
     const note =
       Math.abs(scaled - rounded) >= 0.25
-        ? `${formatQuantity(scaled, 'screen')} ${i.name} rounds to ${rounded} ${i.name}`
+        ? `${formatQuantity(scaled, 'screen')} ${nounFor(i.name, scaled)} rounds to ${rounded} ${nounFor(i.name, rounded)}`
         : null
-    return { screen: `${rounded} ${i.name}`, spoken: `${numberWord(rounded)} ${i.name}`, note }
+    const name = nounFor(i.name, rounded)
+    return { screen: `${rounded} ${name}`, spoken: `${numberWord(rounded)} ${name}`, note }
   }
 
   if (i.unit in TSP_PER) {
