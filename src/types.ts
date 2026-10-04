@@ -42,52 +42,42 @@ export interface Verdict {
   feedback: string
 }
 
-// ---------- Requests ----------
-
-export interface ParseRequest {
-  recipe: string
-}
-
-export interface CheckRequest {
-  /** Base64 JPEG, no data: prefix. */
-  image: string
-  cue: string
-  /** The step text with placeholders filled in, for context. */
-  step: string
-}
-
-/** Response body is audio/mpeg. */
-export interface SpeakRequest {
-  text: string
-}
-
-// ---------- Camera → state ----------
-
+/** What a held gesture asks for. Thumbs-up = next, thumbs-down = back, open palm = check. */
 export type GestureIntent = 'next' | 'back' | 'check'
 
+/** Fired once when a gesture has been held long enough. */
 export interface GestureEvent {
   intent: GestureIntent
+  /** performance.now() when the hold completed. */
   at: number
 }
 
+/** Drives the hold ring while a gesture is being held. */
 export interface HoldProgress {
-  /** What is being held; null when nothing. */
+  /** The gesture being held, or null when nothing is. */
   intent: GestureIntent | null
-  /** 0..1, drives the ring. */
+  /** 0..1 */
   progress: number
 }
 
-// ---------- API errors (client and server agree) ----------
+// ---------- Requests to the backend ----------
+
+/** POST /api/parse */
+export type ParseRequest = { recipe: string }
+/** POST /api/check. `image` is a base64 JPEG with no data: prefix. */
+export type CheckRequest = { image: string; cue: string; step: string }
+/** POST /api/speak. The response is audio/mpeg. */
+export type SpeakRequest = { text: string }
+
+// ---------- API errors (the client and the server agree on these) ----------
 
 export type ApiErrorKind =
   | 'bad_request' // 400: input too large or malformed
   | 'unprocessable' // 422: model output could not be validated
   | 'upstream' // 502: Gemini or ElevenLabs failed
   | 'rate_limited' // 429
-  | 'timeout' // client-side only
-  | 'aborted' // client-side only
+  | 'timeout' // client side only
+  | 'aborted' // client side only
   | 'unknown'
 
-export interface ApiErrorBody {
-  error: { kind: ApiErrorKind; message: string }
-}
+export type ApiErrorBody = { error: { kind: ApiErrorKind; message: string } }

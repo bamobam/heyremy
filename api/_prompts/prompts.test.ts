@@ -1,3 +1,4 @@
+// @vitest-environment node -- server code runs on Node, not in the browser
 import { describe, expect, it } from 'vitest'
 import { validateRecipe } from '../_lib/schemas.ts'
 import { buildCheckParts, CHECK_SYSTEM, CHECK_TEMPERATURE } from './check.ts'

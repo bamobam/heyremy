@@ -1,0 +1,17 @@
+Camera:
+
+    MacBook Air Camera:
+
+      Model ID: MacBook Air Camera
+      Unique ID: 6C707041-05AC-0011-0004-000000000001
+
+    USB Camera VID:1133 PID:2085:
+
+      Model ID: UVC Camera VendorID_1133 ProductID_2085
+      Unique ID: 0x1110000046d0825
+
+    iPhone Camera:
+
+      Model ID: iPhone18,2
+      Unique ID: 36C4CACD-48E7-4C4E-AFC1-285700000001
+

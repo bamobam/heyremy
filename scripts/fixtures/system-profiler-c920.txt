@@ -1,0 +1,17 @@
+Camera:
+
+    HD Pro Webcam C920:
+
+      Model ID: UVC Camera VendorID_1133 ProductID_2194
+      Unique ID: 0x1130000046d0892
+
+    MacBook Air Camera:
+
+      Model ID: MacBook Air Camera
+      Unique ID: 6C707041-05AC-0011-0004-000000000001
+
+    iPhone Camera:
+
+      Model ID: iPhone18,2
+      Unique ID: 36C4CACD-48E7-4C4E-AFC1-285700000001
+

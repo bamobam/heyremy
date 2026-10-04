@@ -1,3 +1,4 @@
+// @vitest-environment node -- server code runs on Node, not in the browser
 import { describe, expect, it } from 'vitest'
 import { placeholders, slugify, validateRecipe, validateVerdict, ValidationError } from './schemas.ts'
 

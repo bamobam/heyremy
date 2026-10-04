@@ -1,3 +1,4 @@
+// @vitest-environment node -- server code runs on Node, not in the browser
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { describe, expect, it } from 'vitest'
 import { guard, sendAudio, sendError, sendJson } from './http.ts'

@@ -1,3 +1,4 @@
+// @vitest-environment node -- server code runs on Node, not in the browser
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProviderError, generateJson } from '../_lib/gemini.ts'

@@ -255,15 +255,20 @@ useHatCam → frameLoop → recognizer → gestureMapper → gestureFilter → G
 
 ```ts
 function useHatCam(): {
-  videoRef: RefObject<HTMLVideoElement>;
-  status: 'requesting' | 'ready' | 'error';
+  attachVideo: (el: HTMLVideoElement | null) => void;   // callback ref for the <video>
+  status: 'connecting' | 'live' | 'reconnecting' | 'busy' | 'error';
+  error: 'denied' | 'not_found' | 'busy' | 'lost' | 'unknown' | null;
+  reconnects: number;
+  stalls: number;
 }
 ```
 
-- Lists cameras with `enumerateDevices()` and opens the one whose label contains "Logitech".
-- Requests `{ width: 1280, height: 720, frameRate: 30, deviceId }`.
-- If the camera is missing, denied or unplugged, `status` becomes `'error'` and the UI shows "Camera not found. Plug in the hat cam and reload."
+- Lists cameras with `enumerateDevices()` and opens the Logitech C270 or C920 by USB id (`046d:0825`, `046d:0892`), never any other camera.
+- Requests `{ width: 1280, height: 720, frameRate: 30 }` as ideal values.
+- **It keeps the camera alive.** If the cable is pulled, `status` becomes `'reconnecting'` and the same camera is reopened as soon as it is listed again (a device change event, backed up by a check every 2 s). If the stream freezes without ending (no frame for 2 s), it is restarted. If another app holds the camera, `status` is `'busy'` and it retries every 2 s. Only a refused camera permission is final (`'error'`).
+- A hidden tab is not treated as a freeze, since browsers send it no frames.
 - Stops all tracks on unmount. Needs a secure context (`localhost` or heyremy.tech).
+- The decisions are in the pure `watchdog.ts`; `keepHatCam.ts` runs them against the camera APIs.
 
 ### 5.2 `frameLoop.ts`
 
@@ -347,6 +352,8 @@ Transitions:
 
 While the controller has gestures disabled (during a check), the filter stays `idle` and drops samples.
 
+**One fire per hold.** Without a further rule, a thumb kept up for 4 seconds would fire twice (hold, 2 s cooldown, hold again) and skip a step. So after a fire, the same gesture must be let go before it can fire again: more than 3 frames in a row without it, at any point after the fire, count as letting go. If it is still held when the cooldown ends, the filter waits (`rearm`) until it is released. A different gesture can start as soon as the cooldown ends. The code is `src/camera/gestureFilter.ts`.
+
 ### 5.6 `handPresence.ts` (pure)
 
 ```ts
@@ -367,20 +374,34 @@ function grabSharpestFrame(video: HTMLVideoElement, opts?: { frames?: 6; spanMs?
 2. For each, convert to grayscale and compute the variance of a Laplacian (a standard sharpness score). Higher is sharper.
 3. Redraw the sharpest at the output size (long side 768 px) and encode as JPEG at quality 0.8, roughly 80–150 KB.
 
-### 5.8 `useGestures.ts` (glue hook)
+### 5.8 `useCamera.ts` (the one hook the controller uses)
 
-Combines 5.2–5.6 and exposes what the controller and UI need:
+`useCamera` is seam A. It combines the camera connection (5.1), detection and gestures (5.2 to 5.6, through `useGestures`) and the photo for a check (5.7):
 
 ```ts
-function useGestures(video: RefObject<HTMLVideoElement>, opts: {
-  enabled: boolean;
-  onGesture(e: GestureEvent): void;
+function useCamera(opts: {
+  enabled?: boolean;                    // turn gesture reading off; the camera stays connected
+  paused?: boolean;                     // set during a check: gestures cannot fire, the hand is still watched
+  onGesture?(e: GestureEvent): void;    // once per completed hold
 }): {
-  holdProgress: HoldProgress;
+  attachVideo: (el: HTMLVideoElement | null) => void;   // put on the <video> that shows the hat cam
+  status: 'connecting' | 'live' | 'reconnecting' | 'busy' | 'error';
+  holdProgress: HoldProgress;           // for the hold ring
   handVisible: boolean;
-  status: 'loading' | 'ready' | 'error';
+  ready: boolean;                       // camera live and gestures being read
+  grabForCheck(): Promise<GrabResult>;  // wait for the palm to leave, then the sharpest frame as a JPEG
+  // plus label, error, reconnects, stalls, detection, isHandVisible()
 }
 ```
+
+Rules the controller can rely on:
+
+- **Gestures only run while the camera is live.** If the cable drops, any half-held gesture is forgotten and a fresh hold is needed after reconnecting, so nothing fires by surprise.
+- **Pausing is not disabling.** While `paused`, no gesture fires, but the hand is still watched. A gesture still held when the pause ends has to be let go before it can fire again, so a palm held through a check does not start a second one.
+- **`grabForCheck`** waits up to 1.5 s for the hand to leave the frame, then captures. If the hand is still there it captures anyway (the check can answer "unsure"). It rejects with `camera_unavailable` if the camera is not live, or drops while waiting.
+- A gap of more than 500 ms between frames (hidden tab, stalled video) also starts a hold over.
+
+How the controller's check flow uses it: on a `check` gesture it sets `paused`, plays the "Hold still" clip, awaits `grabForCheck()`, sends the JPEG to `/api/check`, and clears `paused` when the verdict is shown.
 
 ### Hour-1 test
 
@@ -505,6 +526,8 @@ stepLabel(s): string              // "Step 3 of 8"
 scaledIngredients(s): { id; label: string; changed: boolean }[]   // for the prep list
 canStart(s): boolean              // phase 'prep' and every clip for s.servings is ready
 gesturesEnabled(s): boolean       // cooking and mode !== 'checking'
+currentClipId(s): string | null   // the audio clip for the step being cooked, at s.servings
+isAutoAdvanceDue(s, now): boolean // a "ready" verdict's 2 s countdown has run out
 ```
 
 ### 6.7 `scaling.ts` (pure)
@@ -517,12 +540,24 @@ function stepClipId(step: Step, servings: number): string   // "step-3" or "step
 ```
 
 - `factor = chosen servings / recipe.servings`.
-- Screen form rounds to kitchen fractions (⅛ ¼ ⅓ ½ ⅔ ¾) and splits awkward amounts into two units, e.g. ¾ cup at half becomes "⅓ cup + 1 tbsp". Spoken form says it in words: "a third of a cup plus a tablespoon".
+- Screen form rounds to kitchen fractions (⅛ ¼ ⅓ ½ ⅔ ¾). Volumes are worked out in teaspoons and written as the fewest measurable pieces: a clean fraction of a cup (¼ cup or more) stays in cups, otherwise tablespoons and teaspoons, and more than a cup that is not a clean fraction becomes whole cups plus tablespoons. So ¾ cup at half is exactly "6 tbsp", and 1 cup at 1.375 is "1 cup + 6 tbsp". Spoken form says it in words: "six tablespoons of flour", "half a cup of flour". (An earlier example here, "⅓ cup + 1 tbsp", was about 6% too much.)
+- Metric amounts round to whole numbers from 10 up and one decimal below. Any other unit (oz, lb) uses kitchen fractions.
+- `describeIngredient(i, factor)` returns the screen text, the spoken text, the rounding note and whether the amount changed, in one go; `formatAmount` picks one form.
 - Whole items with no unit (eggs) round to whole numbers, never below 1, with a note when the rounding is big ("½ egg rounds to 1 small egg").
 - `amount: null` ("a pinch", "to taste") is never scaled.
+- Whole items take the singular or plural to match the count ("2 eggs" halved is "1 egg"), so the parse prompt can give a name in either form.
 - `{id}` fills in as amount + unit + name ("½ cup flour"). An unknown id is left as the bare name; the server rejects unknown ids, so this shouldn't happen.
 
 ### 6.8 `controller.ts`
+
+**Built so far (demo MVP): gestures, steps and checks, with no audio.** The controller is in `src/cooking/controller.ts` with its ports in `ports.ts`. It does the parse, servings, start, navigate, check and auto-advance flows below, and shows everything on screen. Differences from the spec that follows:
+
+- **No audio yet.** There is no `voiceFlow`, no clip cache and no spoken verdict. `canStart` is true as soon as nothing is left to voice, so Start is on straight away. The spec below describes where audio goes back in.
+- **The camera port is `{ grabForCheck(): Promise<{ blob }>, isHolding(): boolean }`**, not `grabFrame` plus `handVisible`. `grabForCheck` (from `useCamera`) already waits for the palm to leave the frame, so the controller does not.
+- **The ready countdown's pause is kept inside the controller.** While a gesture is being held, it tracks the time held and slides the deadline back by that much; the reducer has no action for it.
+- **Pausing gestures during a check is the provider's job**: pass `paused` to `useCamera` while `mode === 'checking'`.
+
+The spec:
 
 The controller subscribes to gesture events and dispatches actions. It owns an `AbortController` for the in-flight check, the auto-advance timer, and references to `grabFrame` and `handVisible`.
 
@@ -616,6 +651,8 @@ The pause matters because a 👎 hold takes 1 s of the 2 s window. Without it, t
 - Exposes `{ state, controller, holdProgress, camera }` through context, and the hooks `useCooking()` and `useHoldProgress()`.
 
 ## 7. API client (Nam)
+
+**Built so far (demo MVP):** `src/api/` has `errors.ts`, `http.ts`, `guards.ts`, `base64.ts`, `client.ts` (`parseRecipe` and `checkStep`), `mock.ts` and `index.ts`. There is no `speak`, `speakMany` or queue, because audio is deferred. `createApi()` returns the real client, or the mock when the URL has `?mock` (`?mock=slow` makes every call take 6 s, `?mock=fail` makes every call fail) or `VITE_MOCK_API=1`. The mock gives the pancake recipe for any text, then verdicts in turn: not ready, unsure, ready. The response guards go a little further than the shapes: a recipe is rejected if a checkable step has no cue, or a step names an ingredient id the recipe does not have.
 
 The API client is the only code in the browser that talks to the backend. The controller sees typed functions, never `fetch`.
 
@@ -978,7 +1015,7 @@ Outside the app (ADR 0001 and PLAN): if the hat rig fails, the same camera goes 
 | --- | --- | --- |
 | `gestureFilter` | Unit tests with scripted samples: hold, flicker, cooldown, switching intent | Nam |
 | `gestureMapper`, `handPresence` | Unit tests | Nam |
-| `scaling` | Unit tests: halving ¾ cup → "⅓ cup + 1 tbsp", eggs rounding, `null` amounts, spoken form, unknown ids | Nam |
+| `scaling` | Unit tests: halving ¾ cup → "6 tbsp", cup, tablespoon and teaspoon splits, metric, eggs rounding, `null` amounts, spoken form, unknown ids, and a sweep that no amount ever prints NaN or undefined | Nam |
 | `cookingReducer` | Unit tests for every action, including stale `requestId`, stale `servings` clips, 👎 cancelling auto-advance, ignored gestures in `checking` | Nam |
 | `controller` | Tests with fake `api`, `audio`, `camera` and clock, including auto-advance pausing during a hold | Nam |
 | `schemas` (server) | Unit tests with malformed model output, off-by-one ids, unknown placeholders, over-long feedback, bad `status` | Havier |
