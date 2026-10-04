@@ -23,15 +23,29 @@
 .vd-bob { animation: vd-bob 3s ease-in-out infinite; transform-origin: 50% 100%; }
 @keyframes vd-bob { 50% { transform: translateY(-8px) rotate(-2deg) } }
 
-/* Welcome: B's split */
+/* Welcome: B's split, two even panels; Remy stands inside the right panel next to his bubble */
 .vd-paste { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
-.vd-paste-left { position: relative; background: var(--umber); color: var(--cream); padding: 40px 56px; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden; }
-.vd-paste-left .vd-logo { position: absolute; top: 28px; left: 56px; }
-.vd-paste-left h1 { font-size: 72px; line-height: 1; margin: 0; color: var(--brand); }
+.vd-paste-left, .vd-paste-right { padding: 96px 64px 64px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+.vd-paste-left { background: var(--umber); color: var(--cream); }
+.vd-paste-left .vd-logo { position: absolute; top: 28px; left: 64px; }
+.vd-paste-copy { display: flex; flex-direction: column; gap: 18px; }
+.vd-catch { align-self: flex-start; font-size: 18px; font-weight: 800; color: var(--umber); background: #DE9762; padding: 8px 16px; border-radius: 999px; transform: rotate(-2deg); }
+.vd-paste-left h1 { font-size: 62px; line-height: 1; margin: 0; color: var(--brand); }
 .vd-paste-left p { font-size: 21px; line-height: 1.5; max-width: 440px; color: #EDCEBA; margin: 0; }
-.vd-paste-remy { position: absolute; right: 24px; bottom: -20px; width: 210px; }
-.vd-paste-right { background: #EDCEBA; padding: 56px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
-.vd-paste-right textarea { height: 230px; border: 2px solid var(--ink); border-radius: 20px; padding: 18px; font: 400 17px/1.6 "M PLUS 2", sans-serif; background: var(--cream); color: var(--ink); resize: none; box-shadow: 6px 6px 0 var(--ink); }
+.vd-hints { display: flex; gap: 10px; flex-wrap: wrap; }
+.vd-hints span { word-spacing: 4px; font-size: 16px; font-weight: 700; padding: 8px 14px; border-radius: 999px; background: rgba(255,247,234,.1); border: 1px solid rgba(255,247,234,.25); }
+.vd-paste-right { background: #EDCEBA; gap: 18px; }
+.vd-paste-right textarea { height: 170px; border: 2px solid var(--ink); border-radius: 20px; padding: 16px 18px; font: 400 17px/1.6 "M PLUS 2", sans-serif; background: var(--cream); color: var(--ink); resize: none; box-shadow: 6px 6px 0 var(--ink); }
+.vd-meet { display: flex; align-items: flex-end; gap: 14px; }
+.vd-stand { position: relative; flex: none; width: 150px; display: flex; flex-direction: column; align-items: center; }
+.vd-stand img { width: 100%; position: relative; z-index: 1; }
+.vd-stand i { width: 70%; height: 14px; margin-top: -10px; border-radius: 50%; background: rgba(29,27,32,.18); animation: vd-shadow 3s ease-in-out infinite; }
+.vd-stand.big { width: 230px; }
+@keyframes vd-shadow { 50% { transform: scaleX(.85); opacity: .7 } }
+.vd-bubble.left { border-radius: 24px 24px 24px 6px; margin-bottom: 70px; position: relative; }
+.vd-bubble.left::before { content: ''; position: absolute; left: -14px; bottom: 14px; border: 8px solid transparent; border-right: 12px solid var(--ink); }
+.vd-bubble.small.left { margin-bottom: 20px; }
+.vd-bubble b { color: var(--umber); }
 
 /* Reading: B's slate field + ticker */
 .vd-ticker { display: flex; flex-direction: column; gap: 8px; font-size: 22px; font-weight: 700; }
@@ -84,6 +98,7 @@
 .vd-verdict { display: flex; align-items: center; gap: 28px; animation: vd-pop .5s .15s cubic-bezier(.2,1.4,.4,1) backwards; }
 .vd-verdict img { width: 240px; animation: vd-bob 2s ease-in-out infinite; }
 .vd-verdict > div { max-width: 600px; }
+.vd-catchline { font-size: 26px; font-weight: 800; color: var(--cream); opacity: .9; }
 .vd-verdict p { font-size: 56px; font-weight: 800; margin: 8px 0 0; line-height: 1.1; color: var(--cream); }
 @keyframes vd-pop { from { opacity: 0; transform: scale(.8) } }
 
