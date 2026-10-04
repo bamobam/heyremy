@@ -133,11 +133,11 @@ export function VariantD({ flow }: { flow: Flow }) {
             <div className="vd-dots">{recipe.steps.map((_, i) => <i key={i} className={i < flow.step ? 'd' : i === flow.step ? 'n' : ''} style={i === flow.step ? { background: f.accent } : undefined} />)}</div>
           </header>
           <div className="vd-rise">
-            <div className="vd-track" style={{ transform: `translateX(calc(${-flow.step} * (70% + 32px)))` }}>
+            <div className="vd-track" style={{ transform: `translateX(calc(${-flow.step} * (70vw + 32px)))` }}>
               {recipe.steps.map((s, i) => {
                 const c = FIELDS[i % FIELDS.length]
                 return (
-                  <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg, '--card': c.card } as React.CSSProperties}>
+                  <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg, '--card': c.card, '--accent': c.accent } as React.CSSProperties}>
                     <div className="vd-step-text">
                     <div className="vd-num" style={{ background: c.accent, color: c.card, clipPath: shape(STEP_SHAPES[i % STEP_SHAPES.length], i * 20) }}>{i + 1}</div>
                     <h2>{s.text}</h2>
@@ -145,17 +145,15 @@ export function VariantD({ flow }: { flow: Flow }) {
                     {s.cue && <div className="vd-cue">✋ Ready when: <b>{s.cue}</b></div>}
                     </div>
                     <div className="vd-step-media" style={{ background: c.back }}>
-                      {i === flow.step
-                        ? <CameraView cam={cam} primary={flow.screen === 'cooking'} className="vd-step-cam" style={{ '--cam-bg': c.back, '--cam-fg': '#FFF7EA' } as React.CSSProperties} />
-                        : <div className="vd-step-cam vd-step-cam--ghost" aria-hidden />}
-                      {i === flow.step && flow.check.kind !== 'looking' && s.checkable && <p className="vd-step-hint">Keep the bowl inside the picture, then show ✋.</p>}
-                      {i === flow.step && flow.check.kind === 'looking' && (
-                        <>
-                          <i className="vd-scan" aria-hidden />
-                          <div className="vd-peek"><RiggedRemy pose="stir" /></div>
-                        </>
-                      )}
+                      <div className="vd-cam-frame" style={{ background: c.back }}>
+                        {i === flow.step
+                          ? <CameraView cam={cam} primary={flow.screen === 'cooking'} className="vd-step-cam" style={{ '--cam-bg': c.back, '--cam-fg': '#FFF7EA' } as React.CSSProperties} />
+                          : <div className="vd-step-cam vd-step-cam--ghost" aria-hidden />}
+                        {i === flow.step && flow.check.kind === 'looking' && <i className="vd-scan" aria-hidden />}
+                      </div>
+                      <p className="vd-step-hint" style={{ visibility: i === flow.step && s.checkable && flow.check.kind !== 'looking' ? 'visible' : 'hidden' }}>Keep the bowl inside the picture, then show ✋.</p>
                     </div>
+                    {i === flow.step && flow.check.kind === 'looking' && <div className="vd-peek"><RiggedRemy pose="stir" /></div>}
                   </article>
                 )
               })}
