@@ -1,0 +1,7 @@
+/* PROTOTYPE (throwaway): head rocks on a 3.2 s beat; the shape breathes on a 2.4 s beat so the two never sync up. */
+.remy-badge { position: relative; flex: none; display: flex; align-items: center; justify-content: center; }
+.remy-badge__shape { position: absolute; inset: 0; animation: badge-zoom 2.4s ease-in-out infinite; }
+.remy-badge__head { position: relative; width: 78%; transform-origin: 50% 85%; animation: badge-rock 3.2s ease-in-out infinite; }
+@keyframes badge-zoom { 0%, 100% { transform: scale(.86) rotate(0deg) } 50% { transform: scale(1.04) rotate(12deg) } }
+@keyframes badge-rock { 0%, 100% { transform: rotate(-7deg) } 50% { transform: rotate(7deg) } }
+@media (prefers-reduced-motion: reduce) { .remy-badge__shape, .remy-badge__head { animation: none; } }

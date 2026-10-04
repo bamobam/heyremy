@@ -1,0 +1,17 @@
+/* PROTOTYPE (throwaway): Remy flipbook. Container uses Remy 2's frame (2290 x 2200); Remy 1 is scaled 1.214x and placed so the eyes line up. */
+.flip-remy { position: relative; width: 100%; aspect-ratio: 2290 / 2200; flex: none; }
+.flip-remy > img.flip-f1, .flip-remy > img.flip-f2 { position: absolute; display: block; z-index: auto; max-width: none; }
+.flip-remy > img.flip-f2 { inset: 0; width: 100%; height: 100%; }
+.flip-remy > img.flip-f1 { left: var(--f1-left, -2.4%); top: var(--f1-top, -2.9%); width: var(--f1-width, 92.3%); height: auto; }
+/* Both frames swap on hard steps, like a flipbook. */
+.flip-f1 { animation: flip-a var(--flip, 1.2s) steps(1, end) infinite; }
+.flip-f2 { animation: flip-b var(--flip, 1.2s) steps(1, end) infinite; }
+@keyframes flip-a { 0% { opacity: 1 } 50% { opacity: 0 } }
+@keyframes flip-b { 0% { opacity: 0 } 50% { opacity: 1 } }
+.pose-idle { --flip: 2.4s; }
+.pose-wave { --flip: 1s; }
+.pose-stir { --flip: .5s; }
+.pose-cheer { --flip: .36s; }
+.pose-cheer { animation: flip-hop .72s ease-in-out infinite; }
+@keyframes flip-hop { 50% { transform: translateY(-5%) } }
+@media (prefers-reduced-motion: reduce) { .flip-f1 { animation: none; opacity: 1 } .flip-f2 { animation: none; opacity: 0 } .pose-cheer { animation: none } }

@@ -1,0 +1,678 @@
+/* The shared components of §9.3. Each block is named after the component it styles. */
+
+/* --- RemyBadge: his head rocks on 3.2 s, the shape breathes on 2.4 s, so the two never sync. --- */
+.ui-badge {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-badge__shape {
+  position: absolute;
+  inset: 0;
+  animation: badge-zoom 2.4s ease-in-out infinite;
+}
+
+.ui-badge__head {
+  position: relative;
+  width: 78%;
+  transform-origin: 50% 85%;
+  animation: badge-rock 3.2s ease-in-out infinite;
+}
+
+@keyframes badge-zoom {
+  0%,
+  100% {
+    transform: scale(0.86) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(12deg);
+  }
+}
+
+@keyframes badge-rock {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+/* --- RemyFlipbook: two frames of the full mascot, swapping on hard steps. Frame 1 is scaled and
+   offset into frame 2's box so the hat and feet line up. --- */
+.ui-flip {
+  position: relative;
+  flex: none;
+  width: 100%;
+  aspect-ratio: 2290 / 2200;
+}
+
+.ui-flip__f2 {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+.ui-flip__f1 {
+  position: absolute;
+  top: var(--f1-top, -2.9%);
+  left: var(--f1-left, -2.4%);
+  display: block;
+  width: var(--f1-width, 92.3%);
+  height: auto;
+  max-width: none;
+}
+
+.ui-flip--idle {
+  --flip: 2.4s;
+}
+
+.ui-flip--wave {
+  --flip: 1s;
+}
+
+.ui-flip--stir {
+  --flip: 0.5s;
+}
+
+.ui-flip--cheer {
+  --flip: 0.36s;
+  animation: flip-hop 0.72s ease-in-out infinite;
+}
+
+.ui-flip__f1 {
+  animation: flip-a var(--flip, 1.2s) steps(1, end) infinite;
+}
+
+.ui-flip__f2 {
+  animation: flip-b var(--flip, 1.2s) steps(1, end) infinite;
+}
+
+@keyframes flip-a {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes flip-b {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes flip-hop {
+  50% {
+    transform: translateY(-5%);
+  }
+}
+
+/* --- RemyLoader: the parsing screen. A blob morphs under him while he stirs. --- */
+.ui-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ui-loader__stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.ui-loader__blob {
+  position: absolute;
+  inset: 8% -6% 0;
+  background: var(--pink);
+  opacity: 0.55;
+  animation: remy-morph 4.8s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+
+.ui-loader__img {
+  position: relative;
+  width: 100%;
+  transform-origin: 50% 100%;
+  animation: remy-stir 1.2s ease-in-out infinite;
+}
+
+.ui-loader__steam {
+  display: flex;
+  gap: 10px;
+  height: 18px;
+}
+
+.ui-loader__steam i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--apricot);
+  animation: remy-steam 1.2s ease-in-out infinite;
+}
+
+.ui-loader__steam i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ui-loader__steam i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.ui-loader__label {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@keyframes remy-stir {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+  50% {
+    transform: none;
+  }
+  75% {
+    transform: translateY(-6px) rotate(2deg);
+  }
+}
+
+@keyframes remy-steam {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: translateY(4px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+/* --- CameraView: Remy's eye. Hosts set --cam-ring, --cam-bg and --cam-fg. --- */
+.ui-cam {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  border-radius: 28px;
+  background: var(--cam-bg, var(--slate));
+  color: var(--cam-fg, var(--cream));
+  outline: 3px solid var(--cam-ring, transparent);
+  outline-offset: 5px;
+  overflow: hidden;
+}
+
+.ui-cam video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ui-cam__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.ui-cam__empty p {
+  max-width: 26ch;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.ui-cam__spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: cam-spin 1s linear infinite;
+}
+
+.ui-cam.is-error .ui-cam__spinner,
+.ui-cam.is-busy .ui-cam__spinner {
+  display: none;
+}
+
+@keyframes cam-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ui-cam figcaption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 14px 10px;
+  background: linear-gradient(transparent, rgb(29 27 32 / 55%));
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ui-cam:not(.is-live) figcaption {
+  background: none;
+  color: inherit;
+}
+
+.ui-cam__label {
+  max-width: 14ch;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.ui-cam__dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--stone);
+}
+
+.ui-cam.is-live .ui-cam__dot {
+  background: #7bd389;
+  animation: cam-pulse 2s ease-out infinite;
+}
+
+.ui-cam.is-connecting .ui-cam__dot,
+.ui-cam.is-reconnecting .ui-cam__dot {
+  background: var(--sparkle);
+}
+
+.ui-cam.is-error .ui-cam__dot,
+.ui-cam.is-busy .ui-cam__dot {
+  background: var(--clay);
+}
+
+@keyframes cam-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(123 211 137 / 70%);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 8px rgb(123 211 137 / 0%);
+  }
+}
+
+/* --- ServingsStepper: − number + on sand. --- */
+.ui-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--sand);
+}
+
+.ui-stepper button {
+  width: 36px;
+  height: 36px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.ui-stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.ui-stepper__value {
+  min-width: 8ch;
+  text-align: center;
+}
+
+/* --- IngredientList: a four-column grid of drawn tiles. --- */
+.ui-ings {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.ui-ing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 18px;
+  text-align: center;
+  font-size: 14px;
+  animation: ui-drop 0.5s var(--spring) backwards;
+}
+
+@keyframes ui-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+}
+
+.ui-ing__amount {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--umber);
+}
+
+/* An amount that moved because servings changed is called out in the brand colour (§9.3). */
+.ui-ing__amount--changed {
+  color: var(--brand);
+}
+
+.ui-ing__note {
+  color: var(--cocoa);
+  font-size: 13px;
+}
+
+/* --- PrepChecklist: tickable rows, each box in the next of the four colours. --- */
+.ui-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 4px;
+}
+
+.ui-checklist h3 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.ui-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 19px;
+  transition: background-color 0.2s;
+}
+
+.ui-check:hover {
+  background: rgb(237 206 186 / 40%);
+}
+
+.ui-check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ui-check__box {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 3px solid;
+  border-radius: 8px;
+  transition:
+    background-color 0.25s var(--spring),
+    transform 0.4s var(--bouncy);
+}
+
+.ui-check--done {
+  color: var(--cocoa);
+  text-decoration: line-through;
+  text-decoration-color: rgb(190 116 99 / 60%);
+}
+
+.ui-check--done .ui-check__box {
+  transform: scale(1.1) rotate(-6deg);
+}
+
+/* The camera setup check sits beside the checklist. */
+.ui-setup {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  align-items: center;
+  gap: 18px;
+  margin-top: 10px;
+  padding: 0 12px;
+}
+
+.ui-setup p {
+  margin: 0;
+  color: var(--cocoa);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* --- StepProgress: one dot per step, the current one a wide pill. --- */
+.ui-steps {
+  display: flex;
+  gap: 8px;
+}
+
+.ui-steps i {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: rgb(255 247 234 / 25%);
+  transition: all 0.4s;
+}
+
+.ui-steps i.ui-steps__done {
+  background: rgb(255 247 234 / 60%);
+}
+
+.ui-steps i.ui-steps__now {
+  width: 36px;
+}
+
+/* --- HoldPill: the ring that fills while a gesture is held. --- */
+.ui-hold {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  z-index: 7; /* above the verdict overlay, so a hold is visible there too */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 999px;
+  background: rgb(29 27 32 / 55%);
+  color: var(--cream);
+  font-size: 17px;
+  font-weight: 700;
+  transform: translateX(-50%);
+  transition: opacity 0.3s;
+}
+
+.ui-hold__ring {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background:
+    conic-gradient(var(--cream) calc(var(--p) * 1turn), rgb(255 247 234 / 25%) 0) border-box;
+}
+
+.ui-hold__ring span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(29 27 32 / 55%);
+  font-size: 14px;
+}
+
+/* --- GestureLegend: back · check · next, with ✋ lit only when the step is checkable. --- */
+.ui-legend {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 36px 22px;
+}
+
+.ui-legend__group {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgb(29 27 32 / 25%);
+}
+
+.ui-legend__group span {
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: rgb(255 247 234 / 12%);
+  font-size: 18px;
+  font-weight: 700;
+  transition: border-radius 0.5s var(--spring);
+}
+
+.ui-legend__group span:first-child {
+  border-radius: 999px 8px 8px 999px;
+}
+
+.ui-legend__next {
+  border-radius: 8px 999px 999px 8px !important;
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.ui-legend__check--on {
+  background: var(--pink);
+  color: var(--ink);
+}
+
+.ui-legend__check--off {
+  opacity: 0.35;
+}
+
+/* --- ErrorBanner and VoicingProgress: one line each, above the action. --- */
+.ui-error {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: var(--edge) solid var(--ink);
+  background: var(--clay);
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ui-error button {
+  margin-left: auto;
+  padding: 4px 12px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 999px;
+  background: var(--cream);
+  cursor: pointer;
+  font: 700 15px var(--font);
+}
+
+.ui-voicing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--cocoa);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ui-voicing button {
+  padding: 6px 14px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 999px;
+  background: var(--cream);
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  font: 700 15px var(--font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-badge__shape,
+  .ui-badge__head,
+  .ui-flip__f1,
+  .ui-flip__f2,
+  .ui-flip--cheer,
+  .ui-loader__img,
+  .ui-loader__steam i,
+  .ui-loader__blob,
+  .ui-cam__spinner,
+  .ui-cam.is-live .ui-cam__dot {
+    animation: none;
+  }
+}
+/* --- Dev only: which backend and camera this run is using (DevTag). --- */
+.ui-devtag {
+  position: fixed;
+  top: 6px;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  gap: 14px;
+  padding: 3px 14px;
+  border-radius: 999px;
+  background: rgb(29 27 32 / 82%);
+  color: var(--cream);
+  font-size: 12px;
+  font-weight: 700;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.ui-devtag span::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--stone);
+  content: '';
+}
+
+.ui-devtag .is-ok::before {
+  background: var(--sage);
+}
+
+.ui-devtag .is-off::before {
+  background: var(--sparkle);
+}

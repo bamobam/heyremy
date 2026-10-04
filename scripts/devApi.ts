@@ -1,15 +1,18 @@
 // A Vite plugin that serves the functions in api/ while `npm run dev` runs, so the
 // app can talk to the real backend locally with no Vercel account or CLI.
-// Keys come from .env.local and stay in the dev server's process: Vite only
+// Keys come from env/.env.local and stay in the dev server's process: Vite only
 // sends VITE_-prefixed variables to the browser, and these have no such prefix.
 
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { loadEnv, type Plugin } from 'vite'
-import { handleApiRequest, type ApiHandler } from './devApiCore.ts'
+import { handleApiRequest, syncEnvKeys, type ApiHandler } from './devApiCore.ts'
 
 const KEYS = ['GEMINI_API_KEY', 'ELEVENLABS_API_KEY']
 const MAX_BODY_BYTES = 2 * 1024 * 1024
+
+/** The keys this plugin has put in process.env, so a restart can replace them (see syncEnvKeys). */
+const setByUs = new Set<string>()
 
 export function devApi(): Plugin {
   return {
@@ -17,14 +20,18 @@ export function devApi(): Plugin {
     apply: 'serve',
 
     config(_config, { mode }) {
-      const env = loadEnv(mode, process.cwd(), '')
-      for (const key of KEYS) if (env[key] && !process.env[key]) process.env[key] = env[key]
+      syncEnvKeys(KEYS, loadEnv(mode, join(process.cwd(), 'env'), ''), process.env, setByUs)
     },
 
     configureServer(server) {
+      if (server.config.env.VITE_MOCK_API === '1') {
+        server.config.logger.warn(
+          '\n  VITE_MOCK_API=1: the app uses the stand-in backend and never calls /api.\n  Clear it in env/.env.local to use the real one.\n',
+        )
+      }
       if (!process.env.GEMINI_API_KEY) {
         server.config.logger.warn(
-          '\n  /api/parse and /api/check will fail: GEMINI_API_KEY is not set.\n  Add it to .env.local and restart the dev server.\n',
+          '\n  /api/parse and /api/check will fail: GEMINI_API_KEY is not set.\n  Add it to env/.env.local and restart the dev server.\n',
         )
       }
 

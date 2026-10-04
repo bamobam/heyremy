@@ -1,0 +1,214 @@
+/* The four screens' layouts (§9.2). */
+
+/* --- Welcome: two even panels. Umber on the left for the pitch, sand on the right for the box. --- */
+.ui-welcome {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.ui-welcome__left,
+.ui-welcome__right {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 96px 64px 64px;
+}
+
+.ui-welcome__left {
+  background: var(--umber);
+  color: var(--cream);
+}
+
+.ui-welcome__left .ui-logo {
+  position: absolute;
+  top: 28px;
+  left: 64px;
+}
+
+.ui-welcome__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ui-welcome__catch {
+  align-self: flex-start;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--pink);
+  color: var(--umber);
+  font-size: 18px;
+  font-weight: 800;
+  transform: rotate(-2deg);
+}
+
+.ui-welcome__left h1 {
+  margin: 0;
+  color: var(--brand);
+  font-size: 62px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ui-welcome__left p {
+  max-width: 440px;
+  margin: 0;
+  color: var(--sand);
+  font-size: 21px;
+  line-height: 1.5;
+}
+
+.ui-welcome__hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ui-welcome__hints span {
+  padding: 8px 14px;
+  border: 1px solid rgb(255 247 234 / 25%);
+  border-radius: 999px;
+  background: rgb(255 247 234 / 10%);
+  font-size: 16px;
+  font-weight: 700;
+  word-spacing: 4px;
+}
+
+.ui-welcome__right {
+  gap: 18px;
+  background: var(--sand);
+}
+
+.ui-welcome__right textarea {
+  height: 170px;
+  padding: 16px 18px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 20px;
+  background: var(--cream);
+  box-shadow: 6px 6px 0 var(--ink);
+  font: 400 17px / 1.6 var(--font);
+  resize: none;
+}
+
+/* Remy stands next to his bubble, at the foot of the page. */
+.ui-welcome__meet,
+.ui-done__meet {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+/* --- Parsing: a slate field, Remy reading, and a ticker of what he is doing. --- */
+.ui-ticker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.ui-ticker span {
+  opacity: 0;
+  animation: ui-tick 0.5s forwards;
+}
+
+.ui-ticker span:nth-child(2) {
+  animation-delay: 0.8s;
+}
+
+.ui-ticker span:nth-child(3) {
+  animation-delay: 1.6s;
+}
+
+@keyframes ui-tick {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- Prep: the recipe card on the left, before-you-start and the setup check on the right. --- */
+.ui-prep {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ui-prep__grid {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 28px;
+  min-height: 0;
+  padding: 0 36px 32px;
+}
+
+.ui-prep__card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 28px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: var(--lift-lg);
+}
+
+.ui-prep__head {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.ui-prep__head h1 {
+  margin: 4px 0 8px;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ui-prep__side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* --- Cooking: the page takes the step's field and cross-fades between them. --- */
+.ui-cook {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  transition:
+    background-color 0.6s ease,
+    color 0.6s ease;
+}
+
+/* Remy and his bubble sit at the foot of the cooking screen. */
+.ui-cook__remy {
+  position: absolute;
+  bottom: 70px;
+  left: 36px;
+}
+
+/* --- Done: a sage field, Remy celebrating, and one button. --- */
+.ui-done__title {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.ui-done__stats {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  opacity: 0.85;
+}

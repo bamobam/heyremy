@@ -6,7 +6,7 @@ import { GrabError, grabSharpestFrame, type GrabResult } from './grabSharpestFra
 import type { Detection } from './recognizer.ts'
 import type { DetectionDeps, DetectionStatus } from './useDetection.ts'
 import { useGestures } from './useGestures.ts'
-import { useHatCam, type HatCamStatus } from './useHatCam.ts'
+import { useHatCam, type HatCam, type HatCamStatus } from './useHatCam.ts'
 import type { CameraErrorKind } from './openHatCam.ts'
 import { waitForHandGone } from './waitForHandGone.ts'
 
@@ -24,6 +24,8 @@ export interface CameraOptions {
   onDetection?: (detection: Detection, t: number) => void
   mapping?: Mapping
   config?: FilterConfig
+  /** The camera connection to read. Defaults to the hat cam; the UI passes the default camera for ?cam=any. */
+  source?: () => HatCam
   /** Replacements for the real MediaPipe and frame capture, for tests. */
   deps?: {
     detection?: DetectionDeps
@@ -76,9 +78,10 @@ export function useCamera({
   onDetection,
   mapping,
   config,
+  source = useHatCam,
   deps,
 }: CameraOptions = {}): Camera {
-  const hat = useHatCam()
+  const hat = source()
   const live = hat.status === 'live'
 
   const gestures = useGestures(hat.video, {

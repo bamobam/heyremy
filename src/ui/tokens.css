@@ -1,0 +1,106 @@
+/* SYSTEM_DESIGN §9.1 visual tokens, from prototype D. Every colour the UI paints with is named here;
+   fields.ts holds the step and verdict fields that pick from these. */
+
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+2:wght@400;500;700;800;900&display=swap');
+
+:root {
+  /* Ink and paper: text, borders and hard shadows; page and light text on dark fields. */
+  --ink: #1d1b20;
+  --cream: #fff7ea;
+
+  /* Warm neutrals. */
+  --umber: #541b05;
+  --cocoa: #73462f;
+  --sand: #edceba;
+  --blush: #e3beb2;
+  --stone: #9f9593;
+
+  /* The six step-field colours, plus the brand orange used for buttons and the welcome headline. */
+  --apricot: #de9762;
+  --clay: #be7463;
+  --sage: #657167;
+  --slate: #2f3341;
+  --brand: #f4905f;
+
+  /* v5 accents: the catch tag, scan line, loader blob, and a ✋ that is live. */
+  --pink: #f6b3bc;
+  --sparkle: #ffd84d;
+
+  /* What "done" looks like, named by meaning rather than colour. */
+  --ready: var(--sage);
+  --notyet: var(--clay);
+  --unsure: var(--stone);
+
+  /* M3 Expressive springs as CSS linear(): --spring moves things, --bouncy pops them. */
+  --spring: linear(
+    0,
+    0.006,
+    0.025 2.8%,
+    0.101 6.1%,
+    0.539 18.9%,
+    0.721 25.3%,
+    0.849 31.5%,
+    0.937 38.1%,
+    0.968 41.8%,
+    0.991 45.7%,
+    1.006 50.1%,
+    1.015 55%,
+    1.017 63.9%,
+    1.001 85.9%,
+    1
+  );
+  --bouncy: linear(
+    0,
+    0.009,
+    0.035 2.1%,
+    0.141,
+    0.281 6.7%,
+    0.723 12.9%,
+    0.938 16.7%,
+    1.017,
+    1.077,
+    1.121,
+    1.149 24.3%,
+    1.159,
+    1.163,
+    1.161,
+    1.154 29.9%,
+    1.129 32.8%,
+    1.051 39.6%,
+    1.017 43.1%,
+    0.991,
+    0.977 51%,
+    0.974 53.8%,
+    0.975 57.1%,
+    0.997 69.8%,
+    1.003 76.9%,
+    1
+  );
+
+  /* Surfaces: flat, 2 px ink border, hard offset shadow (§9.1). */
+  --edge: 2px;
+  --lift: 4px 4px 0 var(--ink);
+  --lift-lg: 8px 8px 0 var(--ink);
+
+  --font: 'M PLUS 2', system-ui, sans-serif;
+}
+
+/* Reset the Vite starter's global styles inside the app (§9.1 shield rule). */
+#root {
+  font-family: var(--font);
+  color: var(--ink);
+  color-scheme: light;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root :is(h1, h2, h3) {
+  color: inherit;
+  font-family: inherit;
+  letter-spacing: normal;
+}
+
+#root textarea {
+  color: var(--ink);
+  font-family: inherit;
+}
