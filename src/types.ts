@@ -41,3 +41,53 @@ export interface Verdict {
   /** Spoken to the cook, under 15 words; includes a fix when not_ready. */
   feedback: string
 }
+
+// ---------- Requests ----------
+
+export interface ParseRequest {
+  recipe: string
+}
+
+export interface CheckRequest {
+  /** Base64 JPEG, no data: prefix. */
+  image: string
+  cue: string
+  /** The step text with placeholders filled in, for context. */
+  step: string
+}
+
+/** Response body is audio/mpeg. */
+export interface SpeakRequest {
+  text: string
+}
+
+// ---------- Camera → state ----------
+
+export type GestureIntent = 'next' | 'back' | 'check'
+
+export interface GestureEvent {
+  intent: GestureIntent
+  at: number
+}
+
+export interface HoldProgress {
+  /** What is being held; null when nothing. */
+  intent: GestureIntent | null
+  /** 0..1, drives the ring. */
+  progress: number
+}
+
+// ---------- API errors (client and server agree) ----------
+
+export type ApiErrorKind =
+  | 'bad_request' // 400: input too large or malformed
+  | 'unprocessable' // 422: model output could not be validated
+  | 'upstream' // 502: Gemini or ElevenLabs failed
+  | 'rate_limited' // 429
+  | 'timeout' // client-side only
+  | 'aborted' // client-side only
+  | 'unknown'
+
+export interface ApiErrorBody {
+  error: { kind: ApiErrorKind; message: string }
+}
