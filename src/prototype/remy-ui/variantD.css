@@ -1,0 +1,92 @@
+/* PROTOTYPE (throwaway) — Variant D: B's palette and prep→cook rise + A's dashboard, carousel and pops */
+.vd { --ink: #1D1B20; --cream: #FFF7EA; --brand: #F4905F; --cocoa: #73462F; --umber: #541B05;
+  position: fixed; inset: 0; font-family: "M PLUS 2", system-ui, sans-serif; color: var(--ink); background: var(--cream); overflow: hidden; }
+.vd-enter { animation: vd-enter .55s cubic-bezier(.2,.8,.2,1); }
+@keyframes vd-enter { from { opacity: 0; transform: translateY(30px) } }
+.vd-fade { animation: vd-fade .3s; }
+@keyframes vd-fade { from { opacity: 0 } }
+.vd-full { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; color: var(--cream); }
+.vd-kicker { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--cocoa); }
+.vd-kicker.light { color: rgba(255,247,234,.85); }
+.vd-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .14em; font-size: 22px; }
+.vd-logo img { width: 46px; }
+.vd-top { display: flex; justify-content: space-between; align-items: center; padding: 18px 36px; position: relative; z-index: 2; }
+.vd-chip { font-size: 14px; font-weight: 700; background: #EDCEBA; color: var(--umber); padding: 8px 14px; border-radius: 999px; }
+.vd-row { display: flex; gap: 14px; }
+.vd-btn { font: 800 20px "M PLUS 2", sans-serif; border: 2px solid var(--ink); background: var(--brand); color: var(--ink); border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 4px 4px 0 var(--ink); transition: transform .15s, box-shadow .15s; }
+.vd-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+.vd-btn.ghost { background: #fff; }
+.vd-btn.big { width: 100%; font-size: 24px; padding: 18px; }
+.vd-btn.light { background: var(--cream); }
+.vd-bubble { background: #fff; color: var(--ink); border: 2px solid var(--ink); border-radius: 24px 24px 24px 6px; padding: 16px 22px; font-size: 20px; line-height: 1.45; font-weight: 500; box-shadow: 4px 4px 0 var(--ink); max-width: 440px; }
+.vd-bubble.small { font-size: 17px; padding: 10px 16px; }
+.vd-bob { animation: vd-bob 3s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes vd-bob { 50% { transform: translateY(-8px) rotate(-2deg) } }
+
+/* Welcome: B's split */
+.vd-paste { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
+.vd-paste-left { position: relative; background: var(--umber); color: var(--cream); padding: 40px 56px; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden; }
+.vd-paste-left .vd-logo { position: absolute; top: 28px; left: 56px; }
+.vd-paste-left h1 { font-size: 72px; line-height: 1; margin: 0; color: var(--brand); }
+.vd-paste-left p { font-size: 21px; line-height: 1.5; max-width: 440px; color: #EDCEBA; margin: 0; }
+.vd-paste-remy { position: absolute; right: 24px; bottom: -20px; width: 210px; }
+.vd-paste-right { background: #EDCEBA; padding: 56px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+.vd-paste-right textarea { height: 230px; border: 2px solid var(--ink); border-radius: 20px; padding: 18px; font: 400 17px/1.6 "M PLUS 2", sans-serif; background: var(--cream); color: var(--ink); resize: none; box-shadow: 6px 6px 0 var(--ink); }
+
+/* Reading: B's slate field + ticker */
+.vd-ticker { display: flex; flex-direction: column; gap: 8px; font-size: 22px; font-weight: 700; }
+.vd-ticker span { opacity: 0; animation: vd-tick .5s forwards; }
+.vd-ticker span:nth-child(2) { animation-delay: .8s; } .vd-ticker span:nth-child(3) { animation-delay: 1.6s; }
+@keyframes vd-tick { from { opacity: 0; transform: translateX(-20px) } to { opacity: 1 } }
+
+/* Prep: A's dashboard in B's palette */
+.vd-prep-page { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.vd-prep { flex: 1; display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; padding: 0 36px 32px; min-height: 0; }
+.vd-card { background: #fff; border: 2px solid var(--ink); border-radius: 28px; box-shadow: 8px 8px 0 var(--ink); padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+.vd-card-head { display: flex; gap: 20px; align-items: center; }
+.vd-plate { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #EDCEBA, #DE9762 70%, #BE7463); border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
+.vd-plate img { width: 90px; }
+.vd-card h1 { font-size: 44px; margin: 4px 0 8px; line-height: 1; }
+.vd-stepper { display: inline-flex; align-items: center; gap: 12px; background: #EDCEBA; border-radius: 999px; padding: 4px; }
+.vd-stepper button { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; font-size: 20px; cursor: pointer; }
+.vd-ing { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.vd-ing-item { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 10px 6px; border-radius: 18px; font-size: 14px; animation: vd-drop .5s cubic-bezier(.2,1.5,.4,1) backwards; }
+.vd-ing-item b { font-size: 17px; color: var(--umber); }
+@keyframes vd-drop { from { opacity: 0; transform: translateY(-24px) } }
+.vd-side { display: flex; flex-direction: column; gap: 18px; }
+.vd-before { background: #fff; border: 2px solid var(--ink); border-radius: 24px; box-shadow: 6px 6px 0 var(--ink); padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+.vd-before-item { display: flex; gap: 12px; align-items: center; font-size: 18px; }
+.vd-before-item em { font-style: normal; font-weight: 800; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
+.vd-remy-line { display: flex; align-items: flex-end; gap: 10px; }
+.vd-remy-line img { width: 70px; }
+
+/* Cooking: B's color fields + rise on entry, A's carousel between steps */
+.vd-cook { position: absolute; inset: 0; display: flex; flex-direction: column; transition: background-color .6s ease, color .6s ease; }
+.vd-dots { display: flex; gap: 8px; }
+.vd-dots i { width: 12px; height: 12px; border-radius: 6px; background: rgba(255,247,234,.25); transition: all .4s; }
+.vd-dots i.d { background: rgba(255,247,234,.6); }
+.vd-dots i.n { width: 36px; }
+.vd-rise { flex: 1; animation: vd-rise .7s cubic-bezier(.7,0,.2,1); }
+@keyframes vd-rise { from { opacity: 0; transform: translateY(160px) } }
+.vd-track { display: flex; gap: 32px; padding-left: 16%; height: 76%; padding-top: 8px; transition: transform .6s cubic-bezier(.7,0,.2,1); }
+.vd-step { flex: none; width: 68%; border-radius: 34px; padding: 40px 48px; display: flex; flex-direction: column; gap: 18px; opacity: .4; transform: scale(.9); transition: opacity .5s, transform .6s cubic-bezier(.7,0,.2,1), box-shadow .5s; }
+.vd-step.now { opacity: 1; transform: none; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+.vd-num { font-size: 96px; font-weight: 800; line-height: .8; }
+.vd-step h2 { font-size: 58px; line-height: 1.08; margin: 0; }
+.vd-heads { font-size: 22px; font-weight: 800; padding: 14px 20px; border-radius: 14px; align-self: flex-start; animation: vd-pulse 1.6s ease-in-out infinite; }
+@keyframes vd-pulse { 50% { transform: scale(1.03) } }
+.vd-cue { font-size: 20px; opacity: .9; }
+.vd-remy { position: absolute; left: 36px; bottom: 70px; display: flex; align-items: flex-end; gap: 10px; }
+.vd-remy img { width: 84px; }
+.vd-legend { display: flex; justify-content: center; gap: 40px; padding: 16px; font-size: 18px; opacity: .85; }
+.vd-wipe { animation: vd-wipe .5s cubic-bezier(.7,0,.2,1); }
+@keyframes vd-wipe { from { clip-path: circle(0% at 50% 60%) } to { clip-path: circle(150% at 50% 60%) } }
+.vd-verdict { display: flex; align-items: center; gap: 28px; animation: vd-pop .5s .15s cubic-bezier(.2,1.4,.4,1) backwards; }
+.vd-verdict img { width: 240px; animation: vd-bob 2s ease-in-out infinite; }
+.vd-verdict > div { max-width: 600px; }
+.vd-verdict p { font-size: 56px; font-weight: 800; margin: 8px 0 0; line-height: 1.1; color: var(--cream); }
+@keyframes vd-pop { from { opacity: 0; transform: scale(.8) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .vd *, .vd { animation: none !important; transition: none !important; }
+}

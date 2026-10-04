@@ -1,0 +1,134 @@
+// PROTOTYPE (throwaway) — Variant D "Best of A + B": B's palette, welcome split and prep→cook rise; A's prep dashboard, card carousel, bob and verdict pop.
+import type { Flow } from './useFlow'
+import { recipe, formatAmount, ingredientLook } from './data'
+import { HEAD, MASCOT, RemyLoader, IngredientArt } from './shared'
+import './variantD.css'
+
+export const name = 'Best of A + B'
+
+// B's color fields, one per step: card color, page backdrop (a deeper shade), text, accent.
+const FIELDS = [
+  { card: '#541B05', back: '#2A0D02', fg: '#FFF7EA', accent: '#DE9762' },
+  { card: '#657167', back: '#343B35', fg: '#FFF7EA', accent: '#EDCEBA' },
+  { card: '#2F3341', back: '#181A22', fg: '#FFF7EA', accent: '#F4905F' },
+  { card: '#BE7463', back: '#5E3127', fg: '#1D1B20', accent: '#FFF7EA' },
+  { card: '#73462F', back: '#3A2317', fg: '#FFF7EA', accent: '#E3BEB2' },
+  { card: '#DE9762', back: '#6E4325', fg: '#1D1B20', accent: '#541B05' },
+]
+const VERDICT = { ready: '#657167', not_ready: '#BE7463', unsure: '#9F9593' } as const
+const PREP_DOTS = ['#DE9762', '#BE7463', '#657167', '#2F3341']
+
+export function VariantD({ flow }: { flow: Flow }) {
+  const f = FIELDS[flow.step % FIELDS.length]
+  return (
+    <div className="vd">
+      {flow.screen === 'paste' && (
+        <div className="vd-paste vd-enter">
+          <div className="vd-paste-left">
+            <div className="vd-logo light"><img src={HEAD} alt="" />REMY</div>
+            <h1>Cook it.<br />Don't touch it.</h1>
+            <p>Paste a recipe. Remy reads every step out loud, watches your bowl, and tells you when it's ready.</p>
+            <img src={MASCOT} alt="" className="vd-bob vd-paste-remy" />
+          </div>
+          <div className="vd-paste-right">
+            <div className="vd-bubble">Hi, I'm Remy! What are we cooking today?</div>
+            <textarea defaultValue={'Fluffy pancakes (serves 4)\n1 cup flour, 2 tbsp sugar, 2 tsp baking powder, ½ tsp salt, ¾ cup milk, 1 egg, 2 tbsp butter…'} />
+            <div className="vd-row"><button className="vd-btn" onClick={flow.parse}>Let's cook</button><button className="vd-btn ghost" onClick={flow.parse}>Try the pancake demo</button></div>
+          </div>
+        </div>
+      )}
+
+      {flow.screen === 'reading' && (
+        <div className="vd-full vd-enter" style={{ background: '#2F3341' }}>
+          <RemyLoader size={250} />
+          <div className="vd-ticker"><span>Finding ingredients</span><span>Moving hidden prep up front</span><span>Writing what "done" looks like</span></div>
+        </div>
+      )}
+
+      {flow.screen === 'prep' && (
+        <div className="vd-prep-page vd-enter">
+          <header className="vd-top"><div className="vd-logo"><img src={HEAD} alt="" />REMY</div><div className="vd-chip">6 steps · about 25 min</div></header>
+          <div className="vd-prep">
+            <section className="vd-card">
+              <div className="vd-card-head">
+                <div className="vd-plate"><img src={MASCOT} alt="" /></div>
+                <div>
+                  <div className="vd-kicker">Tonight's recipe</div>
+                  <h1>{recipe.title}</h1>
+                  <div className="vd-stepper">
+                    <button onClick={() => flow.setServings(Math.max(1, flow.servings - 1))}>−</button>
+                    <b>{flow.servings} servings</b>
+                    <button onClick={() => flow.setServings(flow.servings + 1)}>+</button>
+                  </div>
+                </div>
+              </div>
+              <div className="vd-ing">
+                {recipe.ingredients.map((i, n) => (
+                  <div key={i.id} className="vd-ing-item" style={{ background: `${ingredientLook[i.id]?.color ?? '#EDCEBA'}55`, animationDelay: `${n * 50}ms` }}>
+                    <IngredientArt id={i.id} size={74} />
+                    <b>{formatAmount(i.amount, i.unit, flow.scale)}</b>
+                    <span>{i.name}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="vd-side">
+              <div className="vd-before">
+                <div className="vd-kicker">Before you start</div>
+                {recipe.prep.map((p, i) => <div key={p} className="vd-before-item"><em style={{ background: PREP_DOTS[i], color: i === 0 ? '#1D1B20' : '#FFF7EA' }}>{i + 1}</em>{p}</div>)}
+              </div>
+              <div className="vd-remy-line"><img src={HEAD} alt="" className="vd-bob" /><div className="vd-bubble small">Ready when you are!</div></div>
+              <button className="vd-btn big" onClick={flow.start}>Start cooking</button>
+            </section>
+          </div>
+        </div>
+      )}
+
+      {flow.screen === 'cooking' && (
+        <div className="vd-cook" style={{ background: f.back, color: f.fg }}>
+          <header className="vd-top">
+            <div className="vd-logo light"><img src={HEAD} alt="" />REMY</div>
+            <div className="vd-dots">{recipe.steps.map((_, i) => <i key={i} className={i < flow.step ? 'd' : i === flow.step ? 'n' : ''} style={i === flow.step ? { background: f.accent } : undefined} />)}</div>
+          </header>
+          <div className="vd-rise">
+            <div className="vd-track" style={{ transform: `translateX(calc(${-flow.step} * (68% + 32px)))` }}>
+              {recipe.steps.map((s, i) => {
+                const c = FIELDS[i % FIELDS.length]
+                return (
+                  <article key={s.id} className={`vd-step ${i === flow.step ? 'now' : ''}`} style={{ background: c.card, color: c.fg }}>
+                    <div className="vd-num" style={{ color: c.accent }}>{String(i + 1).padStart(2, '0')}</div>
+                    <h2>{s.text}</h2>
+                    {s.headsUp && <div className="vd-heads" style={{ background: c.accent, color: c.card }}>🔥 Heads-up · {s.headsUp}</div>}
+                    {s.cue && <div className="vd-cue">✋ Ready when: <b>{s.cue}</b></div>}
+                  </article>
+                )
+              })}
+            </div>
+          </div>
+          <div className="vd-remy"><img src={HEAD} alt="" className="vd-bob" /><div className="vd-bubble small">{flow.current.text}</div></div>
+          <div className="vd-legend"><span>👍 next</span><span>👎 back</span><span style={{ opacity: flow.current.checkable ? 1 : .35 }}>✋ is it ready?</span></div>
+
+          {flow.check.kind === 'looking' && (
+            <div className="vd-full vd-fade" style={{ background: 'rgba(29,27,32,.9)' }}><RemyLoader size={230} label="Hold still, let me look…" /></div>
+          )}
+          {flow.check.kind === 'verdict' && (
+            <div className="vd-full vd-wipe" style={{ background: VERDICT[flow.check.verdict.status] }}>
+              <div className="vd-verdict">
+                <img src={MASCOT} alt="" />
+                <div><div className="vd-kicker light">{flow.check.verdict.status.replace('_', ' ')}</div><p>{flow.check.verdict.feedback}</p></div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {flow.screen === 'done' && (
+        <div className="vd-full vd-enter" style={{ background: '#657167' }}>
+          <div className="vd-bubble">We did it! Enjoy your pancakes.</div>
+          <img src={MASCOT} alt="" className="vd-bob" style={{ width: 280 }} />
+          <button className="vd-btn light" onClick={flow.restart}>Cook something else</button>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -2,9 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+2:wght@400;500;700;800&display=swap');
 
 /* Shield the variants from the Vite starter's global h1/h2/color rules. */
-:is(.va, .vb, .vc) :is(h1, h2) { color: inherit; font-family: inherit; font-weight: 800; letter-spacing: normal; }
-:is(.va, .vb, .vc) textarea { color: #1D1B20; }
-:is(.va, .vb, .vc) { color-scheme: light; text-align: left; }
+:is(.va, .vb, .vc, .vd) :is(h1, h2) { color: inherit; font-family: inherit; font-weight: 800; letter-spacing: normal; }
+:is(.va, .vb, .vc, .vd) textarea { color: #1D1B20; }
+:is(.va, .vb, .vc, .vd) { color-scheme: light; text-align: left; }
 
 .remy-loader { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .remy-loader__img { width: 100%; transform-origin: 50% 100%; animation: remy-stir 1.2s ease-in-out infinite; }

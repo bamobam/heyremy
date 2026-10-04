@@ -7,8 +7,9 @@ import { PrototypeSwitcher } from '../PrototypeSwitcher'
 import * as A from './VariantA'
 import * as B from './VariantB'
 import * as C from './VariantC'
+import * as D from './VariantD'
 
-const VARIANTS = { A: { name: A.name, C: A.VariantA }, B: { name: B.name, C: B.VariantB }, C: { name: C.name, C: C.VariantC } } as const
+const VARIANTS = { D: { name: D.name, C: D.VariantD }, A: { name: A.name, C: A.VariantA }, B: { name: B.name, C: B.VariantB }, C: { name: C.name, C: C.VariantC } } as const
 type Key = keyof typeof VARIANTS
 
 export default function RemyUIPrototype() {
@@ -20,7 +21,7 @@ export default function RemyUIPrototype() {
     return () => removeEventListener('popstate', on)
   }, [])
   const param = new URLSearchParams(search).get('variant')
-  const key: Key = param && param in VARIANTS ? (param as Key) : 'A'
+  const key: Key = param && param in VARIANTS ? (param as Key) : 'D'
   const V = VARIANTS[key].C
   return (
     <>
