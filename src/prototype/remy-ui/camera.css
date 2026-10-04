@@ -1,0 +1,15 @@
+/* PROTOTYPE (throwaway): hat-cam view */
+.cam-view { position: relative; margin: 0; aspect-ratio: 16 / 9; border-radius: 22px; overflow: hidden; background: #2F3341; border: 3px solid #1D1B20; box-shadow: 6px 6px 0 #1D1B20; }
+.cam-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-view__empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; text-align: center; color: #FFF7EA; font-size: 15px; line-height: 1.4; }
+.cam-view__empty p { margin: 0; max-width: 30ch; }
+.cam-view__spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(255,247,234,.25); border-top-color: #F6B3BC; animation: cam-spin 1s linear infinite; }
+.is-error .cam-view__spinner, .is-busy .cam-view__spinner { display: none; }
+@keyframes cam-spin { to { transform: rotate(360deg) } }
+.cam-view figcaption { position: absolute; left: 10px; top: 10px; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(29,27,32,.72); color: #FFF7EA; font: 700 13px "M PLUS 2", system-ui, sans-serif; }
+.cam-view__dot { width: 9px; height: 9px; border-radius: 50%; background: #9F9593; }
+.is-live .cam-view__dot { background: #7BD389; box-shadow: 0 0 0 0 rgba(123,211,137,.7); animation: cam-pulse 2s ease-out infinite; }
+.is-reconnecting .cam-view__dot, .is-connecting .cam-view__dot { background: #FFD84D; }
+.is-error .cam-view__dot, .is-busy .cam-view__dot { background: #BE7463; }
+@keyframes cam-pulse { 70% { box-shadow: 0 0 0 8px rgba(123,211,137,0) } 100% { box-shadow: 0 0 0 0 rgba(123,211,137,0) } }
+@media (prefers-reduced-motion: reduce) { .cam-view__spinner, .is-live .cam-view__dot { animation: none; } }
