@@ -53,6 +53,12 @@
   transition: opacity 0.35s ease;
 }
 
+.ui-card__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .ui-card__num {
   display: flex;
   flex: none;
@@ -206,6 +212,58 @@
   color: var(--card);
   font-size: 22px;
   font-weight: 800;
+}
+
+/* Whether Remy can check the step. Checkable is the app's pink catch tag, tilted and popping in when its
+   card comes up; nothing to check is a flat, still pill in the card's own text colour, so it never
+   invites a gesture. Both lead with the gesture's glyph in a round chip, like the hold ring. */
+.ui-checkbadge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.ui-checkbadge__chip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cream);
+  font-size: 16px;
+}
+
+.ui-checkbadge--yes {
+  background: var(--pink);
+  color: var(--umber);
+  transform: rotate(-2deg);
+}
+
+.ui-checkbadge--no {
+  background: color-mix(in srgb, var(--fg) 14%, transparent);
+  color: var(--fg);
+}
+
+.ui-checkbadge--no .ui-checkbadge__chip {
+  opacity: 0.7;
+}
+
+.ui-card--now .ui-checkbadge {
+  animation: ui-badge-pop 0.7s var(--bouncy) 0.25s both;
+}
+
+@keyframes ui-badge-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
 }
 
 .ui-cue {
@@ -365,7 +423,8 @@
   .ui-verdict,
   .ui-verdict__shape,
   .ui-verdict__spark,
-  .ui-verdict__head {
+  .ui-verdict__head,
+  .ui-card--now .ui-checkbadge {
     animation: none;
   }
 }
