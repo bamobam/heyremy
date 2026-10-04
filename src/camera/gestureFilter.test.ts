@@ -235,6 +235,17 @@ describe('stepFilter', () => {
   })
 
   it('has the documented default thresholds', () => {
-    expect(cfg).toEqual({ holdMs: 1000, minScore: 0.7, cooldownMs: 2000, dropToleranceFrames: 3 })
+    expect(cfg).toEqual({ holdMs: 1000, minScore: 0.7, minScoreFor: { check: 0.6 }, cooldownMs: 2000, dropToleranceFrames: 3 })
+  })
+
+  it('lets an open palm count from 0.6 while thumbs still need 0.7', () => {
+    const held = (intent: 'check' | 'next', score: number) => [
+      { intent, score, t: 0 },
+      { intent, score, t: 500 },
+      { intent, score, t: 1000 },
+    ]
+    expect(run(held('check', 0.62)).fires).toEqual([{ t: 1000, intent: 'check' }])
+    expect(run(held('check', 0.58)).fires).toEqual([])
+    expect(run(held('next', 0.62)).fires).toEqual([])
   })
 })

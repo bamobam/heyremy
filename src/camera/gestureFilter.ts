@@ -9,6 +9,8 @@ export interface FilterConfig {
   holdMs: number
   /** Readings below this score count as no gesture. */
   minScore: number
+  /** Per-gesture overrides of minScore. */
+  minScoreFor?: Partial<Record<GestureIntent, number>>
   /** After firing, nothing new fires for this long. */
   cooldownMs: number
   /** Frames in a row the hand may drop out without breaking a hold. */
@@ -18,6 +20,8 @@ export interface FilterConfig {
 export const DEFAULT_FILTER_CONFIG: FilterConfig = {
   holdMs: 1000,
   minScore: 0.7,
+  // The open palm reads lower than the thumbs from the hat cam, which mostly sees the back of the hand.
+  minScoreFor: { check: 0.6 },
   cooldownMs: 2000,
   dropToleranceFrames: 3,
 }
@@ -55,9 +59,14 @@ const result = (state: FilterState, progress: HoldProgress = NO_PROGRESS, fire: 
   progress,
 })
 
+/** The score a reading of this gesture needs to count. */
+export function minScoreFor(intent: GestureIntent, cfg: FilterConfig): number {
+  return cfg.minScoreFor?.[intent] ?? cfg.minScore
+}
+
 /** One frame in, the next state out. */
 export function stepFilter(state: FilterState, sample: Sample, cfg: FilterConfig): FilterOutput {
-  const intent = sample.intent !== null && sample.score >= cfg.minScore ? sample.intent : null
+  const intent = sample.intent !== null && sample.score >= minScoreFor(sample.intent, cfg) ? sample.intent : null
 
   const fromIdle = (): FilterOutput =>
     intent === null

@@ -33,6 +33,11 @@ describe('stepTally (counts gesture attempts for the hour-1 test)', () => {
     expect(t.hits.Thumb_Up ?? 0).toBe(0)
   })
 
+  it('counts an open palm from 0.6, like the gesture filter', () => {
+    expect(run([det('Open_Palm', 0.62)]).hits.Open_Palm).toBe(1)
+    expect(run([det('Open_Palm', 0.58)]).hits.Open_Palm ?? 0).toBe(0)
+  })
+
   it('a low-confidence frame ends the current attempt', () => {
     const t = run([det('Thumb_Up', 0.9), det('Thumb_Up', 0.4), det('Thumb_Up', 0.9)])
     expect(t.hits.Thumb_Up).toBe(2)
