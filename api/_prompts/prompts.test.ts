@@ -26,7 +26,10 @@ describe('parse prompt', () => {
   it('has a worked example that passes validation', () => {
     const json = PARSE_SYSTEM.slice(PARSE_SYSTEM.lastIndexOf('</recipe>') + '</recipe>'.length)
     const recipe = validateRecipe(JSON.parse(json))
-    expect(recipe.steps).toHaveLength(4)
+    // The example adds stages the recipe implies: the second side, repeating, and serving.
+    expect(recipe.steps).toHaveLength(8)
+    // A checkable done check comes before the repeat and serve steps.
+    expect(recipe.steps.at(-3)?.checkable).toBe(true)
     expect(recipe.steps.some((s) => s.checkable)).toBe(true)
     expect(recipe.steps.some((s) => s.cue !== null && !s.checkable)).toBe(true)
     expect(recipe.steps.some((s) => s.headsUp !== null)).toBe(true)
