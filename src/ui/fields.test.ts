@@ -44,15 +44,18 @@ describe('visual tokens', () => {
   })
 })
 
-/**
- * Cards whose step text is below the 3:1 WCAG AA threshold for large text, with the ratio measured
- * today. Prototype D was tuned on a laptop at arm's length; §9.1 says the cook reads these from 2 m,
- * which is where these fall short. Darkening the card is a palette decision, so it is recorded here
- * rather than changed here — remove an entry once the colour is fixed and the test will hold it.
- */
-const KNOWN_SHORTFALLS: Record<string, number> = {
-  '#657167': 2.13, // sage: cream step text
-  '#73462f': 2.87, // cocoa: cream step text
+/** WCAG relative luminance: channels are linearised first, which a plain weighted sum skips. */
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map(i => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
 }
 
 describe('fields', () => {
@@ -80,19 +83,23 @@ describe('fields', () => {
   })
 
   it('keeps the step text readable on every card', () => {
-    const luminance = (hex: string) => {
-      const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b
-    }
+    // Step text is 38px at weight 800, so WCAG AA for large text: 3:1 against its card.
     for (const field of FIELDS) {
-      // Step text is 38px at weight 800, so WCAG AA for large text: 3:1 against its card.
-      const [hi, lo] = [luminance(field.fg), luminance(field.card)].sort((a, b) => b - a)
-      const ratio = (hi + 0.05) / (lo + 0.05)
-      const key = field.card.toLowerCase()
-      // Step text is 38px at weight 800, so WCAG AA for large text: 3:1 against its card. Cards with
-      // a recorded shortfall are held to today's measured ratio so they cannot drift further.
-      const floor = KNOWN_SHORTFALLS[key] ?? 3
-      expect(ratio + 0.01, `${field.fg} on ${field.card} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(floor)
+      expect(contrast(field.fg, field.card), `${field.fg} on ${field.card}`).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('keeps the step number and heads-up text readable on their accent', () => {
+    for (const field of FIELDS) {
+      expect(contrast(field.card, field.accent), `${field.card} on ${field.accent}`).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('keeps the verdict text readable on each verdict field', () => {
+    // steps.css paints the unsure verdict in ink, because cream on that grey is only 2.7:1.
+    const text = { ready: '#FFF7EA', not_ready: '#FFF7EA', unsure: '#1D1B20' } as const
+    for (const [status, field] of Object.entries(VERDICT_FIELDS)) {
+      expect(contrast(text[status as keyof typeof text], field), status).toBeGreaterThanOrEqual(3)
     }
   })
 })

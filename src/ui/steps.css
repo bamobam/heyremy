@@ -346,6 +346,12 @@
   opacity: 0.9;
 }
 
+/* Cream on the unsure grey is only 2.7:1, so that verdict reads in ink (5.9:1). */
+.ui-verdict--unsure,
+.ui-verdict--unsure .ui-verdict__text {
+  color: var(--ink);
+}
+
 /* The countdown bar under a ready verdict. */
 .ui-countdown {
   width: 420px;
