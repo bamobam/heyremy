@@ -29,7 +29,7 @@
 .vd-paste-left { background: var(--umber); color: var(--cream); }
 .vd-paste-left .vd-logo { position: absolute; top: 28px; left: 64px; }
 .vd-paste-copy { display: flex; flex-direction: column; gap: 18px; }
-.vd-catch { align-self: flex-start; font-size: 18px; font-weight: 800; color: var(--umber); background: #DE9762; padding: 8px 16px; border-radius: 999px; transform: rotate(-2deg); }
+.vd-catch { align-self: flex-start; font-size: 18px; font-weight: 800; color: var(--umber); background: #F6B3BC; padding: 8px 16px; border-radius: 999px; transform: rotate(-2deg); }
 .vd-paste-left h1 { font-size: 62px; line-height: 1; margin: 0; color: var(--brand); }
 .vd-paste-left p { font-size: 21px; line-height: 1.5; max-width: 440px; color: #EDCEBA; margin: 0; }
 .vd-hints { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -98,7 +98,8 @@
 .vd-verdict { display: flex; align-items: center; gap: 28px; animation: vd-pop .5s .15s cubic-bezier(.2,1.4,.4,1) backwards; }
 .vd-verdict img { width: 240px; animation: vd-bob 2s ease-in-out infinite; }
 .vd-verdict > div { max-width: 600px; }
-.vd-catchline { font-size: 26px; font-weight: 800; color: var(--cream); opacity: .9; }
+.vd-catchline { font-size: 26px; font-weight: 800; color: var(--cream); }
+.vd-catchline::after { content: " ✦"; color: #FFD84D; }
 .vd-verdict p { font-size: 56px; font-weight: 800; margin: 8px 0 0; line-height: 1.1; color: var(--cream); }
 @keyframes vd-pop { from { opacity: 0; transform: scale(.8) } }
 

@@ -3,8 +3,8 @@ import type { Flow } from './useFlow'
 import { ingredientLook } from './data'
 import './shared.css'
 
-export const MASCOT = '/prototype/remy-mascot-512.png'
-export const HEAD = '/prototype/remy-head-256.png'
+export const MASCOT = '/prototype/remy-mascot.svg'
+export const HEAD = '/prototype/remy-head.svg'
 
 /** Remy stirs: tilt left, hop, tilt right, settle (1.2 s loop) with steam puffs. */
 export function RemyLoader({ size = 220, label }: { size?: number; label?: string }) {

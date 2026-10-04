@@ -1,0 +1,7 @@
+ink    #1d1b20
+fur    #BEBBB8
+pink   #F6B3BC
+spoon  #E3C18F
+sparkle #FFD84D
+hat    #FFF7EA
+icon background #F4905F
