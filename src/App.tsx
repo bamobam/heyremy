@@ -1,8 +1,7 @@
 // The app: one CookingProvider, and whichever of the four screens the phase calls for (§9.2).
 // Components read through useCooking() and useHoldProgress() only (§9.5).
 import { CookingProvider } from './cooking/contract.ts'
-import { canCheck, canStart, currentStep, filledSteps, scaledIngredients } from './cooking/contract.ts'
-import { useCooking, useHoldProgress } from './cooking/context.ts'
+import { useCooking } from './cooking/context.ts'
 import { CookingScreen } from './ui/CookingScreen.tsx'
 import { DoneScreen } from './ui/DoneScreen.tsx'
 import { PrepReview } from './ui/PrepReview.tsx'
@@ -14,8 +13,7 @@ import './ui/steps.css'
 import './ui/screens.css'
 
 function Screens() {
-  const { state, controller, dispatch, camera } = useCooking()
-  const hold = useHoldProgress()
+  const { state, controller, dispatch } = useCooking()
 
   if (state.phase === 'input' || state.phase === 'parsing') {
     return (
@@ -30,35 +28,9 @@ function Screens() {
     )
   }
 
-  if (state.phase === 'prep') {
-    return (
-      <PrepReview
-        state={state}
-        camera={camera}
-        ingredients={scaledIngredients(state)}
-        canStart={canStart(state)}
-        onServings={controller.setServings}
-        onRetryVoicing={controller.retryVoicing}
-        onStart={controller.start}
-        onDismissError={() => dispatch({ type: 'errorDismissed' })}
-      />
-    )
-  }
+  if (state.phase === 'prep') return <PrepReview />
 
-  if (state.phase === 'cooking') {
-    return (
-      <CookingScreen
-        state={state}
-        camera={camera}
-        steps={filledSteps(state)}
-        step={currentStep(state)}
-        canCheck={canCheck(state)}
-        hold={hold}
-        onTap={() => dispatch({ type: 'screenTapped' })}
-        onDismissError={() => dispatch({ type: 'errorDismissed' })}
-      />
-    )
-  }
+  if (state.phase === 'cooking') return <CookingScreen />
 
   return <DoneScreen stats={state.stats} title={state.recipe?.title ?? 'Your recipe'} onRestart={controller.restart} />
 }

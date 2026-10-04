@@ -1,8 +1,8 @@
 // PrepReview (§9.2): the recipe card with scaled amounts, what to do before starting, and the camera
 // setup check. The Start button only comes alive once every clip for the chosen servings is cached.
 import { useState } from 'react'
-import type { CookingState, ScaledIngredient } from '../cooking/contract.ts'
-import type { HatCam } from '../camera/useHatCam.ts'
+import { canStart, scaledIngredients } from '../cooking/contract.ts'
+import { useCooking } from '../cooking/context.ts'
 import { HEAD_SRC, RemyBadge, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 import { CameraSetup, ErrorBanner, IngredientList, PrepChecklist, ServingsStepper, VoicingProgress } from './prep.tsx'
@@ -13,25 +13,8 @@ function timeChip(stepCount: number): string {
   return `${stepCount} steps, about ${minutes} minutes`
 }
 
-export function PrepReview({
-  state,
-  camera,
-  canStart,
-  ingredients,
-  onServings,
-  onRetryVoicing,
-  onStart,
-  onDismissError,
-}: {
-  state: CookingState
-  camera: HatCam
-  canStart: boolean
-  ingredients: ScaledIngredient[]
-  onServings: (n: number) => void
-  onRetryVoicing: () => void
-  onStart: () => void
-  onDismissError: () => void
-}) {
+export function PrepReview() {
+  const { state, controller, dispatch } = useCooking()
   const recipe = state.recipe
   const { ready, total } = state.voicing
 
@@ -45,7 +28,7 @@ export function PrepReview({
 
   return (
     <div className="ui-prep ui-enter">
-      <ErrorBanner error={state.error} onDismiss={onDismissError} />
+      <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: 'errorDismissed' })} />
       <header className="ui-top">
         <div className="ui-logo">
           <img src={HEAD_SRC} alt="" />
@@ -60,25 +43,25 @@ export function PrepReview({
             <RemyBadge size={132} color="var(--apricot)" form="cookie" />
             <div>
               <h1>{recipe.title}</h1>
-              <ServingsStepper servings={state.servings} original={recipe.servings} onChange={onServings} />
+              <ServingsStepper servings={state.servings} original={recipe.servings} onChange={controller.setServings} />
             </div>
           </div>
-          <IngredientList ingredients={ingredients} />
+          <IngredientList ingredients={scaledIngredients(state)} />
         </section>
 
         <section className="ui-prep__side">
           <div>
             <PrepChecklist items={recipe.prep} />
-            <CameraSetup cam={camera} />
+            <CameraSetup />
           </div>
           <div className="ui-remy-line ui-remy-line--small">
             <img src={HEAD_SRC} alt="" />
             <SpeechBubble small>{SAY.prep}</SpeechBubble>
           </div>
-          <button type="button" className="ui-btn ui-btn--wide" onClick={onStart} disabled={!canStart}>
+          <button type="button" className="ui-btn ui-btn--wide" onClick={controller.start} disabled={!canStart(state)}>
             Remy, let's cook!
           </button>
-          <VoicingProgress ready={state.voicing.servings === state.servings ? state.voicing.ready.length : 0} total={state.voicing.total} failed={voiceFailed} onRetry={() => { setVoiceFailed(false); onRetryVoicing() }} />
+          <VoicingProgress ready={state.voicing.servings === state.servings ? state.voicing.ready.length : 0} total={state.voicing.total} failed={voiceFailed} onRetry={() => { setVoiceFailed(false); controller.retryVoicing() }} />
         </section>
       </div>
     </div>

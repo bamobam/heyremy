@@ -1,8 +1,8 @@
 // CookingScreen (§9.2): the hands-free part. The page takes the step's colour field, the cards slide
 // along one track, and the check happens inside the current card. Every pointer down counts as a tap.
 import { useEffect, useState } from 'react'
-import type { CookingState, FilledStep, HoldProgress } from '../cooking/contract.ts'
-import type { HatCam } from '../camera/useHatCam.ts'
+import { canCheck, currentStep, filledSteps, type FilledStep } from '../cooking/contract.ts'
+import { useCooking, useHoldProgress } from '../cooking/context.ts'
 import { GestureLegend, HoldPill, StepCard, StepProgress, VerdictOverlay } from './cooking.tsx'
 import { fieldFor } from './fields.ts'
 import { HEAD_SRC, SpeechBubble } from './Remy.tsx'
@@ -33,25 +33,10 @@ function useTicking(active: boolean, ms = 100): number {
   return now
 }
 
-export function CookingScreen({
-  state,
-  camera,
-  steps,
-  step,
-  canCheck,
-  hold,
-  onTap,
-  onDismissError,
-}: {
-  state: CookingState
-  camera: HatCam
-  steps: FilledStep[]
-  step: FilledStep | null
-  canCheck: boolean
-  hold: HoldProgress
-  onTap: () => void
-  onDismissError: () => void
-}) {
+export function CookingScreen() {
+  const { state, dispatch } = useCooking()
+  const hold = useHoldProgress()
+  const steps = filledSteps(state)
   const field = fieldFor(state.stepIndex)
   const checking = state.mode === 'checking'
   const now = useTicking(state.mode === 'verdict')
@@ -60,9 +45,9 @@ export function CookingScreen({
     <div
       className={`ui-cook ${checking ? 'ui-cook--checking' : ''}`}
       style={{ background: field.back, color: field.fg }}
-      onPointerDown={onTap}
+      onPointerDown={() => dispatch({ type: 'screenTapped' })}
     >
-      <ErrorBanner error={state.error} onDismiss={onDismissError} />
+      <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: 'errorDismissed' })} />
       <header className="ui-top">
         <div className="ui-logo ui-logo--light">
           <img src={HEAD_SRC} alt="" />
@@ -74,7 +59,7 @@ export function CookingScreen({
       <div className="ui-rise">
         <div className="ui-track" style={{ transform: `translateX(calc(${-state.stepIndex} * (70vw + 32px)))` }}>
           {steps.map((s, i) => (
-            <StepCard key={s.id} step={s} index={i} current={i === state.stepIndex} checking={checking} camera={camera} />
+            <StepCard key={s.id} step={s} index={i} current={i === state.stepIndex} checking={checking} />
           ))}
         </div>
       </div>
@@ -82,11 +67,11 @@ export function CookingScreen({
       <div className="ui-cook__remy">
         <div className="ui-remy-line">
           <img src={HEAD_SRC} alt="" />
-          <SpeechBubble small>{bubbleFor(step, state.stepIndex, checking)}</SpeechBubble>
+          <SpeechBubble small>{bubbleFor(currentStep(state), state.stepIndex, checking)}</SpeechBubble>
         </div>
       </div>
 
-      <GestureLegend canCheck={canCheck} />
+      <GestureLegend canCheck={canCheck(state)} />
       <HoldPill hold={hold} />
 
       {state.mode === 'verdict' && state.verdict && (

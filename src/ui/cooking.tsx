@@ -2,7 +2,7 @@
 // and the verdict overlay. Remy is present here, so these are the pieces read at 2 m.
 import type { CSSProperties } from 'react'
 import { AUTO_ADVANCE_MS, type FilledStep, type HoldProgress } from '../cooking/contract.ts'
-import type { HatCam } from '../camera/useHatCam.ts'
+import { useCooking } from '../cooking/context.ts'
 import { CameraView } from './CameraView.tsx'
 import { fieldFor, VERDICT_FIELDS } from './fields.ts'
 import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
@@ -35,14 +35,13 @@ export function StepCard({
   index,
   current,
   checking,
-  camera,
 }: {
   step: FilledStep
   index: number
   current: boolean
   checking: boolean
-  camera: HatCam
 }) {
+  const { camera } = useCooking()
   const field = fieldFor(index)
   const cardVars = { '--card': field.card, '--back': field.back, '--fg': field.fg, '--accent': field.accent } as CSSProperties
   const n = index % STEP_SHAPES.length
