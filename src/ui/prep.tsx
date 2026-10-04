@@ -15,7 +15,7 @@ export function ServingsStepper({ servings, original, onChange }: { servings: nu
         −
       </button>
       <b className="ui-stepper__value">
-        {servings} servings{original !== servings ? ` (was ${original})` : ''}
+        {servings} {servings === 1 ? 'serving' : 'servings'}{original !== servings ? ` (was ${original})` : ''}
       </b>
       <button type="button" onClick={() => onChange(servings + 1)} disabled={servings >= MAX_SERVINGS} aria-label="More servings">
         +

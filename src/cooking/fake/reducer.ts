@@ -20,6 +20,11 @@ export function initialState(): CookingState {
   }
 }
 
+/** gestureNext, gestureBack and checkStarted only apply while cooking, and not mid-check (§6.3). */
+function canNavigate(s: CookingState): boolean {
+  return s.phase === 'cooking' && s.mode !== 'checking'
+}
+
 /** The §6.2 action → §6.3 state rules. Pure, so they can be tested without React. */
 export function fakeReducer(s: CookingState, a: Action): CookingState {
   switch (a.type) {
@@ -48,6 +53,7 @@ export function fakeReducer(s: CookingState, a: Action): CookingState {
       return { ...s, phase: 'input', error: a.error }
 
     case 'servingsChanged':
+      if (s.phase !== 'prep') return s
       return { ...s, servings: Math.min(MAX_SERVINGS, Math.max(MIN_SERVINGS, Math.round(a.servings))) }
 
     case 'voicingStarted':
@@ -74,7 +80,7 @@ export function fakeReducer(s: CookingState, a: Action): CookingState {
 
     // A verdict never blocks next: the cook can always move on (§6.5).
     case 'gestureNext': {
-      if (!s.recipe) return s
+      if (!s.recipe || !canNavigate(s)) return s
       if (s.stepIndex >= s.recipe.steps.length - 1) {
         return { ...s, phase: 'done', mode: 'idle', verdict: null, autoAdvanceAt: null }
       }
@@ -90,6 +96,7 @@ export function fakeReducer(s: CookingState, a: Action): CookingState {
 
     // 👎 during a ready countdown cancels it and stays put; otherwise it goes back a step (§6.5).
     case 'gestureBack':
+      if (!canNavigate(s)) return s
       if (s.autoAdvanceAt !== null) return { ...s, autoAdvanceAt: null }
       return {
         ...s,
@@ -99,8 +106,18 @@ export function fakeReducer(s: CookingState, a: Action): CookingState {
         requestId: s.requestId + 1,
       }
 
+    // Bumps requestId, so a verdict still in flight for the previous check is dropped, and clears a
+    // ready countdown that "check again" interrupts (§6.2).
     case 'checkStarted':
-      return { ...s, mode: 'checking', verdict: null, stats: { ...s.stats, checks: s.stats.checks + 1 } }
+      if (!canNavigate(s) || !s.recipe?.steps[s.stepIndex]?.checkable) return s
+      return {
+        ...s,
+        mode: 'checking',
+        verdict: null,
+        autoAdvanceAt: null,
+        requestId: s.requestId + 1,
+        stats: { ...s.stats, checks: s.stats.checks + 1 },
+      }
 
     // A verdict for a step the cook already left is dropped (§6.8 checkFlow).
     case 'checkSucceeded':
@@ -117,12 +134,14 @@ export function fakeReducer(s: CookingState, a: Action): CookingState {
       return { ...s, mode: 'idle', error: a.error }
 
     case 'screenTapped':
+      if (s.phase !== 'cooking') return s
       return { ...s, stats: { ...s.stats, taps: s.stats.taps + 1 } }
 
     case 'errorDismissed':
       return { ...s, error: null }
 
+    // Back to the input screen with the pasted text kept (§6.2).
     case 'restart':
-      return initialState()
+      return { ...initialState(), recipeText: s.recipeText }
   }
 }

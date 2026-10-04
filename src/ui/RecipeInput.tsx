@@ -1,5 +1,5 @@
 // RecipeInput (§9.2): the welcome split, and the parsing field while Remy reads the recipe.
-import type { CookingError } from '../cooking/contract.ts'
+import { DEMO_RECIPE_TEXT, type CookingError } from '../cooking/contract.ts'
 import { HEAD_SRC, RemyBadge, RemyLoader, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 import { injectShapeKeyframes } from './shapes.ts'
@@ -80,7 +80,7 @@ export function RecipeInput({
           <button type="button" className="ui-btn" onClick={() => onSubmit(recipeText)} disabled={recipeText.trim() === ''}>
             Let's cook!
           </button>
-          <button type="button" className="ui-btn ui-btn--ghost" onClick={() => onSubmit(recipeText)}>
+          <button type="button" className="ui-btn ui-btn--ghost" onClick={() => { onTextChange(DEMO_RECIPE_TEXT); onSubmit(DEMO_RECIPE_TEXT) }}>
             Try the pancake demo
           </button>
         </div>

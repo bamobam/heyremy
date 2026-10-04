@@ -1,7 +1,7 @@
 // The cooking screen's components (§9.3): the step-card carousel, the hold pill, the gesture legend
 // and the verdict overlay. Remy is present here, so these are the pieces read at 2 m.
 import type { CSSProperties } from 'react'
-import type { FilledStep, HoldProgress } from '../cooking/contract.ts'
+import { AUTO_ADVANCE_MS, type FilledStep, type HoldProgress } from '../cooking/contract.ts'
 import type { HatCam } from '../camera/useHatCam.ts'
 import { CameraView } from './CameraView.tsx'
 import { fieldFor, VERDICT_FIELDS } from './fields.ts'
@@ -9,9 +9,6 @@ import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
 import { SAY, GESTURE_HINTS } from './say.ts'
 import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes.ts'
 import { CueChip, HeadsUpBanner } from './prep.tsx'
-
-/** How long a verdict is on screen before it moves on, and how long the countdown bar takes. */
-const AUTO_ADVANCE_MS = 2000
 
 /** One dot per step: done, the current one a wide pill in the step accent, upcoming faint. */
 export function StepProgress({ steps, index, accent }: { steps: FilledStep[]; index: number; accent: string }) {
@@ -63,7 +60,7 @@ export function StepCard({
       <div className="ui-card__media" style={{ background: field.back }}>
         <div className="ui-card__frame">
           {current ? (
-            <CameraView cam={camera} caption="Remy's view" style={{ '--cam-bg': field.back, '--cam-fg': '#fff7ea' } as CSSProperties} />
+            <CameraView cam={camera} primary caption="Remy's view" style={{ '--cam-bg': field.back, '--cam-fg': '#fff7ea' } as CSSProperties} />
           ) : (
             <div className="ui-card__ghost" aria-hidden />
           )}
@@ -132,7 +129,7 @@ export function VerdictOverlay({ verdict, autoAdvanceAt, now }: { verdict: { sta
   const left = autoAdvanceAt === null ? 0 : Math.max(0, Math.min(1, (autoAdvanceAt - now) / AUTO_ADVANCE_MS))
 
   return (
-    <div className="ui-full ui-wipe" style={{ background: VERDICT_FIELDS[verdict.status] }}>
+    <div className="ui-full ui-wipe" role="status" style={{ background: VERDICT_FIELDS[verdict.status] }}>
       <div className={`ui-verdict ui-verdict--${verdict.status}`}>
         <div className="ui-verdict__hero">
           <div className="ui-verdict__shape" style={{ clipPath: shape(VERDICT_SHAPE[verdict.status]) }} />

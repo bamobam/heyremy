@@ -129,7 +129,9 @@
 .ui-btn:focus-visible,
 .ui-stepper button:focus-visible,
 .ui-check:focus-within,
-.ui-btn--icon:focus-visible {
+.ui-btn--icon:focus-visible,
+.ui-error button:focus-visible,
+.ui-voicing button:focus-visible {
   outline: 3px solid var(--slate);
   outline-offset: 3px;
 }

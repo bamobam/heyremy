@@ -42,8 +42,9 @@ describe('parse', () => {
 
 describe('servings', () => {
   it('clamps to the allowed range', () => {
-    expect(run([{ type: 'servingsChanged', servings: 0 }]).servings).toBe(1)
-    expect(run([{ type: 'servingsChanged', servings: 999 }]).servings).toBe(24)
+    const prep = { ...onStep(0), phase: 'prep' as const }
+    expect(run([{ type: 'servingsChanged', servings: 0 }], prep).servings).toBe(1)
+    expect(run([{ type: 'servingsChanged', servings: 999 }], prep).servings).toBe(24)
   })
 
   it('drops a clip from an abandoned servings run', () => {
@@ -106,10 +107,10 @@ describe('checks', () => {
   })
 
   it('sets the countdown only for ready', () => {
-    const ready = run([{ type: 'checkStarted' }, { type: 'checkSucceeded', requestId: 0, verdict: verdict('ready'), now: 1000 }], onStep(1))
+    const ready = run([{ type: 'checkStarted' }, { type: 'checkSucceeded', requestId: 1, verdict: verdict('ready'), now: 1000 }], onStep(1))
     expect(ready.autoAdvanceAt).toBe(3000)
     for (const status of ['not_ready', 'unsure'] as const) {
-      const s = run([{ type: 'checkStarted' }, { type: 'checkSucceeded', requestId: 0, verdict: verdict(status), now: 1000 }], onStep(1))
+      const s = run([{ type: 'checkStarted' }, { type: 'checkSucceeded', requestId: 1, verdict: verdict(status), now: 1000 }], onStep(1))
       expect(s.autoAdvanceAt).toBeNull()
     }
   })
@@ -121,15 +122,39 @@ describe('checks', () => {
   })
 
   it('goes back to idle when a check fails', () => {
-    const s = run([{ type: 'checkStarted' }, { type: 'checkFailed', requestId: 0, error: { kind: 'camera', message: 'no photo' } }], onStep(1))
+    const s = run([{ type: 'checkStarted' }, { type: 'checkFailed', requestId: 1, error: { kind: 'camera', message: 'no photo' } }], onStep(1))
     expect(s.mode).toBe('idle')
     expect(s.error?.kind).toBe('camera')
   })
 })
 
+describe('the §6.3 guards', () => {
+  it('checkStarted bumps requestId and cancels a ready countdown', () => {
+    const before = onStep(1, { mode: 'verdict', verdict: verdict('ready'), autoAdvanceAt: 5000, requestId: 3 })
+    const s = fakeReducer(before, { type: 'checkStarted' })
+    expect(s).toMatchObject({ mode: 'checking', requestId: 4, autoAdvanceAt: null })
+  })
+
+  it('ignores checks on a step that is not checkable, and gestures mid-check', () => {
+    const plain = PANCAKE_RECIPE.steps.findIndex(st => !st.checkable)
+    expect(fakeReducer(onStep(plain), { type: 'checkStarted' }).mode).toBe('idle')
+    const checking = onStep(1, { mode: 'checking' })
+    expect(fakeReducer(checking, { type: 'gestureNext' })).toBe(checking)
+    expect(fakeReducer(checking, { type: 'gestureBack' })).toBe(checking)
+    expect(fakeReducer(checking, { type: 'checkStarted' })).toBe(checking)
+  })
+
+  it('only changes servings in prep, and counts taps only while cooking', () => {
+    const cooking = onStep(0)
+    expect(fakeReducer(cooking, { type: 'servingsChanged', servings: 8 })).toBe(cooking)
+    expect(fakeReducer(initialState(), { type: 'screenTapped' }).stats.taps).toBe(0)
+    expect(fakeReducer(cooking, { type: 'screenTapped' }).stats.taps).toBe(1)
+  })
+})
+
 describe('the session', () => {
   it('counts taps, for the done screen', () => {
-    const s = run([{ type: 'screenTapped' }, { type: 'screenTapped' }, { type: 'screenTapped' }])
+    const s = run([{ type: 'screenTapped' }, { type: 'screenTapped' }, { type: 'screenTapped' }], onStep(0))
     expect(s.stats.taps).toBe(3)
   })
 
@@ -139,8 +164,8 @@ describe('the session', () => {
     expect(s.phase).toBe('input')
   })
 
-  it('restarts back to a clean session', () => {
-    const s = run([{ type: 'restart' }], onStep(3, { stats: { checks: 2, taps: 9 } }))
-    expect(s).toEqual(initialState())
+  it('restarts back to a clean session but keeps the pasted text', () => {
+    const s = run([{ type: 'restart' }], onStep(3, { recipeText: 'my soup', stats: { checks: 2, taps: 9 } }))
+    expect(s).toEqual({ ...initialState(), recipeText: 'my soup' })
   })
 })

@@ -10,7 +10,7 @@ function statsLine(stats: CookingStats): string {
   return `You checked ${checks} and touched the screen ${stats.taps} ${stats.taps === 1 ? 'time' : 'times'}.`
 }
 
-export function DoneScreen({ stats, onRestart }: { stats: CookingStats; onRestart: () => void }) {
+export function DoneScreen({ stats, title, onRestart }: { stats: CookingStats; title: string; onRestart: () => void }) {
   return (
     <div className="ui-full ui-enter" style={{ background: 'var(--sage)' }}>
       <div className="ui-done__meet">
@@ -18,7 +18,7 @@ export function DoneScreen({ stats, onRestart }: { stats: CookingStats; onRestar
         <SpeechBubble>
           <b>{SAY.done}</b>
           <br />
-          Pancakes are done.
+          {title} is done.
         </SpeechBubble>
       </div>
       <p className="ui-done__stats">{statsLine(stats)}</p>

@@ -60,7 +60,7 @@ function Screens() {
     )
   }
 
-  return <DoneScreen stats={state.stats} onRestart={controller.restart} />
+  return <DoneScreen stats={state.stats} title={state.recipe?.title ?? 'Your recipe'} onRestart={controller.restart} />
 }
 
 export default function App() {

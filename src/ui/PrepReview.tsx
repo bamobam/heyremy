@@ -1,5 +1,6 @@
 // PrepReview (§9.2): the recipe card with scaled amounts, what to do before starting, and the camera
 // setup check. The Start button only comes alive once every clip for the chosen servings is cached.
+import { useState } from 'react'
 import type { CookingState, ScaledIngredient } from '../cooking/contract.ts'
 import type { HatCam } from '../camera/useHatCam.ts'
 import { HEAD_SRC, RemyBadge, SpeechBubble } from './Remy.tsx'
@@ -32,9 +33,15 @@ export function PrepReview({
   onDismissError: () => void
 }) {
   const recipe = state.recipe
-  if (!recipe) return null
+  const { ready, total } = state.voicing
 
-  const voiceFailed = state.error?.kind === 'upstream' && state.voicing.total > 0 && state.voicing.ready.length < state.voicing.total
+  // Sticky: dismissing the error banner must not take "Try again" away while the voice is unfinished.
+  const [voiceFailed, setVoiceFailed] = useState(false)
+  const failedNow = state.error?.kind === 'upstream' && total > 0 && ready.length < total
+  if (failedNow && !voiceFailed) setVoiceFailed(true)
+  if (voiceFailed && !failedNow && (total === 0 || ready.length >= total)) setVoiceFailed(false)
+
+  if (!recipe) return null
 
   return (
     <div className="ui-prep ui-enter">
@@ -71,7 +78,7 @@ export function PrepReview({
           <button type="button" className="ui-btn ui-btn--wide" onClick={onStart} disabled={!canStart}>
             Remy, let's cook!
           </button>
-          <VoicingProgress ready={state.voicing.servings === state.servings ? state.voicing.ready.length : 0} total={state.voicing.total} failed={voiceFailed} onRetry={onRetryVoicing} />
+          <VoicingProgress ready={state.voicing.servings === state.servings ? state.voicing.ready.length : 0} total={state.voicing.total} failed={voiceFailed} onRetry={() => { setVoiceFailed(false); onRetryVoicing() }} />
         </section>
       </div>
     </div>

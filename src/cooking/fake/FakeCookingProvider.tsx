@@ -8,6 +8,7 @@ import { grabSharpestFrame } from '../../camera/grabSharpestFrame.ts'
 import { useHatCam } from '../../camera/useHatCam.ts'
 import { useGestures } from '../../camera/useGestures.ts'
 import { createAudioPlayer } from '../../audio/player.ts'
+import { clipCache } from '../../audio/clipCache.ts'
 import { useAnyCam, USE_ANY_CAMERA } from '../../ui/useAnyCam.ts'
 import type { GestureEvent, ParsedRecipe } from '../../types.ts'
 import { CookingContext, HoldProgressContext, type Controller, type CookingContextValue, type UiAction } from '../contract.ts'
@@ -15,6 +16,7 @@ import { currentStep, gesturesEnabled } from './selectors.ts'
 import { fakeReducer, initialState } from './reducer.ts'
 import { fillPlaceholders, stepClipId } from './scaling.ts'
 import { fakeApi, SILENT_WAV } from './fakeApi.ts'
+import { SAY } from '../../ui/say.ts'
 import { FIXED_CLIP_IDS } from './fixtures.ts'
 
 // Chosen once at load, so the hook order never changes between renders (?cam=any skips the hat cam).
@@ -36,6 +38,13 @@ function wantedClips(recipe: ParsedRecipe, servings: number): { id: string; text
     text: fillPlaceholders(step.spoken, recipe.ingredients, factor, 'spoken'),
   }))
   return [...fixed, ...steps]
+}
+
+/** What the browser speaks if a step's clip is missing, so the step is never silent. */
+function stepSpeech(recipe: ParsedRecipe | null, step: ParsedRecipe['steps'][number], servings: number): string {
+  if (!recipe) return step.spoken
+  const factor = recipe.servings > 0 ? servings / recipe.servings : 1
+  return fillPlaceholders(step.spoken, recipe.ingredients, factor, 'spoken')
 }
 
 export function FakeCookingProvider({ children }: { children: React.ReactNode }) {
@@ -133,17 +142,23 @@ export function FakeCookingProvider({ children }: { children: React.ReactNode })
   /** gestureNext / gestureBack, plus the clip for the step we land on. From cache, never the network (§1). */
   const navigate = useCallback(
     (action: 'gestureNext' | 'gestureBack') => {
+      // 👎 during a ready countdown only cancels it: the step stays and its clip is not replayed (§6.5).
+      const cancelsCountdown = action === 'gestureBack' && stateRef.current.autoAdvanceAt !== null
       clearTimers()
+      if (cancelsCountdown) {
+        rawDispatch({ type: action })
+        return
+      }
       audio.stop()
-rawDispatch({ type: action })
+      rawDispatch({ type: action })
       later(() => {
         const s = stateRef.current
         if (s.phase === 'done') {
-          void audio.play('done', 'Bon appétit, chef!')
+          void audio.play('done', SAY.done)
           return
         }
         const step = s.recipe?.steps[s.stepIndex]
-        if (step) void audio.play(stepClipId(step, s.servings))
+        if (step) void audio.play(stepClipId(step, s.servings), stepSpeech(s.recipe, step, s.servings))
       }, 0)
     },
     [audio, clearTimers, later],
@@ -153,11 +168,11 @@ rawDispatch({ type: action })
     const before = stateRef.current
     const step = currentStep(before)
     if (before.phase !== 'cooking' || before.mode === 'checking' || !step?.checkable) return
-    const requestId = before.requestId
+    const requestId = before.requestId + 1 // what checkStarted bumps it to
     const video = camera.video
 
     rawDispatch({ type: 'checkStarted' })
-    void audio.play('looking', 'Hold still, let me look…')
+    void audio.play('looking', SAY.look)
 
     const startedAt = performance.now()
     while (handVisible.current && performance.now() - startedAt < HAND_OUT_MS) await wait(100)
@@ -213,7 +228,7 @@ rawDispatch({ type: action })
     later(() => {
       const s = stateRef.current
       const step = s.recipe?.steps[0]
-      if (step) void audio.play(stepClipId(step, s.servings))
+      if (step) void audio.play(stepClipId(step, s.servings), stepSpeech(s.recipe, step, s.servings))
     }, 0)
   }, [audio, later])
 
@@ -257,7 +272,13 @@ rawDispatch({ type: action })
   })
 
   const dispatch = useCallback((action: UiAction) => rawDispatch(action), [])
-  const restart = useCallback(() => rawDispatch({ type: 'restart' }), [])
+  const restart = useCallback(() => {
+    clearTimers()
+    voiceRun.current++ // drops a voice run still in flight
+    audio.stop()
+    clipCache.clear()
+    rawDispatch({ type: 'restart' })
+  }, [audio, clearTimers])
 
   const controller = useMemo<Controller>(
     () => ({ submitRecipe, setServings, retryVoicing, start: startCooking, onGesture, restart }),

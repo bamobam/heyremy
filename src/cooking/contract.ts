@@ -163,4 +163,5 @@ export { CookingContext, HoldProgressContext, NO_HOLD, useCooking, useHoldProgre
 // ---------- Implementation (TEMPORARY: swap these two lines for Nam's real modules) ----------
 
 export { FakeCookingProvider as CookingProvider } from './fake/FakeCookingProvider.tsx'
+export { PANCAKE_RECIPE_TEXT as DEMO_RECIPE_TEXT } from './fake/fixtures.ts'
 export { canCheck, canStart, currentStep, filledSteps, gesturesEnabled, isLastStep, scaledIngredients, stepLabel } from './fake/selectors.ts'
