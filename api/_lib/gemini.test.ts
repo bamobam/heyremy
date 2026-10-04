@@ -47,6 +47,7 @@ describe('generateJson', () => {
       responseMimeType: 'application/json',
       responseSchema: { type: 'OBJECT' },
       temperature: 0.2,
+      thinkingConfig: { thinkingLevel: 'low' },
     })
   })
 

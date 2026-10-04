@@ -40,6 +40,8 @@ export async function generateJson(opts: {
       responseMimeType: 'application/json',
       responseSchema: opts.schema,
       temperature: opts.temperature,
+      // Default thinking made /parse take 20–60+ s; low answers in ~4 s with the same output.
+      thinkingConfig: { thinkingLevel: 'low' },
     },
   }
 
