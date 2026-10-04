@@ -50,7 +50,7 @@
 .vd-stand { width: 190px; }
 .vd-stand.big { width: 280px; }
 @keyframes vd-shadow { 50% { transform: scaleX(.85); opacity: .7 } }
-.vd-bubble.left { border-radius: 24px 24px 24px 6px; margin-bottom: 70px; position: relative; }
+.vd-bubble.left { border-radius: 24px 24px 24px 6px; margin-bottom: 30px; position: relative; }
 .vd-bubble.left::before { content: ''; position: absolute; left: -14px; bottom: 14px; border: 8px solid transparent; border-right: 12px solid var(--ink); }
 .vd-bubble.small.left { margin-bottom: 20px; }
 .vd-bubble b { color: var(--umber); }
@@ -122,6 +122,7 @@
 .vd-verdict.ready .vd-hero-shape { background: #FFD84D; opacity: .9; }
 
 .vd-hero .vd-hero-remy { position: relative; width: 250px; }
+.vd-hero .vd-hero-head { position: relative; width: 190px; transform-origin: 50% 85%; animation: badge-rock 3.2s ease-in-out infinite; }
 .vd-spark { position: absolute; color: #FFF7EA; font-style: normal; font-size: 34px; animation: vd-twinkle 1.4s ease-in-out infinite; }
 .vd-spark.s1 { top: 6%; right: 8%; } .vd-spark.s2 { top: 30%; left: 2%; font-size: 24px; animation-delay: .4s; } .vd-spark.s3 { bottom: 10%; right: 0; font-size: 28px; animation-delay: .8s; }
 @keyframes vd-spin { to { transform: rotate(360deg) } }

@@ -4,6 +4,7 @@ import type { Flow } from './useFlow'
 import { recipe, formatAmount, ingredientLook } from './data'
 import { HEAD, RemyLoader, IngredientArt } from './shared'
 import { RiggedRemy } from './RiggedRemy'
+import { RemyBadge } from './RemyBadge'
 import './variantD.css'
 import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes'
 
@@ -54,7 +55,7 @@ export function VariantD({ flow }: { flow: Flow }) {
           </div>
           <div className="vd-paste-right">
             <div className="vd-meet">
-              <div className="vd-stand"><RiggedRemy pose="wave" /><i /></div>
+              <RemyBadge size={200} color="#F6B3BC" form="sunny" />
               <div className="vd-bubble left"><b>{SAY.hello}</b><br />{SAY.ask}</div>
             </div>
             <textarea defaultValue={'Fluffy pancakes (serves 4)\n1 cup flour, 2 tbsp sugar, 2 tsp baking powder, ½ tsp salt, ¾ cup milk, 1 egg, 2 tbsp butter…'} />
@@ -76,7 +77,7 @@ export function VariantD({ flow }: { flow: Flow }) {
           <div className="vd-prep">
             <section className="vd-card">
               <div className="vd-card-head">
-                <div className="vd-plate" style={{ clipPath: shape('cookie') }}><RiggedRemy pose="idle" width={104} /></div>
+                <RemyBadge size={132} color="#DE9762" form="cookie" />
                 <div>
                   <h1>{recipe.title}</h1>
                   <div className="vd-stepper">
@@ -147,7 +148,9 @@ export function VariantD({ flow }: { flow: Flow }) {
                 <div className="vd-hero">
                   <div className="vd-hero-shape" style={{ clipPath: shape(VERDICT_SHAPE[flow.check.verdict.status]) }} />
                   {flow.check.verdict.status === 'ready' && <><i className="vd-spark s1">✦</i><i className="vd-spark s2">✦</i><i className="vd-spark s3">✦</i></>}
-                  <RiggedRemy pose={flow.check.verdict.status === 'ready' ? 'cheer' : 'idle'} className="vd-hero-remy" />
+                  {flow.check.verdict.status === 'ready'
+                    ? <RiggedRemy pose="cheer" className="vd-hero-remy" />
+                    : <img src={HEAD} alt="" className="vd-hero-head" />}
                 </div>
                 <div><div className="vd-catchline">{SAY.verdict[flow.check.verdict.status]}</div><p>{flow.check.verdict.feedback}</p></div>
               </div>
@@ -159,7 +162,7 @@ export function VariantD({ flow }: { flow: Flow }) {
       {flow.screen === 'done' && (
         <div className="vd-full vd-enter" style={{ background: '#657167' }}>
           <div className="vd-meet">
-            <div className="vd-stand big"><RiggedRemy pose="cheer" /><i /></div>
+            <RemyBadge size={230} color="#FFD84D" form="burst" />
             <div className="vd-bubble left"><b>{SAY.done}</b><br />Pancakes are done. You didn't touch the screen once.</div>
           </div>
           <button className="vd-btn light" onClick={flow.restart}>Let's cook something else!</button>
