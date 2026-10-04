@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cam:check": "node scripts/camCheck.ts"
+    "cam:check": "node scripts/camCheck.ts",
+    "prototype": "vite --open /prototype"
   },
   "dependencies": {
     "react": "^19.2.8",
