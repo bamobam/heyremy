@@ -190,8 +190,8 @@ describe('canStart', () => {
       ...ids.map((id) => ({ type: 'clipReady', id, servings }) as const),
     )
 
-  it('is false before any clips are asked for', () => {
-    expect(canStart(prep())).toBe(false)
+  it('is true when there are no clips to wait for, as when there is no voice', () => {
+    expect(canStart(prep())).toBe(true)
   })
 
   it('is false until every clip is ready', () => {
