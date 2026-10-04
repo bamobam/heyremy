@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react'
 import { CAMERA_ERROR_MESSAGES } from './cameraMessages.ts'
 import { emptyTally, stepTally } from './gestureTally.ts'
+import type { GrabResult } from './grabSharpestFrame.ts'
+import { GrabPanel } from './GrabPanel.tsx'
 import { HandOverlay } from './HandOverlay.tsx'
 import { useDetection, type DetectionDeps } from './useDetection.ts'
 import { useHatCam } from './useHatCam.ts'
@@ -38,7 +40,13 @@ function useFrameRate(video: HTMLVideoElement | null, live: boolean): number | n
   return fps
 }
 
-export default function CameraDebug({ detectionDeps }: { detectionDeps?: DetectionDeps }) {
+export default function CameraDebug({
+  detectionDeps,
+  grab,
+}: {
+  detectionDeps?: DetectionDeps
+  grab?: (video: HTMLVideoElement) => Promise<GrabResult>
+}) {
   const { attachVideo, video, status, error, label, stream } = useHatCam()
   const live = status === 'live'
   const [tally, setTally] = useState(emptyTally)
@@ -126,6 +134,8 @@ export default function CameraDebug({ detectionDeps }: { detectionDeps?: Detecti
               Reset counts
             </button>
           </section>
+
+          <GrabPanel video={video} live={live} grab={grab} />
         </div>
       </div>
     </main>

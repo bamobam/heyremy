@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { C270, IPHONE, MACBOOK, installFakeMediaDevices } from '../test/fakes/media.ts'
 import CameraDebug from './CameraDebug.tsx'
+import { GrabError, type GrabResult } from './grabSharpestFrame.ts'
 import type { Detection, Recognizer } from './recognizer.ts'
 import type { DetectionDeps } from './useDetection.ts'
 
@@ -122,5 +123,82 @@ describe('CameraDebug', () => {
       expect(await screen.findByText(/model missing/)).toBeInTheDocument()
       expect(screen.getByText('Detection: error')).toBeInTheDocument()
     })
+  })
+})
+
+describe('CameraDebug grab panel', () => {
+  const grabResult = (bytes = 112 * 1024): GrabResult => ({
+    blob: new Blob([new Uint8Array(bytes)], { type: 'image/jpeg' }),
+    width: 768,
+    height: 432,
+    scores: [10.5, 40.25, 22, 120.75, 30, 5],
+    chosen: 3,
+  })
+
+  async function liveWith(grab: () => Promise<GrabResult>) {
+    installFakeMediaDevices([C270])
+    URL.createObjectURL = vi.fn(() => 'blob:grabbed')
+    URL.revokeObjectURL = vi.fn()
+    render(<CameraDebug detectionDeps={fakeDetection().deps} grab={grab} />)
+    await screen.findByText('live')
+  }
+
+  it('has a Grab button that is disabled until the camera is live', async () => {
+    installFakeMediaDevices([MACBOOK, IPHONE])
+    render(<CameraDebug detectionDeps={fakeDetection().deps} grab={async () => grabResult()} />)
+    await screen.findByText(/Hat cam not found/)
+    expect(screen.getByRole('button', { name: 'Grab frame' })).toBeDisabled()
+  })
+
+  it('shows the grabbed image with its size, dimensions and sharpness scores', async () => {
+    await liveWith(async () => grabResult())
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+
+    const image = await screen.findByAltText('Grabbed frame')
+    expect(image).toHaveAttribute('src', 'blob:grabbed')
+    expect(screen.getByTestId('grab-size')).toHaveTextContent('112 KB')
+    expect(screen.getByTestId('grab-dimensions')).toHaveTextContent('768 × 432')
+    expect(screen.getAllByTestId(/^grab-score-\d+$/)).toHaveLength(6)
+    expect(screen.getByTestId('grab-score-3')).toHaveTextContent('120.8')
+    expect(screen.getByTestId('grab-score-3')).toHaveTextContent('chosen')
+    expect(screen.getByTestId('grab-score-0')).not.toHaveTextContent('chosen')
+  })
+
+  it('shows Grabbing and disables the button while the capture runs', async () => {
+    let finish: (r: GrabResult) => void = () => {}
+    await liveWith(() => new Promise<GrabResult>((resolve) => (finish = resolve)))
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+
+    expect(await screen.findByRole('button', { name: 'Grabbing...' })).toBeDisabled()
+    await act(async () => finish(grabResult()))
+    expect(screen.getByRole('button', { name: 'Grab frame' })).toBeEnabled()
+  })
+
+  it('shows a message when the camera is not available, and lets you try again', async () => {
+    await liveWith(async () => {
+      throw new GrabError('camera_unavailable')
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+
+    expect(await screen.findByText(/Camera not ready/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Grab frame' })).toBeEnabled()
+    expect(screen.queryByAltText('Grabbed frame')).not.toBeInTheDocument()
+  })
+
+  it('releases the previous image when you grab again', async () => {
+    await liveWith(async () => grabResult())
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+    await screen.findByAltText('Grabbed frame')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:grabbed'))
+  })
+
+  it('flags a JPEG outside the 80 to 150 KB target', async () => {
+    await liveWith(async () => grabResult(300 * 1024))
+    fireEvent.click(screen.getByRole('button', { name: 'Grab frame' }))
+    await screen.findByAltText('Grabbed frame')
+    expect(screen.getByTestId('grab-size')).toHaveTextContent('300 KB')
+    expect(screen.getByTestId('grab-size')).toHaveTextContent('outside 80-150 KB')
   })
 })
