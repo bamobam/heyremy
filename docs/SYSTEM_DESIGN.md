@@ -538,7 +538,9 @@ function stepClipId(step: Step, servings: number): string   // "step-3" or "step
 ```
 
 - `factor = chosen servings / recipe.servings`.
-- Screen form rounds to kitchen fractions (⅛ ¼ ⅓ ½ ⅔ ¾) and splits awkward amounts into two units, e.g. ¾ cup at half becomes "⅓ cup + 1 tbsp". Spoken form says it in words: "a third of a cup plus a tablespoon".
+- Screen form rounds to kitchen fractions (⅛ ¼ ⅓ ½ ⅔ ¾). Volumes are worked out in teaspoons and written as the fewest measurable pieces: a clean fraction of a cup (¼ cup or more) stays in cups, otherwise tablespoons and teaspoons, and more than a cup that is not a clean fraction becomes whole cups plus tablespoons. So ¾ cup at half is exactly "6 tbsp", and 1 cup at 1.375 is "1 cup + 6 tbsp". Spoken form says it in words: "six tablespoons of flour", "half a cup of flour". (An earlier example here, "⅓ cup + 1 tbsp", was about 6% too much.)
+- Metric amounts round to whole numbers from 10 up and one decimal below. Any other unit (oz, lb) uses kitchen fractions.
+- `describeIngredient(i, factor)` returns the screen text, the spoken text, the rounding note and whether the amount changed, in one go; `formatAmount` picks one form.
 - Whole items with no unit (eggs) round to whole numbers, never below 1, with a note when the rounding is big ("½ egg rounds to 1 small egg").
 - `amount: null` ("a pinch", "to taste") is never scaled.
 - `{id}` fills in as amount + unit + name ("½ cup flour"). An unknown id is left as the bare name; the server rejects unknown ids, so this shouldn't happen.
@@ -999,7 +1001,7 @@ Outside the app (ADR 0001 and PLAN): if the hat rig fails, the same camera goes 
 | --- | --- | --- |
 | `gestureFilter` | Unit tests with scripted samples: hold, flicker, cooldown, switching intent | Nam |
 | `gestureMapper`, `handPresence` | Unit tests | Nam |
-| `scaling` | Unit tests: halving ¾ cup → "⅓ cup + 1 tbsp", eggs rounding, `null` amounts, spoken form, unknown ids | Nam |
+| `scaling` | Unit tests: halving ¾ cup → "6 tbsp", cup, tablespoon and teaspoon splits, metric, eggs rounding, `null` amounts, spoken form, unknown ids, and a sweep that no amount ever prints NaN or undefined | Nam |
 | `cookingReducer` | Unit tests for every action, including stale `requestId`, stale `servings` clips, 👎 cancelling auto-advance, ignored gestures in `checking` | Nam |
 | `controller` | Tests with fake `api`, `audio`, `camera` and clock, including auto-advance pausing during a hold | Nam |
 | `schemas` (server) | Unit tests with malformed model output, off-by-one ids, unknown placeholders, over-long feedback, bad `status` | Havier |
