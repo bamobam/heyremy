@@ -55,6 +55,18 @@ function pageAudio(): AudioElement {
   return (page[PAGE_AUDIO] ??= new Audio())
 }
 
+/**
+ * One id for the whole page, kept on globalThis like the element. Every player in this page shares it,
+ * so they ignore each other's "I started talking" messages: a BroadcastChannel also reaches other
+ * players in the same page, and a leftover one (after a hot reload or a provider remount) would
+ * otherwise pause the shared element right after a cached clip starts, leaving every step silent.
+ */
+const PAGE_ID = Symbol.for('remy.pageVoiceId')
+function pageVoiceId(): string {
+  const page = globalThis as unknown as Record<symbol, string | undefined>
+  return (page[PAGE_ID] ??= Math.random().toString(36).slice(2))
+}
+
 type Outcome = 'ended' | 'failed' | 'stopped'
 
 export function createAudioPlayer(deps: AudioPlayerDeps): AudioPlayer {
@@ -84,7 +96,7 @@ export function createAudioPlayer(deps: AudioPlayerDeps): AudioPlayer {
 
   // Another open page of the app (a second tab) must not talk over this one: whichever page started
   // talking last wins, and the other stops. Ties go to the larger page id.
-  const pageId = deps.pageId ?? Math.random().toString(36).slice(2)
+  const pageId = deps.pageId ?? pageVoiceId()
   const now = deps.now ?? Date.now
   const channel = deps.channel !== undefined ? deps.channel : typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('remy-voice')
   let startedAt = 0

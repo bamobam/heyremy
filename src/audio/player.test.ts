@@ -317,6 +317,34 @@ describe('one voice across pages', () => {
   })
 })
 
+describe('players in the same page', () => {
+  it('do not silence each other, so a leftover player cannot cut off a cached clip', async () => {
+    // Each player gets its own channel object, as with real BroadcastChannels in one page, and each
+    // hears the others. Delivery is async, as in a browser, so a message lands after the clip has
+    // started. No pageId is passed, so both use the page-wide one.
+    const listeners: Array<{ owner: number; fn: (e: { data: unknown }) => void }> = []
+    const channelFor = (owner: number) => ({
+      postMessage: (data: unknown) => void setTimeout(() => listeners.filter((l) => l.owner !== owner).forEach((l) => l.fn({ data }))),
+      addEventListener: (_: 'message', fn: (e: { data: unknown }) => void) => void listeners.push({ owner, fn }),
+    })
+    const audio = new FakeAudio() // the page's one element
+    const clock = { t: 100 }
+    const make = (owner: number) => {
+      const urls = new FakeObjectUrls()
+      return createAudioPlayer({ speak: async (t) => blob(t), cache: createClipCache(urls), urls, createAudio: () => audio, channel: channelFor(owner), now: () => clock.t })
+    }
+    const leftover = make(1)
+    await leftover.unlock() // it has played, so it holds the shared element
+    const current = make(2)
+    current.preload('step-1', blob('step one'))
+
+    clock.t = 200
+    void current.play('step-1')
+    await new Promise((r) => setTimeout(r, 10)) // let the channel deliver
+    expect(audio.paused).toBe(false)
+  })
+})
+
 describe('one <audio> per page', () => {
   it('shares one element between players, so a second player cuts the first instead of playing over it', async () => {
     // jsdom has no playback, so the test setup stubs play(); note which element each call is on.
