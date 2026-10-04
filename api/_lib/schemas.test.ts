@@ -90,10 +90,13 @@ describe('validateRecipe', () => {
     rejects(r, /unknown ingredient \{sugar\}/)
   })
 
-  it('rejects different placeholders in text and spoken', () => {
+  it('repairs a placeholder that is in only one of text and spoken into the plain ingredient name', () => {
     const r = pancakes()
-    r.steps[0] = step({ text: 'Add {milk} and {egg}.', spoken: 'Step 1. Add {milk}.' })
-    rejects(r, /different placeholders/)
+    r.steps[0] = step({ text: 'Add {milk} and {egg}.', spoken: 'Step 1. Add {milk}, greasing the pan with {butter}.' })
+    const s = validateRecipe(r).steps[0]
+    expect(s.text).toBe('Add {milk} and egg.')
+    expect(s.spoken).toBe('Step 1. Add {milk}, greasing the pan with butter, melted.')
+    expect(placeholders(s.text)).toEqual(placeholders(s.spoken))
   })
 
   it('allows the same placeholder repeated a different number of times', () => {

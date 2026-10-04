@@ -124,6 +124,15 @@ function rewrite(text: string, rename: Map<string, string>): string {
   })
 }
 
+/** Replaces these placeholders with the ingredient's name, without its amount. */
+function toPlainName(s: string, ids: string[], ingredients: Ingredient[]): string {
+  if (ids.length === 0) return s
+  return s.replace(PLACEHOLDER, (whole, id: string) =>
+    // Braces are dropped so a name can never read as a new placeholder.
+    ids.includes(id) ? (ingredients.find((i) => i.id === id)?.name ?? id).replace(/[{}]/g, '') : whole,
+  )
+}
+
 export function validateRecipe(x: unknown): ParsedRecipe {
   if (!isObj(x)) throw new ValidationError('Recipe is not an object.')
 
@@ -147,16 +156,17 @@ export function validateRecipe(x: unknown): ParsedRecipe {
     const rawText = optText(s.text)
     const rawSpoken = optText(s.spoken)
     if (rawText === null || rawSpoken === null) throw new ValidationError(`Step ${n} has empty text.`)
-    const text = rewrite(rawText, rename)
-    const spoken = rewrite(rawSpoken, rename)
+    let text = rewrite(rawText, rename)
+    let spoken = rewrite(rawSpoken, rename)
 
     const inText = placeholders(text)
     const inSpoken = placeholders(spoken)
     const unknown = [...inText, ...inSpoken].find((p) => !ids.has(p))
     if (unknown !== undefined) throw new ValidationError(`Step ${n} uses unknown ingredient {${unknown}}.`)
-    if (inText.join() !== inSpoken.join()) {
-      throw new ValidationError(`Step ${n} has different placeholders in text and spoken.`)
-    }
+    // An ingredient in only one of the two (often a tip in spoken, "greasing the pan with {oil}") becomes its
+    // plain name there, so the amounts said and shown still match. Rejecting the whole recipe over it was too strict.
+    text = toPlainName(text, inText.filter((p) => !inSpoken.includes(p)), ingredients)
+    spoken = toPlainName(spoken, inSpoken.filter((p) => !inText.includes(p)), ingredients)
 
     const cue = optText(s.cue)
     return { id: n, text, spoken, cue, checkable: cue !== null && s.checkable === true, headsUp: optText(s.headsUp) }
