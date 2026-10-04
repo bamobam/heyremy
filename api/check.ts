@@ -7,9 +7,11 @@ import { guard, sendError, sendJson } from './_lib/http.ts'
 import { MAX_CHECK_BODY_BYTES, MAX_CUE_CHARS, MAX_STEP_CHARS, checkJpegBase64, checkText } from './_lib/limits.ts'
 import { log } from './_lib/log.ts'
 import { ValidationError, validateVerdict, verdictSchema } from './_lib/schemas.ts'
-import { CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.ts'
+import { CHECK_MAX_TOKENS, CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.ts'
 
-const GEMINI_TIMEOUT_MS = 7_000 // the client gives up at 8 s
+// The client gives up at 8 s. No retry after a timeout: two slow attempts would outlast it,
+// but a fast 503/429 still gets one try on the fallback model.
+const GEMINI_TIMEOUT_MS = 7_000
 
 /** Request size from content-length, or the parsed body re-serialised when the header is missing. */
 function bodySize(req: VercelRequest): number {
@@ -20,6 +22,8 @@ function bodySize(req: VercelRequest): number {
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const started = Date.now()
   let modelMs: number | undefined
+  let model: string | undefined
+  let attempts: number | undefined
   let verdict: Verdict | undefined
   try {
     if (!guard(req, res, { method: 'POST', contentType: 'application/json' })) return
@@ -37,16 +41,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       parts: buildCheckParts(image as string, (cue as string).trim(), (step as string).trim()),
       schema: verdictSchema,
       temperature: CHECK_TEMPERATURE,
+      maxOutputTokens: CHECK_MAX_TOKENS,
       timeoutMs: GEMINI_TIMEOUT_MS,
     })
     modelMs = out.modelMs
+    model = out.model
+    attempts = out.attempts
     verdict = validateVerdict(out.data)
     sendJson(res, verdict)
   } catch (e) {
     if (e instanceof ValidationError) sendError(res, 'unprocessable', e.message)
-    else if (e instanceof ProviderError) sendError(res, e.kind, e.message)
+    else if (e instanceof ProviderError) {
+      attempts = e.attempts
+      sendError(res, e.kind, e.message)
+    }
     else sendError(res, 'unknown', 'Something went wrong.')
   } finally {
-    log({ route: '/api/check', status: res.statusCode, latencyMs: Date.now() - started, modelMs, verdict: verdict?.status })
+    log({ route: '/api/check', status: res.statusCode, latencyMs: Date.now() - started, modelMs, model, attempts, verdict: verdict?.status })
   }
 }

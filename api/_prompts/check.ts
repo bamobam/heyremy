@@ -4,6 +4,8 @@
 export type Part = string | { inlineData: { mimeType: string; data: string } }
 
 export const CHECK_TEMPERATURE = 0.2
+// A verdict is ~30 output tokens; this only stops a runaway response.
+export const CHECK_MAX_TOKENS = 512
 
 export const CHECK_SYSTEM = `You are Remy, a hands-free cooking buddy. The cook wears a camera on their chef's hat and has asked you to check whether the current step is done. You get one photo from that hat cam, the step's cue (the visible sign the step is done) and the step itself.
 

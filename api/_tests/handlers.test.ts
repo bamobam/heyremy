@@ -108,15 +108,19 @@ describe.each(routes)('%s: shared guards and errors', (_name, h, body) => {
 
 describe('/api/parse', () => {
   it('returns the validated recipe and logs without recipe text', async () => {
-    gen.mockResolvedValue({ data: RECIPE, modelMs: 42 })
+    gen.mockResolvedValue({ data: RECIPE, modelMs: 42, model: 'gemini-test', attempts: 1 })
     const res = await call(parse, { recipe: `  ${RECIPE_TEXT}  ` })
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual(RECIPE)
     const args = gen.mock.calls[0][0]
     expect(args.parts[0]).toContain(`<recipe>\n${RECIPE_TEXT}\n</recipe>`)
     expect(args.timeoutMs).toBeLessThan(20_000)
+    // The fallback gets whatever the first attempt leaves of the budget.
+    expect(args.firstAttemptMs).toBeLessThan(args.timeoutMs)
+    expect(args.retryOnTimeout).toBe(true)
+    expect(args.maxOutputTokens).toBeGreaterThan(0)
     const line = oneLog()
-    expect(line).toMatchObject({ route: '/api/parse', status: 200, modelMs: 42 })
+    expect(line).toMatchObject({ route: '/api/parse', status: 200, modelMs: 42, model: 'gemini-test', attempts: 1 })
     expect(JSON.stringify(line)).not.toContain('pancakes')
   })
   it('400 on a missing or too-long recipe', async () => {
@@ -125,7 +129,7 @@ describe('/api/parse', () => {
     expect(gen).not.toHaveBeenCalled()
   })
   it('422 when the model returns junk', async () => {
-    gen.mockResolvedValue({ data: { title: 'x', steps: [] }, modelMs: 1 })
+    gen.mockResolvedValue({ data: { title: 'x', steps: [] }, modelMs: 1, model: 'gemini-test', attempts: 1 })
     const res = await call(parse, { recipe: RECIPE_TEXT })
     expect(res.statusCode).toBe(422)
     expect(oneLog().status).toBe(422)
@@ -133,15 +137,25 @@ describe('/api/parse', () => {
 })
 
 describe('/api/check', () => {
+  it('logs the attempt count when the fallback also failed', async () => {
+    const e = new ProviderError('upstream', 'Gemini (fallback) returned 503.')
+    e.attempts = 2
+    gen.mockRejectedValue(e)
+    expect((await call(check, CHECK_BODY)).statusCode).toBe(502)
+    expect(oneLog()).toMatchObject({ status: 502, attempts: 2 })
+  })
   it('returns the verdict and logs its status without image data', async () => {
-    gen.mockResolvedValue({ data: { status: 'not_ready', feedback: 'Still lumpy. Keep whisking.' }, modelMs: 900 })
+    gen.mockResolvedValue({ data: { status: 'not_ready', feedback: 'Still lumpy. Keep whisking.' }, modelMs: 900, model: 'gemini-test', attempts: 1 })
     const res = await call(check, CHECK_BODY)
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ status: 'not_ready', feedback: 'Still lumpy. Keep whisking.' })
     const parts = gen.mock.calls[0][0].parts
     expect(parts.at(-1)).toEqual({ inlineData: { mimeType: 'image/jpeg', data: JPEG } })
+    // Two slow attempts would outlast the client's 8 s, so no retry after a timeout.
+    expect(gen.mock.calls[0][0].retryOnTimeout).toBeFalsy()
+    expect(gen.mock.calls[0][0].timeoutMs).toBeLessThan(8_000)
     const line = oneLog()
-    expect(line).toMatchObject({ route: '/api/check', status: 200, verdict: 'not_ready', modelMs: 900 })
+    expect(line).toMatchObject({ route: '/api/check', status: 200, verdict: 'not_ready', modelMs: 900, model: 'gemini-test', attempts: 1 })
     expect(JSON.stringify(line)).not.toContain(JPEG)
   })
   it('400 on a missing or too-long field', async () => {
@@ -160,7 +174,7 @@ describe('/api/check', () => {
     oneLog()
   })
   it('422 when the model returns junk', async () => {
-    gen.mockResolvedValue({ data: { status: 'maybe', feedback: 'hm' }, modelMs: 1 })
+    gen.mockResolvedValue({ data: { status: 'maybe', feedback: 'hm' }, modelMs: 1, model: 'gemini-test', attempts: 1 })
     expect((await call(check, CHECK_BODY)).statusCode).toBe(422)
     expect(oneLog().verdict).toBeUndefined()
   })

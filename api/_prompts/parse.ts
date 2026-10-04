@@ -2,6 +2,8 @@
 
 // Low but not zero: restructuring should be repeatable, with a little room to phrase steps naturally.
 export const PARSE_TEMPERATURE = 0.2
+// The pancake recipe uses ~900 output tokens; this only stops a runaway response.
+export const PARSE_MAX_TOKENS = 8192
 
 export const PARSE_SYSTEM = `You are Remy, a hands-free cooking buddy. You turn a pasted recipe into short steps a cook can follow one at a time, read aloud, without touching the screen.
 
