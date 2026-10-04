@@ -8,8 +8,8 @@ import { SAY } from './say.ts'
 import { HoldProgressContext } from '../cooking/context.ts'
 import type { HoldProgress } from '../types.ts'
 
-const renderVerdict = (status: 'ready' | 'not_ready' | 'unsure', autoAdvanceAt: number | null = null, feedback = '') =>
-  render(<VerdictPopup verdict={{ status, feedback }} autoAdvanceAt={autoAdvanceAt} now={0} />)
+const renderVerdict = (status: 'ready' | 'not_ready' | 'unsure', feedback = '') =>
+  render(<VerdictPopup verdict={{ status, feedback }} />)
 
 const renderPill = (hold: HoldProgress) =>
   render(
@@ -49,19 +49,20 @@ describe('GestureLegend', () => {
 describe('VerdictPopup', () => {
   it('says something different for each of the three answers', () => {
     for (const status of ['ready', 'not_ready', 'unsure'] as const) {
-      const { unmount } = renderVerdict(status, null, 'because')
+      const { unmount } = renderVerdict(status, 'because')
       expect(screen.getByText(SAY.verdict[status])).toBeTruthy()
       expect(screen.getByText('because')).toBeTruthy()
       unmount()
     }
   })
 
-  it('counts down to the next step only when it is ready', () => {
-    const { container: ready } = renderVerdict('ready', 2000)
-    expect(ready.querySelector('.ui-countdown')).toBeTruthy()
+  it('says it moves on only when it is ready, with no countdown bar or number', () => {
+    const { container: ready } = renderVerdict('ready')
+    expect(ready.textContent).toContain('Moving on in a moment')
+    expect(ready.querySelector('.ui-countdown')).toBeNull()
 
     const { container: notReady } = renderVerdict('not_ready')
-    expect(notReady.querySelector('.ui-countdown')).toBeNull()
+    expect(notReady.textContent).not.toContain('Moving on')
   })
 
   it('gives each verdict its own colour field', () => {

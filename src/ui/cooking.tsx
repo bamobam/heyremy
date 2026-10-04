@@ -1,7 +1,7 @@
 // The cooking screen's components (§9.3): the step-card carousel, the hold pill, the gesture legend
 // and the verdict overlay. Remy is present here, so these are the pieces read at 2 m.
 import type { CSSProperties } from 'react'
-import { AUTO_ADVANCE_MS, useCooking, useHoldProgress, type FilledStep } from '../cooking/contract.ts'
+import { useCooking, useHoldProgress, type FilledStep } from '../cooking/contract.ts'
 import { CameraView } from './CameraView.tsx'
 import { fieldFor, VERDICT_FIELDS } from './fields.ts'
 import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
@@ -140,9 +140,8 @@ export function GestureFallbackNote() {
  * view above it. `ready` celebrates and counts down to the next step; the other two wait for the
  * cook, who can always check again (✋) or move on (👍) (§9.3).
  */
-export function VerdictPopup({ verdict, autoAdvanceAt, now }: { verdict: { status: 'ready' | 'not_ready' | 'unsure'; feedback: string }; autoAdvanceAt: number | null; now: number }) {
+export function VerdictPopup({ verdict }: { verdict: { status: 'ready' | 'not_ready' | 'unsure'; feedback: string } }) {
   const ready = verdict.status === 'ready'
-  const left = autoAdvanceAt === null ? 0 : Math.max(0, Math.min(1, (autoAdvanceAt - now) / AUTO_ADVANCE_MS))
 
   return (
     <div className={`ui-verdict ui-verdict--${verdict.status}`} role="status" style={{ background: VERDICT_FIELDS[verdict.status] }}>
@@ -161,12 +160,8 @@ export function VerdictPopup({ verdict, autoAdvanceAt, now }: { verdict: { statu
         <div className="ui-verdict__catchline">{SAY.verdict[verdict.status]}</div>
         <p className="ui-verdict__text">{verdict.feedback}</p>
         {ready ? (
-          <>
-            <p className="ui-verdict__foot">Moving on in {Math.ceil(left * (AUTO_ADVANCE_MS / 1000))} seconds · 👎 to stay</p>
-            <div className="ui-countdown" aria-hidden>
-              <i style={{ transform: `scaleX(${left})` }} />
-            </div>
-          </>
+          // No number: the move waits for Remy to finish speaking, so a count would sit frozen mid-verdict.
+          <p className="ui-verdict__foot">Moving on in a moment · 👎 to stay</p>
         ) : (
           <p className="ui-verdict__foot">
             {verdict.status === 'not_ready' ? '✋ check again whenever you like · 👍 move on anyway' : '✋ try again · 👍 move on anyway'}

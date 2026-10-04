@@ -1,6 +1,5 @@
 // CookingScreen (§9.2): the hands-free part. The page takes the step's colour field, the cards slide
 // along one track, and the check happens inside the current card. Every pointer down counts as a tap.
-import { useEffect, useState } from 'react'
 import { canCheck, currentStep, filledSteps, useCooking, type ShownStep } from '../cooking/contract.ts'
 import { GestureFallbackNote, GestureLegend, HoldPill, StepCard, StepProgress, VerdictPopup } from './cooking.tsx'
 import { fieldFor } from './fields.ts'
@@ -21,23 +20,11 @@ function bubbleFor(step: ShownStep | null, index: number, checking: boolean) {
   )
 }
 
-/** Re-renders on a timer while a verdict is counting down, so the bar and the seconds move. */
-function useTicking(active: boolean, ms = 100): number {
-  const [now, setNow] = useState(() => performance.now())
-  useEffect(() => {
-    if (!active) return
-    const id = window.setInterval(() => setNow(performance.now()), ms)
-    return () => clearInterval(id)
-  }, [active, ms])
-  return now
-}
-
 export function CookingScreen() {
   const { state, dispatch } = useCooking()
   const steps = filledSteps(state)
   const field = fieldFor(state.stepIndex)
   const checking = state.mode === 'checking'
-  const now = useTicking(state.mode === 'verdict')
 
   return (
     <div
@@ -74,7 +61,7 @@ export function CookingScreen() {
       <HoldPill canCheck={canCheck(state)} />
 
       {state.mode === 'verdict' && state.verdict && (
-        <VerdictPopup verdict={state.verdict} autoAdvanceAt={state.autoAdvanceAt} now={now} />
+        <VerdictPopup verdict={state.verdict} />
       )}
     </div>
   )
