@@ -55,7 +55,8 @@ export function scaledIngredients(s: CookingState): ScaledIngredient[] {
       label: ingredientLabel(i, f, 'screen'),
       amount: i.amount === null ? 'a little' : amount,
       name,
-      changed: changedServings,
+      // Only amounts that actually read differently count; "a little" never changes.
+      changed: changedServings && i.amount !== null && amount !== formatAmount(i, 1, 'screen'),
       note: roundingNote(i, f),
     }
   })

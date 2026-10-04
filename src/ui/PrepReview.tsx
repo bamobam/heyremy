@@ -71,7 +71,7 @@ export function PrepReview({
           <button type="button" className="ui-btn ui-btn--wide" onClick={onStart} disabled={!canStart}>
             Remy, let's cook!
           </button>
-          <VoicingProgress ready={state.voicing.ready.length} total={state.voicing.total} failed={voiceFailed} onRetry={onRetryVoicing} />
+          <VoicingProgress ready={state.voicing.servings === state.servings ? state.voicing.ready.length : 0} total={state.voicing.total} failed={voiceFailed} onRetry={onRetryVoicing} />
         </section>
       </div>
     </div>

@@ -1,15 +1,18 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import CameraDebug from './camera/CameraDebug.tsx'
-// PROTOTYPE (throwaway): /prototype mounts the UI variants. Remove when a variant is picked.
-import RemyUIPrototype from './prototype/remy-ui'
 
-// /?debug=camera opens the camera track's developer page instead of the app.
+// /?debug=camera opens the camera track's developer page; /prototype mounts the UI prototypes.
+// Both load on demand, so neither (nor the prototype's global CSS) ships in the app's own bundle.
+const CameraDebug = lazy(() => import('./camera/CameraDebug.tsx'))
+const RemyUIPrototype = lazy(() => import('./prototype/remy-ui'))
+
 const debug = new URLSearchParams(window.location.search).get('debug')
 const isPrototype = location.pathname.startsWith('/prototype')
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>{isPrototype ? <RemyUIPrototype /> : debug === 'camera' ? <CameraDebug /> : <App />}</StrictMode>,
+  <StrictMode>
+    <Suspense fallback={null}>{isPrototype ? <RemyUIPrototype /> : debug === 'camera' ? <CameraDebug /> : <App />}</Suspense>
+  </StrictMode>,
 )

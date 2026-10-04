@@ -155,7 +155,7 @@ export function VoicingProgress({ ready, total, failed, onRetry }: { ready: numb
   return (
     <div className="ui-voicing">
       <span>
-        {failed ? "Remy's voice isn't ready" : `Preparing voice… ${ready}/${total}`}
+        {failed ? "Remy's voice isn't ready" : total > 0 && ready >= total ? "Remy's voice is ready" : `Preparing voice… ${ready}/${total}`}
       </span>
       {failed && (
         <button type="button" onClick={onRetry}>

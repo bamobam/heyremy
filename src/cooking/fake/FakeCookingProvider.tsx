@@ -235,6 +235,22 @@ rawDispatch({ type: action })
   const handleGesture = useCallback((e: GestureEvent) => onGestureRef.current(e), [])
 
   const gestures = useGestures(camera.video, { enabled: gesturesEnabledNow, onGesture: handleGesture })
+
+  // Keyboard stand-in for gestures (N = 👍 next, B = 👎 back, Space = ✋ check), so the app can be
+  // driven without a working hat cam. Ignored while typing in a field.
+  useEffect(() => {
+    if (!gesturesEnabledNow) return
+    const keys: Record<string, GestureEvent['intent']> = { n: 'next', b: 'back', ' ': 'check' }
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')) return
+      const intent = keys[e.key.toLowerCase()]
+      if (!intent) return
+      e.preventDefault()
+      handleGesture({ intent, at: performance.now() })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [gesturesEnabledNow, handleGesture])
   useEffect(() => {
     handVisible.current = gestures.handVisible
     holding.current = gestures.holdProgress.intent !== null

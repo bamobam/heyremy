@@ -118,10 +118,14 @@ describe('scaledIngredients', () => {
     expect(rows.find(r => r.id === 'flour')?.amount).toBe('1 cup')
   })
 
-  it('scales and marks the rows as changed', () => {
+  it('scales and marks the measured rows as changed', () => {
     const rows = scaledIngredients(at({ servings: 8 }))
     expect(rows.find(r => r.id === 'flour')?.amount).toBe('2 cups')
-    expect(rows.every(r => r.changed)).toBe(true)
+    expect(rows.filter(r => r.id !== 'oil').every(r => r.changed)).toBe(true)
+  })
+
+  it('never marks an unmeasured amount ("a little") as changed', () => {
+    expect(scaledIngredients(at({ servings: 8 })).find(r => r.id === 'oil')?.changed).toBe(false)
   })
 
   it('says "a little" for the unmeasured oil rather than inventing 0', () => {
