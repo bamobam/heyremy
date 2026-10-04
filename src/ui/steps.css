@@ -53,6 +53,12 @@
   transition: opacity 0.35s ease;
 }
 
+.ui-card__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .ui-card__num {
   display: flex;
   flex: none;
@@ -206,6 +212,25 @@
   color: var(--card);
   font-size: 22px;
   font-weight: 800;
+}
+
+/* Whether Remy can check the step: a lit pill when it can, a dashed outline when there is nothing to check. */
+.ui-checkbadge {
+  min-width: 0;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.ui-checkbadge--yes {
+  background: var(--pink);
+  color: var(--ink);
+}
+
+.ui-checkbadge--no {
+  border: 2px dashed currentcolor;
+  opacity: 0.85;
 }
 
 .ui-cue {

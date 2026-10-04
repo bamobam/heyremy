@@ -2,7 +2,7 @@
 // carry the cook-facing copy and the accessible names, so they are worth pinning down.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { GestureLegend, HoldPill, VerdictPopup } from './cooking.tsx'
+import { CheckBadge, GestureLegend, HoldPill, VerdictPopup } from './cooking.tsx'
 import { ErrorBanner, HeadsUpBanner, ServingsStepper, VoicingProgress } from './prep.tsx'
 import { SAY } from './say.ts'
 import { HoldProgressContext } from '../cooking/context.ts'
@@ -43,6 +43,21 @@ describe('GestureLegend', () => {
   it('lights ✋ on a checkable step', () => {
     const { container } = render(<GestureLegend canCheck />)
     expect(container.querySelector('.ui-legend__check--on')).toBeTruthy()
+  })
+})
+
+describe('CheckBadge', () => {
+  it('says Remy can check a checkable step', () => {
+    const { container } = render(<CheckBadge checkable />)
+    expect(screen.getByText(/remy can check this/i)).toBeTruthy()
+    expect(container.querySelector('.ui-checkbadge--yes')).toBeTruthy()
+  })
+
+  it('says plainly that there is nothing to check, and that 👍 is all that is needed', () => {
+    const { container } = render(<CheckBadge checkable={false} />)
+    expect(screen.getByText(/nothing to check/i).textContent).toMatch(/👍/)
+    expect(container.querySelector('.ui-checkbadge--no')).toBeTruthy()
+    expect(screen.queryByText(/remy can check/i)).toBeNull()
   })
 })
 
