@@ -41,3 +41,21 @@ export interface Verdict {
   /** Spoken to the cook, under 15 words; includes a fix when not_ready. */
   feedback: string
 }
+
+/** What a held gesture asks for. Thumbs-up = next, thumbs-down = back, open palm = check. */
+export type GestureIntent = 'next' | 'back' | 'check'
+
+/** Fired once when a gesture has been held long enough. */
+export interface GestureEvent {
+  intent: GestureIntent
+  /** performance.now() when the hold completed. */
+  at: number
+}
+
+/** Drives the hold ring while a gesture is being held. */
+export interface HoldProgress {
+  /** The gesture being held, or null when nothing is. */
+  intent: GestureIntent | null
+  /** 0..1 */
+  progress: number
+}
