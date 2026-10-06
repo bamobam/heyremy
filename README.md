@@ -4,6 +4,9 @@
 
 Built at StormHacks 2026. **Live:** <https://heyremy.vercel.app>
 
+#### Demo link: 
+<https://www.youtube.com/watch?v=ZNVChhM1RV0>
+
 ## How it works
 
 1. **Paste a recipe (or a link to one).** Gemini rewrites it for cooking, not reading: hidden prep ("preheat the oven", "melt the butter") moves to a *Before you start* list, each step gets a heat level and a rough time, a heads-up arrives one step before you need a hot pan, and a final step checks the food is done before you serve.
