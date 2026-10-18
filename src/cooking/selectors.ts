@@ -11,6 +11,8 @@ export interface ShownStep {
   cue: string | null
   checkable: boolean
   headsUp: string | null
+  /** The cue changes with time (boiling, browning, rising): a check takes several frames, not one. */
+  timeDependent?: boolean
 }
 
 /** The recipe's amounts times this make the chosen servings. */
@@ -27,6 +29,7 @@ export function currentStep(s: CookingState): ShownStep | null {
     cue: step.cue,
     checkable: step.checkable,
     headsUp: step.headsUp,
+    timeDependent: step.timeDependent,
   }
 }
 

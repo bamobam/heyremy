@@ -119,9 +119,11 @@ export function createController({ getState, dispatch, api, camera, now, voice }
     checkAbort = abort
     const stale = () => abort.signal.aborted || getState().requestId !== id
 
-    let frame: { blob: Blob }
+    // One frame for most steps (latency matters). A step whose cue changes with time gets a burst, so the
+    // model can see what changes between frames; that takes about 1.4 s longer.
+    let frame: Blob | Blob[]
     try {
-      frame = await camera.grabForCheck()
+      frame = step.timeDependent === true ? (await camera.grabBurstForCheck()).blobs : (await camera.grabForCheck()).blob
     } catch {
       if (stale()) return
       dispatch({ type: 'checkFailed', requestId: id, error: { kind: 'camera', message: 'Camera not ready. Try again.' } })
@@ -129,7 +131,7 @@ export function createController({ getState, dispatch, api, camera, now, voice }
     }
 
     try {
-      const verdict = await api.checkStep(frame.blob, { text: step.text, cue: step.cue ?? '' }, { signal: abort.signal })
+      const verdict = await api.checkStep(frame, { text: step.text, cue: step.cue ?? '' }, { signal: abort.signal })
       if (stale()) return
       dispatch({ type: 'checkSucceeded', requestId: id, verdict, now: now() })
       if (verdict.status === 'ready') startAutoAdvance(id)

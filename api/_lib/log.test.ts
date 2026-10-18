@@ -12,6 +12,9 @@ describe('formatLog', () => {
     const line = formatLog({ route: '/api/speak', status: 429, latencyMs: 1, limit: 'daily' })
     expect(JSON.parse(line)).toEqual({ route: '/api/speak', status: 429, latencyMs: 1, limit: 'daily' })
   })
+  it('writes how many frames a check carried', () => {
+    expect(JSON.parse(formatLog({ route: '/api/check', status: 200, latencyMs: 1, frames: 3 }))).toMatchObject({ frames: 3 })
+  })
   it('drops any extra fields, such as recipe text or images', () => {
     const leaky = { route: '/api/parse', status: 200, latencyMs: 10, recipe: 'secret', image: 'abc' } as LogEntry
     expect(formatLog(leaky)).not.toMatch(/secret|abc/)

@@ -76,6 +76,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   const flow = useMemo(() => {
     const port: CameraPort = {
       grabForCheck: () => cameraRef.current.grabForCheck(),
+      grabBurstForCheck: async () => ({ blobs: (await cameraRef.current.grabBurstForCheck()).map((frame) => frame.blob) }),
       isHolding: () => cameraRef.current.holdProgress.intent !== null,
     }
     return createController({

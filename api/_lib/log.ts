@@ -19,12 +19,14 @@ export interface LogEntry {
   verdict?: Verdict['status']
   /** Why the request got a 429 from our own limiter. Never the client's address. */
   limit?: LimitReason
+  /** /check only: how many frames the request carried (1, or 2 to 4 for a step whose cue changes with time). */
+  frames?: number
 }
 
 /** Builds the line from known fields only, so stray data can't leak into logs. */
 export function formatLog(e: LogEntry): string {
-  const { route, status, latencyMs, modelMs, model, attempts, source, verdict, limit } = e
-  return JSON.stringify({ route, status, latencyMs, modelMs, model, attempts, source, verdict, limit })
+  const { route, status, latencyMs, modelMs, model, attempts, source, verdict, limit, frames } = e
+  return JSON.stringify({ route, status, latencyMs, modelMs, model, attempts, source, verdict, limit, frames })
 }
 
 export function log(e: LogEntry): void {

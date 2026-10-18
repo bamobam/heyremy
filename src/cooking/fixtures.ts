@@ -46,6 +46,7 @@ export const pancakes: ParsedRecipe = {
       cue: 'Bubbles on top and the edges look set',
       checkable: true,
       headsUp: null,
+      timeDependent: true,
     },
     {
       id: 5,

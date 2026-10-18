@@ -56,6 +56,8 @@ describe('isParsedRecipe', () => {
     ['a step whose cue is a number', (r: any) => (r.steps[0].cue = 4)],
     ['a step whose headsUp is a number', (r: any) => (r.steps[0].headsUp = 4)],
     ['a checkable step with no cue', (r: any) => (r.steps[0].cue = null)],
+    ['a step whose timeDependent is not a boolean', (r: any) => (r.steps[0].timeDependent = 'yes')],
+    ['a step whose timeDependent is null', (r: any) => (r.steps[0].timeDependent = null)],
   ])('rejects %s', (_name, damage) => {
     const r = copy()
     damage(r)
@@ -66,6 +68,13 @@ describe('isParsedRecipe', () => {
     expect(isParsedRecipe(pancakes)).toBe(true)
     expect(pancakes.ingredients.some((i) => i.amount === null && i.unit === null)).toBe(true)
     expect(pancakes.steps.some((s) => s.cue === null && s.headsUp === null && !s.checkable)).toBe(true)
+  })
+
+  it.each([true, false, undefined])('accepts a step whose timeDependent is %s', (timeDependent) => {
+    const r = copy() as any
+    if (timeDependent === undefined) delete r.steps[0].timeDependent
+    else r.steps[0].timeDependent = timeDependent
+    expect(isParsedRecipe(r)).toBe(true)
   })
 
   it('rejects a step that uses an ingredient id the recipe does not have', () => {

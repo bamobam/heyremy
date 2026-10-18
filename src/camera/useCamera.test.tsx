@@ -234,4 +234,104 @@ describe('useCamera', () => {
       expect(grab).not.toHaveBeenCalled()
     })
   })
+
+  describe('grabBurstForCheck', () => {
+    const settle = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms))
+
+    async function mountWithFakeTimers(grab = vi.fn(async () => grabbed())) {
+      vi.useFakeTimers()
+      installFakeMediaDevices([C270])
+      const d = fakeDetection()
+      render(<Harness deps={{ detection: d.deps, grab }} />)
+      await settle(20)
+      expect(screen.getByTestId('ready')).toHaveTextContent('true')
+      return { d, grab }
+    }
+
+    it('takes 3 frames about 700 ms apart when no hand is in view', async () => {
+      const grabAt: number[] = []
+      const grab = vi.fn(async () => {
+        grabAt.push(Date.now())
+        return grabbed()
+      })
+      await mountWithFakeTimers(grab)
+      let result: GrabResult[] | undefined
+      void camera.grabBurstForCheck().then((r) => (result = r))
+      await settle(0)
+      expect(grab).toHaveBeenCalledTimes(1)
+      await settle(1400)
+      expect(grab).toHaveBeenCalledTimes(3)
+      expect(grabAt[1] - grabAt[0]).toBe(700)
+      expect(grabAt[2] - grabAt[1]).toBe(700)
+      expect(result).toEqual([grabbed(), grabbed(), grabbed()])
+    })
+
+    it('takes the number of frames it is asked for', async () => {
+      const { grab } = await mountWithFakeTimers()
+      let result: GrabResult[] | undefined
+      void camera.grabBurstForCheck(2).then((r) => (result = r))
+      await settle(1000)
+      expect(grab).toHaveBeenCalledTimes(2)
+      expect(result).toHaveLength(2)
+    })
+
+    it('waits for the palm to leave once, before the first frame', async () => {
+      const { d, grab } = await mountWithFakeTimers()
+      d.at(0, openPalm)
+      let result: GrabResult[] | undefined
+      void camera.grabBurstForCheck().then((r) => (result = r))
+
+      await settle(200)
+      expect(grab).not.toHaveBeenCalled()
+
+      d.holdFor(100, 500, none)
+      await settle(100)
+      expect(grab).toHaveBeenCalledTimes(1)
+
+      // A hand back in view mid-burst (the cook stirs) does not hold the other frames up.
+      d.at(600, openPalm)
+      await settle(1400)
+      expect(grab).toHaveBeenCalledTimes(3)
+      expect(result).toHaveLength(3)
+    })
+
+    it('takes the frames anyway after 1.5 s if the hand stays', async () => {
+      const { d, grab } = await mountWithFakeTimers()
+      d.at(0, openPalm)
+      void camera.grabBurstForCheck()
+      await settle(1400)
+      expect(grab).not.toHaveBeenCalled()
+      await settle(200)
+      expect(grab).toHaveBeenCalledTimes(1)
+    })
+
+    it('rejects with camera_unavailable when the camera is not live, without taking a frame', async () => {
+      vi.useFakeTimers()
+      installFakeMediaDevices([MACBOOK, IPHONE])
+      const d = fakeDetection()
+      const grab = vi.fn(async () => grabbed())
+      render(<Harness deps={{ detection: d.deps, grab }} />)
+      await settle(20)
+
+      await expect(camera.grabBurstForCheck()).rejects.toMatchObject({ kind: 'camera_unavailable' })
+      expect(grab).not.toHaveBeenCalled()
+    })
+
+    it('rejects with the capture error, and takes no more frames, if a frame fails', async () => {
+      const grab = vi.fn(async () => grabbed())
+      grab.mockResolvedValueOnce(grabbed()).mockRejectedValueOnce(new GrabError('camera_unavailable'))
+      await mountWithFakeTimers(grab)
+      const outcome = camera.grabBurstForCheck().then(() => 'frames', (e: unknown) => e)
+      await settle(2000)
+      expect(await outcome).toMatchObject({ kind: 'camera_unavailable' })
+      expect(grab).toHaveBeenCalledTimes(2)
+    })
+
+    it('leaves a single check as it was: one frame, no burst', async () => {
+      const { grab } = await mountWithFakeTimers()
+      void camera.grabForCheck()
+      await settle(2000)
+      expect(grab).toHaveBeenCalledTimes(1)
+    })
+  })
 })

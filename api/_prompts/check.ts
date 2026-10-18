@@ -20,9 +20,27 @@ Rules:
 
 Return only JSON: {"status": "ready" | "not_ready" | "unsure", "feedback": string}.`
 
-export function buildCheckParts(imageB64: string, cue: string, step: string): Part[] {
+// Added to CHECK_SYSTEM only when a check sends several frames, so a single-photo check is word for word what it was.
+const CHECK_BURST_RULES = `This check sends several frames instead of one photo. They come from the same camera over about two seconds, in time order: the first is the oldest. The cue changes with time (boiling, browning, rising), so judge it by what changes between the frames, and use the last frame for how things are now. Rules 1 to 5 still apply to every frame.`
+
+/** The system prompt for a check with this many images: the usual one, plus the frames rule when there are several. */
+export function buildCheckSystem(imageCount: number): string {
+  return imageCount > 1 ? `${CHECK_SYSTEM}\n\n${CHECK_BURST_RULES}` : CHECK_SYSTEM
+}
+
+const jpeg = (data: string): Part => ({ inlineData: { mimeType: 'image/jpeg', data } })
+
+/**
+ * The request parts: the cue and step as text, then the JPEG. With a list of several, each frame follows
+ * a short label, in the order given (time order, oldest first).
+ */
+export function buildCheckParts(images: string | string[], cue: string, step: string): Part[] {
+  const frames = typeof images === 'string' ? [images] : images
+  if (frames.length === 1) {
+    return [`Cue: ${cue}\nStep: ${step}\nIs the cue met in this photo?`, jpeg(frames[0])]
+  }
   return [
-    `Cue: ${cue}\nStep: ${step}\nIs the cue met in this photo?`,
-    { inlineData: { mimeType: 'image/jpeg', data: imageB64 } },
+    `Cue: ${cue}\nStep: ${step}\nIs the cue met in these ${frames.length} frames?`,
+    ...frames.flatMap((data, i) => [`Frame ${i + 1} of ${frames.length}`, jpeg(data)]),
   ]
 }

@@ -106,7 +106,7 @@ export default function ApiDebug({
   const [checking, setChecking] = useState(false)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const [checkMs, setCheckMs] = useState<number | null>(null)
-  const [photo, setPhoto] = useState<{ url: string; kb: number } | null>(null)
+  const [photo, setPhoto] = useState<{ url: string; kb: number; frames: number } | null>(null)
   const [checkError, setCheckError] = useState<Failure | null>(null)
   const photoUrl = useRef<string | null>(null)
   useEffect(
@@ -126,18 +126,19 @@ export default function ApiDebug({
   const { attachVideo } = camera
   const live = camera.status === 'live'
 
-  async function check() {
+  /** One photo, or with `burst` several frames as for a step whose cue changes with time. */
+  async function check(burst = false) {
     if (checking || camera.status !== 'live') return
     setChecking(true)
     setCheckError(null)
     try {
-      const frame = await camera.grabForCheck()
+      const blobs = burst ? (await camera.grabBurstForCheck()).map((frame) => frame.blob) : [(await camera.grabForCheck()).blob]
       if (photoUrl.current) URL.revokeObjectURL(photoUrl.current)
-      photoUrl.current = URL.createObjectURL(frame.blob)
-      setPhoto({ url: photoUrl.current, kb: Math.round(frame.blob.size / 1024) })
+      photoUrl.current = URL.createObjectURL(blobs[blobs.length - 1])
+      setPhoto({ url: photoUrl.current, kb: Math.round(blobs.reduce((sum, blob) => sum + blob.size, 0) / 1024), frames: blobs.length })
 
       const started = now()
-      const result = await api.checkStep(frame.blob, stepToCheck)
+      const result = await api.checkStep(burst ? blobs : blobs[0], stepToCheck)
       setCheckMs(now() - started)
       setVerdict(result)
     } catch (error) {
@@ -238,9 +239,15 @@ export default function ApiDebug({
             )}
             {checkable.length === 0 && <p className="camera-debug__hint">Parse a recipe to pick a step. Until then a sample step is used.</p>}
 
-            <button type="button" onClick={check} disabled={!live || checking}>
+            <button type="button" onClick={() => void check()} disabled={!live || checking}>
               {checking ? 'Checking...' : 'Check with a photo'}
+            </button>{' '}
+            <button type="button" onClick={() => void check(true)} disabled={!live || checking}>
+              Check with 3 frames
             </button>
+            <p className="camera-debug__hint">
+              Three frames about 700 ms apart, as for a step whose cue changes with time. It takes about 1.4 s longer than a photo.
+            </p>
             <p className="camera-debug__hint">Or hold an open palm for 1 s, then take your hand away: it checks by itself.</p>
 
             {checkError && <ErrorLine failure={checkError} />}
@@ -256,7 +263,7 @@ export default function ApiDebug({
             {photo && (
               <>
                 <img className="camera-debug__grab" src={photo.url} alt="Photo sent to the check" />
-                <p className="camera-debug__hint" data-testid="photo-size">{`${photo.kb} KB sent`}</p>
+                <p className="camera-debug__hint" data-testid="photo-size">{photo.frames > 1 ? `${photo.frames} frames, ${photo.kb} KB sent` : `${photo.kb} KB sent`}</p>
               </>
             )}
           </section>
