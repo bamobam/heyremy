@@ -3,9 +3,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { FetchRecipeError, fetchRecipeText, isRecipeUrl } from './_lib/fetchRecipe.js'
 import { ProviderError, generateJson } from './_lib/gemini.js'
-import { guard, sendError, sendJson } from './_lib/http.js'
+import { guard, rateLimit, sendError, sendJson } from './_lib/http.js'
 import { MAX_RECIPE_CHARS, checkText } from './_lib/limits.js'
 import { log } from './_lib/log.js'
+import type { LimitReason } from './_lib/ratelimit.js'
 import { ValidationError, recipeSchema, validateRecipe } from './_lib/schemas.js'
 import { PARSE_MAX_TOKENS, PARSE_SYSTEM, PARSE_TEMPERATURE, buildParseParts } from './_prompts/parse.js'
 
@@ -21,8 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let model: string | undefined
   let attempts: number | undefined
   let source: 'text' | 'json-ld' | 'page-text' | undefined
+  let limit: LimitReason | undefined
   try {
     if (!guard(req, res, { method: 'POST', contentType: 'application/json' })) return
+    limit = rateLimit(req, res, 'parse')
+    if (limit) return
     const body: unknown = req.body
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
       return sendError(res, 'bad_request', 'Send a JSON object.')
@@ -69,6 +73,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
     else sendError(res, 'unknown', 'Something went wrong.')
   } finally {
-    log({ route: '/api/parse', status: res.statusCode, latencyMs: Date.now() - started, modelMs, model, attempts, source })
+    log({ route: '/api/parse', status: res.statusCode, latencyMs: Date.now() - started, modelMs, model, attempts, source, limit })
   }
 }

@@ -3,9 +3,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { Verdict } from '../src/types.js'
 import { ProviderError, generateJson } from './_lib/gemini.js'
-import { guard, sendError, sendJson } from './_lib/http.js'
+import { guard, rateLimit, sendError, sendJson } from './_lib/http.js'
 import { MAX_CHECK_BODY_BYTES, MAX_CUE_CHARS, MAX_STEP_CHARS, checkJpegBase64, checkText } from './_lib/limits.js'
 import { log } from './_lib/log.js'
+import type { LimitReason } from './_lib/ratelimit.js'
 import { ValidationError, validateVerdict, verdictSchema } from './_lib/schemas.js'
 import { CHECK_MAX_TOKENS, CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.js'
 
@@ -25,8 +26,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let model: string | undefined
   let attempts: number | undefined
   let verdict: Verdict | undefined
+  let limit: LimitReason | undefined
   try {
     if (!guard(req, res, { method: 'POST', contentType: 'application/json' })) return
+    limit = rateLimit(req, res, 'check')
+    if (limit) return
     if (bodySize(req) > MAX_CHECK_BODY_BYTES) return sendError(res, 'bad_request', 'Request is over 1.5 MB.')
     const body: unknown = req.body
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
@@ -57,6 +61,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
     else sendError(res, 'unknown', 'Something went wrong.')
   } finally {
-    log({ route: '/api/check', status: res.statusCode, latencyMs: Date.now() - started, modelMs, model, attempts, verdict: verdict?.status })
+    log({ route: '/api/check', status: res.statusCode, latencyMs: Date.now() - started, modelMs, model, attempts, verdict: verdict?.status, limit })
   }
 }

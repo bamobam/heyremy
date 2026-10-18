@@ -32,6 +32,23 @@ describe('userMessage', () => {
   })
 })
 
+describe('userMessage with a message from the server', () => {
+  const daily = "Remy has reached today's limit. Try again tomorrow."
+
+  it('shows the server message for a rate limit, so the daily cap can say "tomorrow"', () => {
+    expect(userMessage('rate_limited', daily)).toBe(daily)
+  })
+
+  it.each([undefined, '', '   '])('keeps the default for a rate limit when the server sent %j', (sent) => {
+    expect(userMessage('rate_limited', sent)).toBe('Too many requests, wait a few seconds.')
+  })
+
+  it('does not take the server message for any other kind', () => {
+    expect(userMessage('upstream', 'Gemini returned 503.')).toBe('Something went wrong on our side. Try again.')
+    expect(userMessage('timeout', 'slow')).toBe('That took too long. Try again.')
+  })
+})
+
 describe('ApiError', () => {
   it('carries the kind and status, and is an Error', () => {
     const e = new ApiError('upstream', { status: 502 })
@@ -45,5 +62,12 @@ describe('ApiError', () => {
 
   it('uses a message from the server when it gives one', () => {
     expect(new ApiError('unprocessable', { message: 'No steps found.' }).message).toBe('No steps found.')
+  })
+
+  it('uses the server message for a rate limit, and the default when there is none', () => {
+    expect(new ApiError('rate_limited', { message: "Remy has reached today's limit. Try again tomorrow." }).message).toBe(
+      "Remy has reached today's limit. Try again tomorrow.",
+    )
+    expect(new ApiError('rate_limited', { status: 429 }).message).toBe('Too many requests, wait a few seconds.')
   })
 })

@@ -1,6 +1,6 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { FALLBACK_MODEL, GEMINI_MODEL, ProviderError, generateJson, retry } from './gemini.js'
+import { BUSY_MESSAGE, FALLBACK_MODEL, GEMINI_MODEL, ProviderError, generateJson, retry } from './gemini.js'
 
 const opts = {
   system: 'sys',
@@ -64,9 +64,12 @@ describe('generateJson', () => {
     expect(attempts).toBe(1)
   })
 
-  it('maps 429 to rate_limited', async () => {
+  it('maps 429 to rate_limited, with words a cook can read rather than the provider name', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 429 })))
     expect(await kindOf(generateJson(opts))).toBe('rate_limited')
+    const e = await generateJson(opts).catch((x: unknown) => x)
+    expect((e as ProviderError).message).toBe(BUSY_MESSAGE)
+    expect(BUSY_MESSAGE).not.toMatch(/gemini|elevenlabs|429/i)
   })
 
   it('maps 500 to upstream', async () => {
@@ -140,7 +143,7 @@ describe('generateJson fallback', () => {
     const e = await generateJson(roomy).catch((x: unknown) => x)
     expect(e).toBeInstanceOf(ProviderError)
     expect((e as ProviderError).kind).toBe('rate_limited')
-    expect((e as ProviderError).message).toContain('fallback')
+    expect((e as ProviderError).message).toBe(BUSY_MESSAGE)
     expect((e as ProviderError).attempts).toBe(2)
   })
 

@@ -2,6 +2,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProviderError, generateJson } from '../_lib/gemini.js'
+import { sharedLimiter } from '../_lib/ratelimit.js'
 import { synthesize } from '../_lib/elevenlabs.js'
 import { FetchRecipeError, fetchRecipeText } from '../_lib/fetchRecipe.js'
 import check from '../check.js'
@@ -32,9 +33,14 @@ function fakeRes() {
 
 type Handler = (req: VercelRequest, res: VercelResponse) => Promise<void>
 
-async function call(h: Handler, body: unknown, opts: { method?: string; type?: string; length?: string } = {}) {
+async function call(
+  h: Handler,
+  body: unknown,
+  opts: { method?: string; type?: string; length?: string; ip?: string } = {},
+) {
   const headers: Record<string, string> = { 'content-type': opts.type ?? 'application/json' }
   if (opts.length) headers['content-length'] = opts.length
+  if (opts.ip) headers['x-forwarded-for'] = opts.ip
   const req = { method: opts.method ?? 'POST', headers, body } as unknown as VercelRequest
   const res = fakeRes()
   await h(req, res as unknown as VercelResponse)
@@ -53,12 +59,26 @@ const RECIPE = {
 }
 const CHECK_BODY = { image: JPEG, cue: 'Smooth, no lumps', step: 'Whisk the batter.' }
 
+// Every setting the limiter reads. Cleared before each test so what the shell exports cannot change a result.
+const LIMIT_ENV = [
+  'RATE_LIMIT_OFF',
+  'RATE_PARSE_PER_MIN',
+  'RATE_CHECK_PER_MIN',
+  'RATE_SPEAK_PER_MIN',
+  'DAILY_CAP_PARSE',
+  'DAILY_CAP_CHECK',
+  'DAILY_CAP_SPEAK',
+]
+
 let logSpy: ReturnType<typeof vi.spyOn>
 beforeEach(() => {
   logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  for (const name of LIMIT_ENV) vi.stubEnv(name, undefined)
+  sharedLimiter.reset()
 })
 afterEach(() => {
   vi.resetAllMocks()
+  vi.unstubAllEnvs()
   logSpy.mockRestore()
 })
 
@@ -245,5 +265,120 @@ describe('/api/speak', () => {
     expect((await call(speak, {})).statusCode).toBe(400)
     expect((await call(speak, { text: 'x'.repeat(301) })).statusCode).toBe(400)
     expect(synth).not.toHaveBeenCalled()
+  })
+})
+
+describe.each(routes)('%s: rate limits', (name, h, body) => {
+  const route = name as 'parse' | 'check' | 'speak'
+  const PER_MIN = { parse: 6, check: 20, speak: 60 }[route]
+  const ok = () => {
+    gen.mockResolvedValue({ data: route === 'check' ? { status: 'ready', feedback: 'Smooth.' } : RECIPE, modelMs: 1, model: 'gemini-test', attempts: 1 })
+    synth.mockResolvedValue(Buffer.from([1, 2, 3]))
+  }
+  const calls = () => (route === 'speak' ? synth.mock.calls.length : gen.mock.calls.length)
+
+  beforeEach(() => {
+    ok()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(Date.UTC(2026, 9, 18, 12, 0, 0))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('allows the default per-minute number of requests from one client, then answers 429', async () => {
+    for (let i = 0; i < PER_MIN; i++) expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(200)
+    const res = await call(h, body, { ip: '203.0.113.7' })
+    expect(res.statusCode).toBe(429)
+    expect(res.body).toEqual({ error: { kind: 'rate_limited', message: 'Too many requests. Wait a minute and try again.' } })
+    expect(Number(res.headers['Retry-After'])).toBeGreaterThanOrEqual(1)
+    expect(Number(res.headers['Retry-After'])).toBeLessThanOrEqual(60)
+    expect(calls()).toBe(PER_MIN) // the refused request never reached the provider
+  })
+
+  it('lets the same client back in once the minute has passed', async () => {
+    vi.stubEnv(`RATE_${route.toUpperCase()}_PER_MIN`, '2')
+    await call(h, body, { ip: '203.0.113.7' })
+    await call(h, body, { ip: '203.0.113.7' })
+    expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(429)
+    vi.advanceTimersByTime(60_000)
+    expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(200)
+  })
+
+  it('does not hold one client back for another', async () => {
+    vi.stubEnv(`RATE_${route.toUpperCase()}_PER_MIN`, '1')
+    expect((await call(h, body, { ip: '203.0.113.7, 10.0.0.1' })).statusCode).toBe(200)
+    expect((await call(h, body, { ip: '203.0.113.7, 10.0.0.2' })).statusCode).toBe(429)
+    expect((await call(h, body, { ip: '198.51.100.4, 10.0.0.1' })).statusCode).toBe(200)
+  })
+
+  it('answers the daily cap for everyone with a different message, until the next UTC day', async () => {
+    vi.stubEnv(`DAILY_CAP_${route.toUpperCase()}`, '2')
+    expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(200)
+    expect((await call(h, body, { ip: '198.51.100.4' })).statusCode).toBe(200)
+    const res = await call(h, body, { ip: '192.0.2.99' })
+    expect(res.statusCode).toBe(429)
+    expect(res.body).toEqual({ error: { kind: 'rate_limited', message: "Remy has reached today's limit. Try again tomorrow." } })
+    expect(res.headers['Retry-After']).toBe(String(12 * 60 * 60))
+    expect(calls()).toBe(2)
+    vi.setSystemTime(Date.UTC(2026, 9, 19, 0, 0, 0))
+    expect((await call(h, body, { ip: '192.0.2.99' })).statusCode).toBe(200)
+  })
+
+  it('logs the route, status and reason, and never the address', async () => {
+    vi.stubEnv(`RATE_${route.toUpperCase()}_PER_MIN`, '1')
+    await call(h, body, { ip: '203.0.113.7' })
+    logSpy.mockClear()
+    await call(h, body, { ip: '203.0.113.7' })
+    const line = oneLog()
+    expect(line).toMatchObject({ route: `/api/${route}`, status: 429, limit: 'per_minute' })
+    expect(JSON.stringify(line)).not.toContain('203.0.113.7')
+    vi.stubEnv(`DAILY_CAP_${route.toUpperCase()}`, '1')
+    logSpy.mockClear()
+    await call(h, body, { ip: '198.51.100.4' })
+    expect(oneLog()).toMatchObject({ status: 429, limit: 'daily' })
+  })
+
+  it('does not put a limit field in the log of a request that was allowed', async () => {
+    await call(h, body, { ip: '203.0.113.7' })
+    expect(oneLog().limit).toBeUndefined()
+  })
+
+  it('refuses before reading the body, so a bad body from a limited client is a 429, not a 400', async () => {
+    vi.stubEnv(`RATE_${route.toUpperCase()}_PER_MIN`, '1')
+    await call(h, body, { ip: '203.0.113.7' })
+    expect((await call(h, 'not an object', { ip: '203.0.113.7' })).statusCode).toBe(429)
+  })
+
+  it('does not count a wrong method or content type against the client', async () => {
+    vi.stubEnv(`RATE_${route.toUpperCase()}_PER_MIN`, '1')
+    for (let i = 0; i < 3; i++) {
+      expect((await call(h, body, { method: 'GET', ip: '203.0.113.7' })).statusCode).toBe(405)
+      expect((await call(h, body, { type: 'text/plain', ip: '203.0.113.7' })).statusCode).toBe(415)
+    }
+    expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(200)
+  })
+
+  it('does nothing when RATE_LIMIT_OFF=1', async () => {
+    vi.stubEnv('RATE_LIMIT_OFF', '1')
+    vi.stubEnv(`RATE_${route.toUpperCase()}_PER_MIN`, '1')
+    vi.stubEnv(`DAILY_CAP_${route.toUpperCase()}`, '1')
+    for (let i = 0; i < 4; i++) expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(200)
+  })
+
+  it('falls back to the defaults for an invalid override', async () => {
+    vi.stubEnv(`RATE_${route.toUpperCase()}_PER_MIN`, '0')
+    vi.stubEnv(`DAILY_CAP_${route.toUpperCase()}`, 'many')
+    for (let i = 0; i < PER_MIN; i++) expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(200)
+    expect((await call(h, body, { ip: '203.0.113.7' })).statusCode).toBe(429)
+  })
+
+  it('tells a provider that is out of capacity apart from our own limit', async () => {
+    gen.mockRejectedValue(new ProviderError('rate_limited', 'provider slow down'))
+    synth.mockRejectedValue(new ProviderError('rate_limited', 'provider slow down'))
+    const res = await call(h, body, { ip: '203.0.113.7' })
+    expect(res.statusCode).toBe(429)
+    expect(res.headers['Retry-After']).toBeUndefined()
+    expect(oneLog().limit).toBeUndefined()
   })
 })

@@ -1,7 +1,7 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ELEVEN_MODEL, VOICE_ID, synthesize } from './elevenlabs.js'
-import { ProviderError } from './gemini.js'
+import { BUSY_MESSAGE, ProviderError } from './gemini.js'
 
 async function kindOf(p: Promise<unknown>): Promise<string> {
   try {
@@ -36,6 +36,7 @@ describe('synthesize', () => {
   it('maps 429 to rate_limited and 500 to upstream', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 429 })))
     expect(await kindOf(synthesize('hi'))).toBe('rate_limited')
+    expect(await synthesize('hi').catch((e: unknown) => (e as ProviderError).message)).toBe(BUSY_MESSAGE)
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })))
     expect(await kindOf(synthesize('hi'))).toBe('upstream')
   })

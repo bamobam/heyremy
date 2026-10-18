@@ -50,6 +50,25 @@ describe('postJson', () => {
     await expect(postJson('/api/parse', {}, opts, fetchFn)).rejects.toMatchObject({ kind: 'rate_limited' })
   })
 
+  it('surfaces the server message on a 429, which is how the daily cap tells the cook to come back tomorrow', async () => {
+    const message = "Remy has reached today's limit. Try again tomorrow."
+    const fetchFn = vi.fn(async () => json({ error: { kind: 'rate_limited', message } }, 429))
+    await expect(postJson('/api/parse', {}, opts, fetchFn)).rejects.toMatchObject({ kind: 'rate_limited', message, status: 429 })
+  })
+
+  it('keeps the default rate-limit message when a 429 comes with no message (or no JSON at all)', async () => {
+    const bare = vi.fn(async () => json({ error: { kind: 'rate_limited' } }, 429))
+    await expect(postJson('/api/parse', {}, opts, bare)).rejects.toMatchObject({
+      kind: 'rate_limited',
+      message: 'Too many requests, wait a few seconds.',
+    })
+    const html = vi.fn(async () => new Response('<html>Too Many Requests</html>', { status: 429 }))
+    await expect(postJson('/api/parse', {}, opts, html)).rejects.toMatchObject({
+      kind: 'rate_limited',
+      message: 'Too many requests, wait a few seconds.',
+    })
+  })
+
   it('treats a network failure as unknown', async () => {
     const fetchFn = vi.fn(async () => {
       throw new TypeError('Failed to fetch')

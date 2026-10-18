@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
-import { handleApiRequest, syncEnvKeys, type ApiHandler } from './devApiCore.ts'
+import { applyDevDefaults, handleApiRequest, syncEnvKeys, type ApiHandler } from './devApiCore.ts'
 
 const json = (body: unknown) => JSON.stringify(body)
 const request = (over: Partial<Parameters<typeof handleApiRequest>[0]> = {}) => ({
@@ -113,6 +113,44 @@ describe('handleApiRequest', () => {
     const handler: ApiHandler = async () => {}
     const out = await handleApiRequest(request(), async () => handler)
     expect(out.status).toBe(500)
+  })
+
+  it('passes a response header such as Retry-After through, so a 429 reaches the browser as the function sent it', async () => {
+    const handler: ApiHandler = async (_req, res) => {
+      res.setHeader('Retry-After', '42')
+      res.status(429).json({ error: { kind: 'rate_limited', message: 'Too many requests. Wait a minute and try again.' } })
+    }
+    const out = await handleApiRequest(request(), async () => handler)
+    expect(out.status).toBe(429)
+    expect(out.headers['Retry-After']).toBe('42')
+  })
+
+  it('gives the handler x-forwarded-for in lower case, joined when it arrives as a list, for the limiter to read', async () => {
+    const { handler, seen } = recordingHandler()
+    await handleApiRequest(request({ headers: { 'X-Forwarded-For': ['203.0.113.7', '10.0.0.1'] } }), async () => handler)
+    expect(seen.headers).toEqual({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1' })
+  })
+})
+
+describe('applyDevDefaults', () => {
+  it('turns the rate limits off when nothing says otherwise, and reports that it did', () => {
+    const env: Record<string, string | undefined> = {}
+    expect(applyDevDefaults(env)).toBe(true)
+    expect(env.RATE_LIMIT_OFF).toBe('1')
+  })
+
+  it('leaves a choice the developer made alone, even RATE_LIMIT_OFF=0 to try the limits locally', () => {
+    for (const chosen of ['0', '1', '']) {
+      const env: Record<string, string | undefined> = { RATE_LIMIT_OFF: chosen }
+      expect(applyDevDefaults(env)).toBe(false)
+      expect(env.RATE_LIMIT_OFF).toBe(chosen)
+    }
+  })
+
+  it('does not touch any other setting', () => {
+    const env: Record<string, string | undefined> = { RATE_PARSE_PER_MIN: '2', DAILY_CAP_SPEAK: '9' }
+    applyDevDefaults(env)
+    expect(env).toEqual({ RATE_PARSE_PER_MIN: '2', DAILY_CAP_SPEAK: '9', RATE_LIMIT_OFF: '1' })
   })
 })
 

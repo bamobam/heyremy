@@ -65,6 +65,24 @@ describe('parseRecipe', () => {
   })
 })
 
+describe('when the server limits the cook', () => {
+  const perMinute = 'Too many requests. Wait a minute and try again.'
+  const daily = "Remy has reached today's limit. Try again tomorrow."
+  const limited = (message: string) => fakeFetch(async () => json({ error: { kind: 'rate_limited', message } }, 429))
+  const frame = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])], { type: 'image/jpeg' })
+
+  it('parseRecipe throws a rate_limited error carrying the server message', async () => {
+    await expect(createApiClient(limited(perMinute)).parseRecipe('pancakes')).rejects.toMatchObject({ kind: 'rate_limited', message: perMinute })
+    await expect(createApiClient(limited(daily)).parseRecipe('pancakes')).rejects.toMatchObject({ kind: 'rate_limited', message: daily })
+  })
+
+  it('checkStep throws a rate_limited error carrying the server message', async () => {
+    const outcome = createApiClient(limited(daily)).checkStep(frame, { text: 'Whisk.', cue: 'Smooth' }).catch((e: unknown) => e)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(await outcome).toMatchObject({ kind: 'rate_limited', message: daily })
+  })
+})
+
 describe('checkStep', () => {
   const frame = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])], { type: 'image/jpeg' })
   const step = { text: 'Whisk 1 cup flour and 2 eggs into a batter.', cue: 'Batter is smooth' }

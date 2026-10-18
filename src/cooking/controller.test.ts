@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ParsedRecipe, Verdict } from '../types.ts'
+import { ApiError } from '../api/errors.ts'
 import { createController } from './controller.ts'
 import { pancakes } from './fixtures.ts'
 import type { ApiClient, CameraPort } from './ports.ts'
@@ -95,6 +96,14 @@ describe('submitting a recipe', () => {
       recipeText: 'my recipe',
       error: { kind: 'unprocessable', message: 'bad recipe' },
     })
+  })
+
+  it("shows the server's own words when the daily cap stops the parse", async () => {
+    const h = setup()
+    const message = "Remy has reached today's limit. Try again tomorrow."
+    h.api.parseRecipe.mockRejectedValueOnce(new ApiError('rate_limited', { message, status: 429 }))
+    await h.controller.submitRecipe('x')
+    expect(h.state).toMatchObject({ phase: 'input', error: { kind: 'rate_limited', message } })
   })
 
   it('reports an unknown error for something that is not an API error', async () => {

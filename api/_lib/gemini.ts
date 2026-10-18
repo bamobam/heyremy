@@ -15,6 +15,12 @@ const MIN_RETRY_MS = 2_000
 /** Jittered pause before the retry. Tests replace this to run without waiting. */
 export const retry = { delayMs: (): number => 500 + Math.random() * 500 }
 
+/**
+ * What the cook reads when Gemini or ElevenLabs itself says "too many requests". The client shows a 429's
+ * message as it is, so it is plain words, not the provider's name. (Our own limits say theirs in ratelimit.ts.)
+ */
+export const BUSY_MESSAGE = 'Remy is busy right now. Wait a few seconds and try again.'
+
 /** A provider failure the handler maps straight to an ApiErrorBody. */
 export class ProviderError extends Error {
   kind: ApiErrorKind
@@ -117,7 +123,7 @@ async function callOnce(
   }
 
   // 429 and 5xx are capacity problems another model may not have; 4xx are our fault and won't change.
-  if (res.status === 429) throw new ProviderError('rate_limited', `${name} rate limit hit.`, { retryable: true })
+  if (res.status === 429) throw new ProviderError('rate_limited', BUSY_MESSAGE, { retryable: true })
   if (!res.ok) throw new ProviderError('upstream', `${name} returned ${res.status}.`, { retryable: res.status >= 500 })
 
   let json: GeminiResponse

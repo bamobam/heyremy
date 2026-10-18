@@ -1,6 +1,6 @@
 // ElevenLabs text-to-speech, one fixed voice (SYSTEM_DESIGN 10.5).
 
-import { ProviderError } from './gemini.js'
+import { BUSY_MESSAGE, ProviderError } from './gemini.js'
 
 // Premade voice "Alice" (clear, British); free plans can't use library voices via the API. Not a secret.
 export const VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2'
@@ -24,7 +24,7 @@ export async function synthesize(text: string): Promise<Buffer> {
     throw new ProviderError('upstream', timedOut ? 'ElevenLabs timed out.' : 'ElevenLabs request failed.')
   }
 
-  if (res.status === 429) throw new ProviderError('rate_limited', 'ElevenLabs rate limit hit.')
+  if (res.status === 429) throw new ProviderError('rate_limited', BUSY_MESSAGE)
   if (!res.ok) throw new ProviderError('upstream', `ElevenLabs returned ${res.status}.`)
 
   try {

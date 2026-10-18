@@ -130,3 +130,14 @@ export function syncEnvKeys(
     }
   }
 }
+
+/**
+ * The dev server is one person trying things (parse alone is limited to 6 a minute, which a prompt-tuning
+ * session passes easily), so the rate limits start off here. A developer who has set RATE_LIMIT_OFF
+ * themselves, even to 0 to try the limits locally, keeps their choice. Returns true when it switched them off.
+ */
+export function applyDevDefaults(env: Record<string, string | undefined>): boolean {
+  if (env.RATE_LIMIT_OFF !== undefined) return false
+  env.RATE_LIMIT_OFF = '1'
+  return true
+}
