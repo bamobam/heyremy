@@ -10,7 +10,8 @@ import { loadEnv, type Plugin } from 'vite'
 import { handleApiRequest, syncEnvKeys, type ApiHandler } from './devApiCore.ts'
 
 const KEYS = ['GEMINI_API_KEY', 'ELEVENLABS_API_KEY']
-const MAX_BODY_BYTES = 2 * 1024 * 1024
+// The biggest body any route takes: a check with several frames (MAX_CHECK_BURST_BODY_BYTES in api/_lib/limits.ts).
+const MAX_BODY_BYTES = 3 * 1024 * 1024
 
 /** The keys this plugin has put in process.env, so a restart can replace them (see syncEnvKeys). */
 const setByUs = new Set<string>()

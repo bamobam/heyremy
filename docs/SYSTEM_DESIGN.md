@@ -374,6 +374,10 @@ function grabSharpestFrame(video: HTMLVideoElement, opts?: { frames?: 6; spanMs?
 2. For each, convert to grayscale and compute the variance of a Laplacian (a standard sharpness score). Higher is sharper.
 3. Redraw the sharpest at the output size (long side 768 px) and encode as JPEG at quality 0.8, roughly 80–150 KB.
 
+#### `grabBurst.ts` (several frames for one check)
+
+One still can't tell a simmer from a boil or a dough that has risen. For a step with `timeDependent: true`, a check takes a burst instead: `grabBurst(video, { frames: 3, spacingMs: 700 })` runs `grabSharpestFrame` that many times (1 to 4), starting each 700 ms after the one before, and returns the JPEGs in time order. That is about 1.9 s for 3 frames, against 0.5 s for one. If the camera drops partway it rejects and takes no more frames.
+
 ### 5.8 `useCamera.ts` (the one hook the controller uses)
 
 `useCamera` is seam A. It combines the camera connection (5.1), detection and gestures (5.2 to 5.6, through `useGestures`) and the photo for a check (5.7):
@@ -390,6 +394,7 @@ function useCamera(opts: {
   handVisible: boolean;
   ready: boolean;                       // camera live and gestures being read
   grabForCheck(): Promise<GrabResult>;  // wait for the palm to leave, then the sharpest frame as a JPEG
+  grabBurstForCheck(frames?: number): Promise<GrabResult[]>;  // the same wait (once), then 3 frames 700 ms apart
   // plus label, error, reconnects, stalls, detection, isHandVisible()
 }
 ```
@@ -399,9 +404,10 @@ Rules the controller can rely on:
 - **Gestures only run while the camera is live.** If the cable drops, any half-held gesture is forgotten and a fresh hold is needed after reconnecting, so nothing fires by surprise.
 - **Pausing is not disabling.** While `paused`, no gesture fires, but the hand is still watched. A gesture still held when the pause ends has to be let go before it can fire again, so a palm held through a check does not start a second one.
 - **`grabForCheck`** waits up to 1.5 s for the hand to leave the frame, then captures. If the hand is still there it captures anyway (the check can answer "unsure"). It rejects with `camera_unavailable` if the camera is not live, or drops while waiting.
+- **`grabBurstForCheck`** waits for the hand once, at the start, and rejects the same way. A hand coming back into view mid-burst (the cook stirs) does not hold the other frames up.
 - A gap of more than 500 ms between frames (hidden tab, stalled video) also starts a hold over.
 
-How the controller's check flow uses it: on a `check` gesture it sets `paused`, plays the "Hold still" clip, awaits `grabForCheck()`, sends the JPEG to `/api/check`, and clears `paused` when the verdict is shown.
+How the controller's check flow uses it: on a `check` gesture it sets `paused`, plays the "Hold still" clip, awaits `grabForCheck()` (or `grabBurstForCheck()` when the current step is `timeDependent`), sends the JPEG (or the JPEGs, in time order) to `/api/check`, and clears `paused` when the verdict is shown.
 
 ### Hour-1 test
 
@@ -881,6 +887,7 @@ Environment variables, set in Vercel only (and `env/.env.local` for development)
 | --- | --- |
 | `/parse` recipe length | 10,000 characters |
 | `/check` image | 1 MB decoded, JPEG only (checked by magic bytes); request body 1.5 MB |
+| `/check` images (several frames, for a step whose cue changes with time) | 2 to 4 JPEGs, 512 KB decoded each; request body 3 MB (Vercel refuses about 4.5 MB). Send `image` or `images`, not both |
 | `/check` cue and step text | 300 characters each |
 | `/speak` text length | 300 characters |
 
@@ -936,6 +943,7 @@ One fixed voice, a low-latency model, `mp3_44100_64` output (small files, quick 
 4. `ready` feedback confirms and moves on ("Smooth batter. On to the next step.").
 5. Feedback is under 15 words and sounds natural spoken.
 6. Temperature 0.2.
+7. With several frames, the system prompt gets one more paragraph: they are sequential frames over about two seconds, oldest first; judge the cue by what changes between them and use the last frame for how things are now. The cue, step and verdict format are unchanged. A single-photo check sends exactly the prompt it always did.
 
 ### 10.7 Endpoints
 
@@ -974,10 +982,10 @@ One fixed voice, a low-latency model, `mp3_44100_64` output (small files, quick 
 
 | | |
 | --- | --- |
-| Request | `application/json`: `{ "image": base64 JPEG, "cue": string, "step": string }` |
-| Success | `200` `Verdict` |
+| Request | `application/json`: `{ "image": base64 JPEG, "cue": string, "step": string }`, or for a step with `timeDependent: true`, `{ "images": [base64 JPEG, …], "cue": string, "step": string }` with 2 to 4 frames in time order (oldest first) |
+| Success | `200` `Verdict` (the same for one frame or several) |
 | Errors | `400` bad image or missing field · `415` not JSON · `422` · `502` · `429` |
-| Typical latency | 1.5–4 s |
+| Typical latency | 1.5–4 s for one frame. With several frames, add about 1.4 s for the client to take 3 frames (700 ms apart) plus a little to upload and read them; the Gemini budget is 9 s instead of 7 s, and the client waits 10 s instead of 8 s |
 
 ```json
 { "status": "not_ready", "feedback": "Still some dry flour streaks. Keep whisking." }
@@ -996,7 +1004,7 @@ All error responses share the `ApiErrorBody` shape from the contract.
 
 ### 10.8 `_lib/log.ts`
 
-One line of JSON per request: route, status, latency, model latency, and for `/check` the verdict status. No recipe text, no images, no keys. Useful for the "what breaks first" Q&A answer and for tuning during polish.
+One line of JSON per request: route, status, latency, model latency, and for `/check` the verdict status and how many frames it carried. No recipe text, no images, no keys. Useful for the "what breaks first" Q&A answer and for tuning during polish.
 
 ## 11. End-to-end flows
 

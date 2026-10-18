@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { GestureEvent, HoldProgress } from '../types.ts'
 import type { FilterConfig } from './gestureFilter.ts'
 import type { Mapping } from './gestureMapper.ts'
+import { BURST_FRAMES, grabBurst } from './grabBurst.ts'
 import { GrabError, grabSharpestFrame, type GrabResult } from './grabSharpestFrame.ts'
 import type { Detection } from './recognizer.ts'
 import type { DetectionDeps, DetectionStatus } from './useDetection.ts'
@@ -65,6 +66,14 @@ export interface Camera {
    * `camera_unavailable` if the camera is not live, or drops while waiting.
    */
   grabForCheck: () => Promise<GrabResult>
+
+  /**
+   * For a check on a step whose cue changes with time: the same wait for the palm (once, at the start),
+   * then `frames` frames (default 3) about 700 ms apart, each the sharpest of its own short run, in
+   * time order. Takes about 1.4 s longer than `grabForCheck`. Rejects like `grabForCheck`, and if the
+   * camera drops partway.
+   */
+  grabBurstForCheck: (frames?: number) => Promise<GrabResult[]>
 }
 
 /**
@@ -103,13 +112,27 @@ export function useCamera({
   })
 
   const { isHandVisible } = gestures
-  const grabForCheck = useCallback(async () => {
+  /** Waits for the palm to leave the frame, then hands back the video as it is then. */
+  const videoForCheck = useCallback(async () => {
     if (!latest.current.video || !latest.current.live) throw new GrabError('camera_unavailable')
     await waitForHandGone(isHandVisible)
     const { video, live: stillLive } = latest.current
     if (!video || !stillLive) throw new GrabError('camera_unavailable')
-    return grabRef.current(video)
+    return video
   }, [isHandVisible])
+
+  const grabForCheck = useCallback(async () => {
+    const video = await videoForCheck()
+    return grabRef.current(video)
+  }, [videoForCheck])
+
+  const grabBurstForCheck = useCallback(
+    async (frames: number = BURST_FRAMES) => {
+      const video = await videoForCheck()
+      return grabBurst(video, { frames }, { grab: (v) => grabRef.current(v) })
+    },
+    [videoForCheck],
+  )
 
   return {
     attachVideo: hat.attachVideo,
@@ -128,5 +151,6 @@ export function useCamera({
     detectionError: gestures.error,
     ready: live && gestures.status === 'ready',
     grabForCheck,
+    grabBurstForCheck,
   }
 }

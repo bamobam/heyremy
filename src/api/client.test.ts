@@ -101,4 +101,64 @@ describe('checkStep', () => {
     await vi.advanceTimersByTimeAsync(8100)
     expect(await outcome).toMatchObject({ kind: 'timeout' })
   })
+
+  describe('with several frames', () => {
+    const jpegBlob = (last: number) => new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, last])], { type: 'image/jpeg' })
+    // The base64 of each blob above, by its last byte.
+    const b64 = { 0x10: '/9j/4AAQ', 0x11: '/9j/4AAR', 0x12: '/9j/4AAS' } as const
+    const burst = [jpegBlob(0x10), jpegBlob(0x11), jpegBlob(0x12)]
+
+    it('posts the frames as base64, in order, as images and with no image', async () => {
+      const fetchFn = fakeFetch(async () => json({ status: 'ready', feedback: 'A rolling boil. Go on.' }))
+      const result = createApiClient(fetchFn).checkStep(burst, step)
+      await vi.advanceTimersByTimeAsync(10)
+      expect(await result).toEqual({ status: 'ready', feedback: 'A rolling boil. Go on.' })
+      expect(fetchFn.mock.calls[0][0]).toBe('/api/check')
+      expect(lastBody(fetchFn)).toEqual({ images: [b64[0x10], b64[0x11], b64[0x12]], cue: 'Batter is smooth', step: step.text })
+    })
+
+    it('posts a list of one frame as a single image', async () => {
+      const fetchFn = fakeFetch(async () => json({ status: 'ready', feedback: 'Smooth.' }))
+      const result = createApiClient(fetchFn).checkStep([frame], step)
+      await vi.advanceTimersByTimeAsync(10)
+      await result
+      expect(lastBody(fetchFn)).toEqual({ image: '/9j/4AAQ', cue: 'Batter is smooth', step: step.text })
+    })
+
+    it.each([
+      ['no frames', []],
+      ['more than 4 frames', Array.from({ length: 5 }, () => frame)],
+    ])('refuses %s without calling the server', async (_name, frames) => {
+      const fetchFn = fakeFetch(async () => json({}))
+      await expect(createApiClient(fetchFn).checkStep(frames, step)).rejects.toMatchObject({ kind: 'bad_request' })
+      expect(fetchFn).not.toHaveBeenCalled()
+    })
+
+    it('rejects an answer that is not a verdict, as unprocessable', async () => {
+      const fetchFn = fakeFetch(async () => json({ nope: true }))
+      const outcome = createApiClient(fetchFn).checkStep(burst, step).catch((e: unknown) => e)
+      await vi.advanceTimersByTimeAsync(10)
+      expect(await outcome).toMatchObject({ kind: 'unprocessable' })
+    })
+
+    it('can be cancelled', async () => {
+      const abort = new AbortController()
+      const fetchFn = hangingFetch()
+      const outcome = createApiClient(fetchFn).checkStep(burst, step, { signal: abort.signal }).catch((e: unknown) => e)
+      await vi.advanceTimersByTimeAsync(50)
+      abort.abort()
+      expect(await outcome).toMatchObject({ kind: 'aborted' })
+    })
+
+    it('waits 10 s, not 8, for the answer', async () => {
+      const fetchFn = hangingFetch()
+      let settled = false
+      const outcome = createApiClient(fetchFn).checkStep(burst, step).catch((e: unknown) => e)
+      void outcome.then(() => (settled = true))
+      await vi.advanceTimersByTimeAsync(9_900)
+      expect(settled).toBe(false)
+      await vi.advanceTimersByTimeAsync(200)
+      expect(await outcome).toMatchObject({ kind: 'timeout' })
+    })
+  })
 })

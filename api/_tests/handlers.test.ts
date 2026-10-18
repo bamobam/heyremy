@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProviderError, generateJson } from '../_lib/gemini.js'
 import { synthesize } from '../_lib/elevenlabs.js'
 import { FetchRecipeError, fetchRecipeText } from '../_lib/fetchRecipe.js'
+import { CHECK_SYSTEM } from '../_prompts/check.js'
 import check from '../check.js'
 import parse from '../parse.js'
 import speak from '../speak.js'
@@ -229,6 +230,130 @@ describe('/api/check', () => {
     gen.mockResolvedValue({ data: { status: 'maybe', feedback: 'hm' }, modelMs: 1, model: 'gemini-test', attempts: 1 })
     expect((await call(check, CHECK_BODY)).statusCode).toBe(422)
     expect(oneLog().verdict).toBeUndefined()
+  })
+})
+
+describe('/api/check with several frames', () => {
+  const frame = (n: number) => Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, n]).toString('base64')
+  const FRAMES = [frame(1), frame(2), frame(3)]
+  const BURST_BODY = { images: FRAMES, cue: 'Rolling boil', step: 'Boil the water.' }
+  const verdict = { data: { status: 'not_ready', feedback: 'Only a simmer. Wait a little.' }, modelMs: 1200, model: 'gemini-test', attempts: 1 }
+
+  it('sends every frame to Gemini in time order, with the frames instruction, and returns the verdict', async () => {
+    gen.mockResolvedValue(verdict)
+    const res = await call(check, BURST_BODY)
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toEqual(verdict.data)
+    const args = gen.mock.calls[0][0]
+    const image = (n: number) => ({ inlineData: { mimeType: 'image/jpeg', data: frame(n) } })
+    expect(args.parts).toEqual([
+      expect.stringContaining('Rolling boil'),
+      'Frame 1 of 3', image(1),
+      'Frame 2 of 3', image(2),
+      'Frame 3 of 3', image(3),
+    ])
+    expect(args.system).toContain(CHECK_SYSTEM)
+    expect(args.system).toContain('time order')
+  })
+
+  it('uses the single-photo prompt and budget for a single image, as before', async () => {
+    gen.mockResolvedValue(verdict)
+    await call(check, CHECK_BODY)
+    const args = gen.mock.calls[0][0]
+    expect(args.system).toBe(CHECK_SYSTEM)
+    expect(args.parts).toHaveLength(2)
+    expect(args.timeoutMs).toBe(7_000)
+  })
+
+  it('gives several frames a little more time, still inside the client\'s 10 s and with no retry after a timeout', async () => {
+    gen.mockResolvedValue(verdict)
+    await call(check, BURST_BODY)
+    const args = gen.mock.calls[0][0]
+    expect(args.timeoutMs).toBeGreaterThan(7_000)
+    expect(args.timeoutMs).toBeLessThan(10_000)
+    expect(args.retryOnTimeout).toBeFalsy()
+  })
+
+  it('logs how many frames came, and no image data', async () => {
+    gen.mockResolvedValue(verdict)
+    await call(check, BURST_BODY)
+    const line = oneLog()
+    expect(line).toMatchObject({ route: '/api/check', status: 200, verdict: 'not_ready', frames: 3 })
+    for (const f of FRAMES) expect(JSON.stringify(line)).not.toContain(f)
+  })
+
+  it('logs one frame for a single image', async () => {
+    gen.mockResolvedValue(verdict)
+    await call(check, CHECK_BODY)
+    expect(oneLog()).toMatchObject({ frames: 1 })
+  })
+
+  it.each([2, 4])('accepts %i frames', async (n) => {
+    gen.mockResolvedValue(verdict)
+    const res = await call(check, { ...BURST_BODY, images: Array.from({ length: n }, (_, i) => frame(i)) })
+    expect(res.statusCode).toBe(200)
+  })
+
+  it.each([
+    ['no frames', []],
+    ['one frame', [frame(1)]],
+    ['five frames', [1, 2, 3, 4, 5].map(frame)],
+    ['a frame that is not a JPEG', [frame(1), NOT_JPEG]],
+    ['a frame with a data: prefix', [frame(1), `data:image/jpeg;base64,${frame(2)}`]],
+    ['a frame that is not text', [frame(1), 7]],
+    ['a list that is not a list', FRAMES.join(',')],
+    ['null', null],
+  ])('400 on images with %s, without calling Gemini', async (_name, images) => {
+    const res = await call(check, { ...BURST_BODY, images })
+    expect(res.statusCode).toBe(400)
+    expect(gen).not.toHaveBeenCalled()
+    oneLog()
+  })
+
+  it('400 when a frame is over 512 KB, and names it', async () => {
+    const big = Buffer.alloc(512 * 1024 + 1)
+    big.set([0xff, 0xd8, 0xff, 0xe0])
+    const res = await call(check, { ...BURST_BODY, images: [frame(1), big.toString('base64')] })
+    expect(res.statusCode).toBe(400)
+    expect(res.body).toEqual({ error: { kind: 'bad_request', message: 'images[1] is over 512 KB.' } })
+    expect(gen).not.toHaveBeenCalled()
+  })
+
+  it('400 when image and images are both sent', async () => {
+    const res = await call(check, { ...BURST_BODY, image: JPEG })
+    expect(res.statusCode).toBe(400)
+    expect(gen).not.toHaveBeenCalled()
+  })
+
+  it('400 when neither image nor images is sent', async () => {
+    const res = await call(check, { cue: 'Smooth', step: 'Whisk.' })
+    expect(res.statusCode).toBe(400)
+    expect(gen).not.toHaveBeenCalled()
+  })
+
+  it('400 on a missing cue or step, as for one image', async () => {
+    expect((await call(check, { ...BURST_BODY, cue: undefined })).statusCode).toBe(400)
+    expect((await call(check, { ...BURST_BODY, step: 'x'.repeat(301) })).statusCode).toBe(400)
+    expect(gen).not.toHaveBeenCalled()
+  })
+
+  it('allows a burst body up to 3 MB, but a single image body only 1.5 MB', async () => {
+    gen.mockResolvedValue(verdict)
+    expect((await call(check, BURST_BODY, { length: String(2.5 * 1024 * 1024) })).statusCode).toBe(200)
+    expect((await call(check, CHECK_BODY, { length: String(2.5 * 1024 * 1024) })).statusCode).toBe(400)
+  })
+
+  it('400 on any body over 3 MB', async () => {
+    const res = await call(check, BURST_BODY, { length: String(3 * 1024 * 1024 + 1) })
+    expect(res.statusCode).toBe(400)
+    expect(gen).not.toHaveBeenCalled()
+  })
+
+  it('maps a Gemini failure and junk output as it does for one image', async () => {
+    gen.mockRejectedValueOnce(new ProviderError('upstream', 'down'))
+    expect((await call(check, BURST_BODY)).statusCode).toBe(502)
+    gen.mockResolvedValueOnce({ data: { status: 'maybe', feedback: 'hm' }, modelMs: 1, model: 'gemini-test', attempts: 1 })
+    expect((await call(check, BURST_BODY)).statusCode).toBe(422)
   })
 })
 
