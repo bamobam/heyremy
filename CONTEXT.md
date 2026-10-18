@@ -59,6 +59,10 @@ _Avoid_: Scan, analysis, snapshot
 Remy's spoken answer to a check: whether the cue is met, and what to do next if it isn't.
 _Avoid_: Result, feedback, response
 
+**Time-dependent step**:
+A Checkable step whose cue changes as time passes (boiling, browning, rising), so one photo cannot judge it. Its Check looks at several frames over about two seconds.
+_Avoid_: Slow step, dynamic step
+
 **Question**:
 The cook asking Remy something out loud during cooking mode (a substitution, a technique, how long to wait, "was I meant to do this before that?"); Remy answers aloud, using the whole recipe, how far the cook has got and what the camera sees.
 _Avoid_: Query, prompt, voice command

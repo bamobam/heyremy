@@ -52,6 +52,17 @@ The dev server also reads `env/.env.local` as a fallback, for setups that keep k
 
 Two optional, public settings (set them in Vercel's environment variables, or in your local env file for a local run): `VITE_FEEDBACK_URL` is a link to a feedback form, shown as "Send feedback" when it is an `https` address; `VITE_MOCK_API=1` runs on the stand-in backend.
 
+Optional server settings (all have sensible defaults, whole numbers above 0 only):
+
+| Variable | Does |
+| --- | --- |
+| `RATE_PARSE_PER_MIN`, `RATE_CHECK_PER_MIN`, `RATE_SPEAK_PER_MIN` | Requests per client per minute (defaults 6, 20, 60) |
+| `DAILY_CAP_PARSE`, `DAILY_CAP_CHECK`, `DAILY_CAP_SPEAK` | Requests per day across all clients (defaults 300, 1500, 8000) |
+| `RATE_LIMIT_OFF=1` | Turns the limits off (the dev server already does; `RATE_LIMIT_OFF=0 npm run dev` tries them). Never set it in production |
+| `ELEVENLABS_VOICE_GRANDMA`, `ELEVENLABS_VOICE_SERGEANT` | ElevenLabs voice ids for those Personas; unset means the default voice |
+
+The limits count per serverless instance, so they slow a runaway down but are not a hard ceiling. Set budgets with Gemini and ElevenLabs too. Cook settings (Level and Persona) are chosen on the start screen and prep, and remembered in the browser.
+
 No hat cam? On the start screen or the camera check in prep, choose "Use this laptop's camera" (shown when the hat cam is missing or in trouble). The page reloads, your pasted recipe is kept, and the choice is remembered in the browser; `?cam=any` and `?cam=hat` still force one or the other. A first-time visitor on the real backend sees a short notice, which the screen behind it waits for, about what Remy sends to Gemini and ElevenLabs.
 
 ```bash
