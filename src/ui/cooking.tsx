@@ -1,11 +1,13 @@
 // The cooking screen's components (§9.3): the step-card carousel, the hold pill, the gesture legend
 // and the verdict overlay. Remy is present here, so these are the pieces read at 2 m.
-import type { CSSProperties } from 'react'
+import { useRef, type CSSProperties } from 'react'
 import { useCooking, useHoldProgress, type FilledStep } from '../cooking/contract.ts'
 import { CameraView } from './CameraView.tsx'
 import { fieldFor, VERDICT_FIELDS } from './fields.ts'
 import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
 import { SAY, GESTURE_HINTS } from './say.ts'
+import { upcomingSteps } from './upNext.ts'
+import { useFitText } from './useFitText.ts'
 import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes.ts'
 import { CueChip, HeadsUpBanner } from './prep.tsx'
 
@@ -21,6 +23,27 @@ export function StepProgress({ steps, index, accent }: { steps: FilledStep[]; in
         />
       ))}
     </div>
+  )
+}
+
+/** What is coming after this step, so the cook has nothing to be anxious about: the next few steps by short title. */
+export function UpNext({ steps, index }: { steps: readonly FilledStep[]; index: number }) {
+  const { items, more } = upcomingSteps(steps, index, 3)
+  if (items.length === 0) return null
+  return (
+    <nav className="ui-upnext" aria-label="Coming up">
+      <span className="ui-upnext__label">Up next</span>
+      <ol>
+        {items.map(item => (
+          <li key={item.id}>
+            <b>{item.number}</b>
+            <span className="ui-upnext__title">{item.title}</span>
+            {item.headsUp && <i aria-label="has a heads-up">🔥</i>}
+          </li>
+        ))}
+      </ol>
+      {more > 0 && <span className="ui-upnext__more">+{more} more</span>}
+    </nav>
   )
 }
 
@@ -57,12 +80,16 @@ export function StepCard({
 }) {
   const { camera } = useCooking()
   const field = fieldFor(index)
+  // The text column shrinks to fit the card, so a long step is never cut off.
+  const card = useRef<HTMLElement>(null)
+  const column = useRef<HTMLDivElement>(null)
+  useFitText({ limit: card, box: column }, { min: 22, max: 38 }, `${step.text}|${step.headsUp}|${step.cue}|${step.checkable}`)
   const cardVars = { '--card': field.card, '--back': field.back, '--fg': field.fg, '--accent': field.accent } as CSSProperties
   const n = index % STEP_SHAPES.length
 
   return (
-    <article className={`ui-card ${current ? 'ui-card--now' : ''}`} style={cardVars} aria-current={current}>
-      <div className="ui-card__text">
+    <article ref={card} className={`ui-card ${current ? 'ui-card--now' : ''}`} style={cardVars} aria-current={current}>
+      <div className="ui-card__text" ref={column}>
         <div className="ui-card__top">
           <div className="ui-card__num" style={{ clipPath: shape(STEP_SHAPES[n], index * 20) }}>
             {index + 1}

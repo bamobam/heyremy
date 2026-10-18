@@ -3,6 +3,7 @@
 import { CookingProvider } from './cooking/contract.ts'
 import { useCooking } from './cooking/context.ts'
 import { CookingScreen } from './ui/CookingScreen.tsx'
+import { ConsentNotice } from './ui/ConsentNotice.tsx'
 import { DevTag } from './ui/DevTag.tsx'
 import { DoneScreen } from './ui/DoneScreen.tsx'
 import { PrepReview } from './ui/PrepReview.tsx'
@@ -18,14 +19,17 @@ function Screens() {
 
   if (state.phase === 'input' || state.phase === 'parsing') {
     return (
-      <RecipeInput
-        phase={state.phase}
-        recipeText={state.recipeText}
-        error={state.error}
-        onTextChange={text => dispatch({ type: 'recipeTextChanged', text })}
-        onSubmit={text => void controller.submitRecipe(text)}
-        onDismissError={() => dispatch({ type: 'errorDismissed' })}
-      />
+      <>
+        {state.phase === 'input' && <ConsentNotice />}
+        <RecipeInput
+          phase={state.phase}
+          recipeText={state.recipeText}
+          error={state.error}
+          onTextChange={text => dispatch({ type: 'recipeTextChanged', text })}
+          onSubmit={text => void controller.submitRecipe(text)}
+          onDismissError={() => dispatch({ type: 'errorDismissed' })}
+        />
+      </>
     )
   }
 

@@ -1,11 +1,12 @@
 // CookingScreen (§9.2): the hands-free part. The page takes the step's colour field, the cards slide
 // along one track, and the check happens inside the current card. Every pointer down counts as a tap.
 import { canCheck, currentStep, filledSteps, useCooking, type ShownStep } from '../cooking/contract.ts'
-import { GestureFallbackNote, GestureLegend, HoldPill, StepCard, StepProgress, VerdictPopup } from './cooking.tsx'
+import { GestureFallbackNote, GestureLegend, HoldPill, StepCard, StepProgress, UpNext, VerdictPopup } from './cooking.tsx'
 import { fieldFor } from './fields.ts'
 import { HEAD_SRC, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 import { ErrorBanner } from './prep.tsx'
+import { HomeLogo } from './HomeLogo.tsx'
 
 /** What Remy says on the cooking screen, in priority order (§9.2). */
 function bubbleFor(step: ShownStep | null, index: number, checking: boolean) {
@@ -35,10 +36,8 @@ export function CookingScreen() {
       <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: 'errorDismissed' })} />
       <GestureFallbackNote />
       <header className="ui-top">
-        <div className="ui-logo ui-logo--light">
-          <img src={HEAD_SRC} alt="" />
-          REMY
-        </div>
+        <HomeLogo light />
+        <UpNext steps={steps} index={state.stepIndex} />
         <StepProgress steps={steps} index={state.stepIndex} accent={field.accent} />
       </header>
 

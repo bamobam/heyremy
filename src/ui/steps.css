@@ -50,6 +50,9 @@
   gap: 16px;
   min-width: 0;
   padding: 36px 18px 36px 44px;
+  /* The starting size. useFitText shrinks it (down to 22px) when the step would not fit the card, and
+     everything in the column is sized from it in em, so they shrink together. */
+  font-size: 38px;
   transition: opacity 0.35s ease;
 }
 
@@ -64,11 +67,11 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 88px;
-  height: 88px;
+  width: max(52px, 2.3em);
+  height: max(52px, 2.3em);
   background: var(--accent);
   color: var(--card);
-  font-size: 42px;
+  font-size: max(26px, 1.1em);
   font-weight: 800;
   transform: scale(0.85) rotate(-20deg);
   transition: transform 0.7s var(--bouncy);
@@ -80,11 +83,12 @@
 }
 
 .ui-card__text h2 {
-  max-width: 16ch;
   margin: 0;
-  font-size: 38px;
+  font-size: 1em;
   font-weight: 800;
   line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .ui-card__media {
@@ -206,11 +210,11 @@
 /* --- HeadsUpBanner and CueChip, both inside the card. --- */
 .ui-headsup {
   align-self: flex-start;
-  padding: 14px 20px;
+  padding: max(8px, 0.37em) max(14px, 0.52em);
   border-radius: 14px;
   background: var(--accent);
   color: var(--card);
-  font-size: 22px;
+  font-size: max(15px, 0.58em);
   font-weight: 800;
 }
 
@@ -267,7 +271,7 @@
 }
 
 .ui-cue {
-  font-size: 20px;
+  font-size: max(14px, 0.52em);
   opacity: 0.9;
 }
 
@@ -426,5 +430,66 @@
   .ui-verdict__head,
   .ui-card--now .ui-checkbadge {
     animation: none;
+  }
+}
+
+/* --- UpNext: the next few steps, in the header between the logo and the step dots. --- */
+.ui-upnext {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 28px;
+  font-size: 15px;
+}
+
+.ui-upnext ol {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-upnext li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgb(255 247 234 / 14%);
+  white-space: nowrap;
+}
+
+.ui-upnext li b {
+  font-weight: 800;
+  opacity: 0.8;
+}
+
+.ui-upnext__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-upnext li i {
+  font-style: normal;
+}
+
+.ui-upnext__label,
+.ui-upnext__more {
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+/* Narrow windows keep just the pills. */
+@media (max-width: 1000px) {
+  .ui-upnext__label,
+  .ui-upnext__more {
+    display: none;
   }
 }

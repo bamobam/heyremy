@@ -1,5 +1,6 @@
 // DoneScreen (§9.2): Remy celebrating on the sage field, the session's stats, and one button.
 import type { CookingStats } from '../cooking/contract.ts'
+import { FeedbackLink } from './FeedbackLink.tsx'
 import { RemyBadge, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 
@@ -25,6 +26,7 @@ export function DoneScreen({ stats, title, onRestart }: { stats: CookingStats; t
       <button type="button" className="ui-btn ui-btn--cream" onClick={onRestart}>
         Let's cook something else!
       </button>
+      <FeedbackLink />
     </div>
   )
 }

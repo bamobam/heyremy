@@ -1,9 +1,11 @@
 // RecipeInput (§9.2): the welcome split, and the parsing field while Remy reads the recipe.
 import { DEMO_RECIPE_TEXT, type CookingError } from '../cooking/contract.ts'
-import { HEAD_SRC, RemyBadge, RemyLoader, SpeechBubble } from './Remy.tsx'
+import { RemyBadge, RemyLoader, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 import { injectShapeKeyframes } from './shapes.ts'
 import { ErrorBanner } from './prep.tsx'
+import { FeedbackLink } from './FeedbackLink.tsx'
+import { HomeLogo } from './HomeLogo.tsx'
 
 injectShapeKeyframes()
 
@@ -42,10 +44,7 @@ export function RecipeInput({
     <div className="ui-welcome ui-enter">
       <ErrorBanner error={error} onDismiss={onDismissError} />
       <div className="ui-welcome__left">
-        <div className="ui-logo ui-logo--light">
-          <img src={HEAD_SRC} alt="" />
-          REMY
-        </div>
+        <HomeLogo light />
         <div className="ui-welcome__copy">
           <div className="ui-welcome__catch">“Hey Remy, let's cook!”</div>
           <h1>
@@ -59,6 +58,7 @@ export function RecipeInput({
             <span>👎 back</span>
             <span>✋ is it ready?</span>
           </div>
+          <FeedbackLink />
         </div>
       </div>
       <div className="ui-welcome__right">

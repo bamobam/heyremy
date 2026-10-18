@@ -4,6 +4,8 @@ import { canStart, scaledIngredients, useCooking } from '../cooking/contract.ts'
 import { HEAD_SRC, RemyBadge, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 import { CameraSetup, ErrorBanner, IngredientList, PrepChecklist, ServingsStepper, VoicingProgress } from './prep.tsx'
+import { FeedbackLink } from './FeedbackLink.tsx'
+import { HomeLogo } from './HomeLogo.tsx'
 
 /** A rough read of how long the recipe takes, from the step count. */
 function timeChip(stepCount: number): string {
@@ -21,11 +23,11 @@ export function PrepReview() {
     <div className="ui-prep ui-enter">
       <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: 'errorDismissed' })} />
       <header className="ui-top">
-        <div className="ui-logo">
-          <img src={HEAD_SRC} alt="" />
-          REMY
+        <HomeLogo />
+        <div className="ui-top__end">
+          <FeedbackLink />
+          <div className="ui-chip">{timeChip(recipe.steps.length)}</div>
         </div>
-        <div className="ui-chip">{timeChip(recipe.steps.length)}</div>
       </header>
 
       <div className="ui-prep__grid">

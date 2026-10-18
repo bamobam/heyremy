@@ -212,3 +212,48 @@
   font-weight: 700;
   opacity: 0.85;
 }
+/* --- ConsentNotice: a card over the start screen, once. --- */
+.ui-consent {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(29 27 32 / 62%);
+}
+
+.ui-consent__card {
+  width: min(520px, 100%);
+  padding: 28px 30px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 36px 36px 36px 10px;
+  background: var(--cream);
+  box-shadow: var(--lift-lg);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.ui-consent__card h2 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.ui-consent__card p {
+  margin: 10px 0;
+}
+
+.ui-consent__card ul {
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
+.ui-consent__card li {
+  margin: 4px 0;
+}
+
+.ui-consent__card .ui-btn {
+  margin-top: 8px;
+}

@@ -676,3 +676,46 @@
 .ui-devtag .is-off::before {
   background: var(--sparkle);
 }
+
+/* A text-style button, for a quiet second action under a message. */
+.ui-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ui-link:focus-visible {
+  outline: 3px solid var(--slate);
+  outline-offset: 3px;
+}
+
+/* --- FeedbackLink: a quiet link; it takes the colour of whatever it sits on. --- */
+.ui-feedback {
+  color: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ui-feedback:focus-visible {
+  outline: 3px solid var(--slate);
+  outline-offset: 3px;
+}
+
+.ui-welcome__copy .ui-feedback {
+  display: inline-block;
+  margin-top: 22px;
+}
+
+.ui-top__end {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}

@@ -50,6 +50,10 @@ ELEVENLABS_API_KEY=...
 
 The dev server also reads `env/.env.local` as a fallback, for setups that keep keys there; values in the root `.env` win. Keys never reach the browser: only `VITE_`-prefixed variables do, and none of these have that prefix.
 
+Two optional, public settings (set them in Vercel's environment variables, or in your local env file for a local run): `VITE_FEEDBACK_URL` is a link to a feedback form, shown as "Send feedback" when it is an `https` address; `VITE_MOCK_API=1` runs on the stand-in backend.
+
+No hat cam? On the camera check in prep, choose "Use this laptop's camera" (or open the app with `?cam=any`). The choice is remembered in the browser. A first-time visitor on the real backend sees a short notice about what Remy sends to Gemini and ElevenLabs.
+
 ```bash
 npm run dev
 ```

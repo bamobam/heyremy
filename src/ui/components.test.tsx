@@ -2,7 +2,7 @@
 // carry the cook-facing copy and the accessible names, so they are worth pinning down.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { CheckBadge, GestureLegend, HoldPill, VerdictPopup } from './cooking.tsx'
+import { CheckBadge, GestureLegend, HoldPill, UpNext, VerdictPopup } from './cooking.tsx'
 import { ErrorBanner, HeadsUpBanner, ServingsStepper, VoicingProgress } from './prep.tsx'
 import { SAY } from './say.ts'
 import { HoldProgressContext } from '../cooking/context.ts'
@@ -196,5 +196,33 @@ describe('HeadsUpBanner', () => {
     expect(screen.getByText(/hot pan/)).toBeTruthy()
     rerender(<HeadsUpBanner text={null} />)
     expect(container.querySelector('.ui-headsup')).toBeNull()
+  })
+})
+
+describe('UpNext', () => {
+  const steps = ['Whisk the dry mix.', 'Add the milk.', 'Heat the pan.', 'Pour a ladle.', 'Flip.', 'Serve.'].map((text, i) => ({
+    id: i + 1,
+    text,
+    spoken: text,
+    cue: null,
+    checkable: false,
+    headsUp: i === 2 ? 'Turn the pan on.' : null,
+  }))
+
+  it('lists the next three steps by number and short title, and counts the rest', () => {
+    render(<UpNext steps={steps} index={0} />)
+    expect(screen.getByRole('navigation', { name: /coming up/i })).toBeTruthy()
+    for (const title of ['Add the milk', 'Heat the pan', 'Pour a ladle']) expect(screen.getByText(new RegExp(title))).toBeTruthy()
+    expect(screen.getByText('+2 more')).toBeTruthy()
+  })
+
+  it('marks a step that has a heads-up', () => {
+    render(<UpNext steps={steps} index={0} />)
+    expect(screen.getAllByLabelText('has a heads-up')).toHaveLength(1)
+  })
+
+  it('shows nothing on the last step', () => {
+    const { container } = render(<UpNext steps={steps} index={5} />)
+    expect(container.firstChild).toBeNull()
   })
 })

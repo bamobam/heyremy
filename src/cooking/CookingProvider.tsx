@@ -9,7 +9,8 @@ import { DONE_CLIP, FIXED_LINES, LOOKING_CLIP } from '../audio/lines.ts'
 import { speak } from '../audio/speak.ts'
 import { useCamera } from '../camera/useCamera.ts'
 import type { HatCam } from '../camera/useHatCam.ts'
-import { USE_ANY_CAMERA, useAnyCam } from '../camera/useAnyCam.ts'
+import { useAnyCam } from '../camera/useAnyCam.ts'
+import { LAPTOP_CAMERA } from '../ui/cameraChoice.ts'
 import type { GestureEvent } from '../types.ts'
 import { createController, toAppError } from './controller.ts'
 import type { CameraPort } from './ports.ts'
@@ -51,7 +52,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
     enabled: state.phase === 'cooking',
     paused: state.mode === 'checking',
     onGesture: useCallback((e: GestureEvent) => gestureRef.current(e), []),
-    source: USE_ANY_CAMERA ? useAnyCam : undefined,
+    source: LAPTOP_CAMERA ? useAnyCam : undefined,
   })
 
   // The controller sees the camera through two functions that always read the newest one.

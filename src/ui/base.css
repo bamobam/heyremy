@@ -228,3 +228,63 @@
   clip-path: inset(50%);
   pointer-events: none;
 }
+
+/* --- HomeLogo: the logo is a button home. It reads as the same logo, not as a button. --- */
+.ui-home {
+  position: relative;
+}
+
+.ui-logo--btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ui-logo--btn.ui-logo--light {
+  color: var(--cream);
+}
+
+.ui-logo--btn:focus-visible {
+  outline: 3px solid var(--slate);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.ui-home__ask {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 0;
+  z-index: 9;
+  width: max-content;
+  max-width: 300px;
+  padding: 18px 20px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 24px 24px 24px 8px;
+  background: var(--sand);
+  box-shadow: var(--lift);
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+.ui-home__ask p {
+  margin: 0;
+}
+
+.ui-home__ask p:first-child {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.ui-home__ask p + p {
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+.ui-home__buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}

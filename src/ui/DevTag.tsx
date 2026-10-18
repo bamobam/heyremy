@@ -2,7 +2,7 @@
 // URL flag (?mock, ?cam=any) or an env flag (VITE_MOCK_API) and neither shows anywhere else, so a
 // stand-in backend or the wrong camera looks like "the real thing is broken".
 import { isMockApi } from '../api/index.ts'
-import { USE_ANY_CAMERA } from '../camera/useAnyCam.ts'
+import { LAPTOP_CAMERA } from './cameraChoice.ts'
 import type { CameraErrorKind } from '../camera/openHatCam.ts'
 import { useCooking, useDetectionReading, type DetectionReading, type GestureStatus, type HatCam } from '../cooking/contract.ts'
 
@@ -46,7 +46,7 @@ export function DevTag() {
   const reading = useDetectionReading()
   const tag = describeSetup({
     mock: isMockApi(),
-    anyCam: USE_ANY_CAMERA,
+    anyCam: LAPTOP_CAMERA,
     status: camera.status,
     error: camera.error,
     cooking: state.phase === 'cooking',
