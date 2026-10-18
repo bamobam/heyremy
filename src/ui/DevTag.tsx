@@ -3,6 +3,7 @@
 // stand-in backend or the wrong camera looks like "the real thing is broken".
 import { isMockApi } from '../api/index.ts'
 import type { CameraErrorKind } from '../camera/openHatCam.ts'
+import { narrationTag } from './narrationText.ts'
 import { CAMERA_MODE, useCooking, useDetectionReading, type DetectionReading, type GestureStatus, type HatCam } from '../cooking/contract.ts'
 
 type Part = { text: string; ok: boolean }
@@ -53,9 +54,10 @@ export function DevTag() {
     gestures,
     reading,
   })
+  const narration = state.recipe ? narrationTag(state.settings.level, state.recipe.steps) : null
   return (
     <div className="ui-devtag" role="note" aria-label="Development setup">
-      {[tag.backend, tag.camera, tag.gestures].map(part => (
+      {[tag.backend, tag.camera, tag.gestures, ...(narration ? [narration] : [])].map(part => (
         <span key={part.text} className={part.ok ? 'is-ok' : 'is-off'}>
           {part.text}
         </span>
