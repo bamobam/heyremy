@@ -18,6 +18,10 @@ describe('feedbackUrl', () => {
     expect(feedbackUrl(' https://forms.gle/abc123 ')).toBe('https://forms.gle/abc123')
   })
 
+  it('returns the address as the browser reads it, so a malformed one cannot turn into a relative link', () => {
+    expect(feedbackUrl('https:example.com')).toBe('https://example.com/')
+  })
+
   it('refuses anything that is not https, such as a script or a plain web address', () => {
     expect(feedbackUrl('javascript:alert(1)')).toBeNull()
     expect(feedbackUrl('http://example.com/form')).toBeNull()
@@ -30,7 +34,7 @@ describe('FeedbackLink', () => {
     vi.stubEnv('VITE_FEEDBACK_URL', 'https://forms.gle/abc123')
     render(<FeedbackLink />)
     const link = screen.getByRole('link', { name: /send feedback/i })
-    expect(link.getAttribute('href')).toBe('https://forms.gle/abc123')
+    expect(link.getAttribute('href')).toBe('https://forms.gle/abc123')  // already in its canonical form
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toContain('noopener')
   })

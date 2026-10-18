@@ -4,6 +4,7 @@ import { RemyBadge, RemyLoader, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 import { injectShapeKeyframes } from './shapes.ts'
 import { ErrorBanner } from './prep.tsx'
+import { CameraSwitch } from './CameraSwitch.tsx'
 import { FeedbackLink } from './FeedbackLink.tsx'
 import { HomeLogo } from './HomeLogo.tsx'
 
@@ -59,6 +60,7 @@ export function RecipeInput({
             <span>✋ is it ready?</span>
           </div>
           <FeedbackLink />
+          <CameraSwitch />
         </div>
       </div>
       <div className="ui-welcome__right">

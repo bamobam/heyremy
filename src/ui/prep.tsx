@@ -1,11 +1,12 @@
 // The prep screen's components (§9.3): the servings stepper, the ingredient grid, the before-you-start
 // checklist, the camera setup check, the voice progress and the error banner.
 import { useState } from 'react'
-import { MAX_SERVINGS, MIN_SERVINGS, useCooking, type CookingError, type FilledStep, type ScaledIngredient } from '../cooking/contract.ts'
+import { CAMERA_MODE, MAX_SERVINGS, MIN_SERVINGS, useCooking, type CookingError, type FilledStep, type ScaledIngredient } from '../cooking/contract.ts'
 import { CameraView } from './CameraView.tsx'
 import { CHECKLIST_COLOURS } from './fields.ts'
 import { ingredientLook, ingredientTint, type IngredientShape } from './ingredients.ts'
-import { LAPTOP_CAMERA, setupHelp, switchCamera } from './cameraChoice.ts'
+import { setupHelp } from './cameraHelp.ts'
+import { CameraSwitch } from './CameraSwitch.tsx'
 
 /** − **n servings** + on sand. The number alone until the servings stretch goal is built. */
 export function ServingsStepper({ servings, original, onChange }: { servings: number; original: number; onChange: (n: number) => void }) {
@@ -137,7 +138,7 @@ export function PrepChecklist({ items }: { items: string[] }) {
 /** The camera setup check: is the bowl actually in the window? */
 export function CameraSetup() {
   const { camera } = useCooking()
-  const help = setupHelp(LAPTOP_CAMERA, camera.error)
+  const help = setupHelp(CAMERA_MODE, camera.error)
   return (
     <div className="ui-setup">
       <CameraView
@@ -147,11 +148,7 @@ export function CameraSetup() {
         style={{ '--cam-ring': 'var(--apricot)', '--cam-bg': 'var(--sand)', '--cam-fg': 'var(--umber)' } as React.CSSProperties}
       />
       <p>{help.text}</p>
-      {help.switchTo && (
-        <button type="button" className="ui-link" onClick={() => switchCamera(help.switchTo!.mode)}>
-          {help.switchTo.label}
-        </button>
-      )}
+      <CameraSwitch />
     </div>
   )
 }

@@ -10,8 +10,9 @@ import { speak } from '../audio/speak.ts'
 import { useCamera } from '../camera/useCamera.ts'
 import type { HatCam } from '../camera/useHatCam.ts'
 import { useAnyCam } from '../camera/useAnyCam.ts'
-import { LAPTOP_CAMERA } from '../ui/cameraChoice.ts'
 import type { GestureEvent } from '../types.ts'
+import { CAMERA_MODE } from './cameraChoice.ts'
+import { takeDraft } from './draft.ts'
 import { createController, toAppError } from './controller.ts'
 import type { CameraPort } from './ports.ts'
 import { stepClipId } from './scaling.ts'
@@ -46,13 +47,22 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   const api = useMemo(() => createApi(), [])
   const audio = useMemo(() => createAudioPlayer({ speak }), [])
 
+  // The recipe text the cook had pasted before switching camera (which reloads the page) comes back.
+  useEffect(() => {
+    const draft = takeDraft()
+    if (draft) dispatch({ type: 'recipeTextChanged', text: draft })
+  }, [dispatch])
+
+  // While a dialog is open on screen, gestures and the keys wait, so a stray one doesn't act behind it.
+  const [dialogOpen, setDialogOpen] = useState(false)
+
   // The latest gesture handler, so the camera is handed one stable callback.
   const gestureRef = useRef<(e: GestureEvent) => void>(() => {})
   const camera = useCamera({
-    enabled: state.phase === 'cooking',
+    enabled: state.phase === 'cooking' && !dialogOpen,
     paused: state.mode === 'checking',
     onGesture: useCallback((e: GestureEvent) => gestureRef.current(e), []),
-    source: LAPTOP_CAMERA ? useAnyCam : undefined,
+    source: CAMERA_MODE === 'laptop' ? useAnyCam : undefined,
   })
 
   // The controller sees the camera through two functions that always read the newest one.
@@ -227,7 +237,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     gestureRef.current = e => void controller.onGesture(e)
   })
-  const keysOn = gesturesEnabled(state)
+  const keysOn = gesturesEnabled(state) && !dialogOpen
   useEffect(() => {
     if (!keysOn) return
     const keys: Record<string, GestureEvent['intent']> = { n: 'next', b: 'back', ' ': 'check' }
@@ -260,7 +270,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   )
 
   const value = useMemo<CookingContextValue>(
-    () => ({ state, controller, dispatch, camera: cameraSlice, gestures, voiceFailed }),
+    () => ({ state, controller, dispatch, camera: cameraSlice, gestures, setDialogOpen, voiceFailed }),
     [state, controller, dispatch, cameraSlice, gestures, voiceFailed],
   )
 

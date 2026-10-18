@@ -41,10 +41,12 @@ export interface CookingContextValue {
   state: CookingState
   controller: Controller
   dispatch: (action: UiAction) => void
-  /** The single hat cam (or the default camera with ?cam=any), for <CameraView>. Stable between renders, so hold ticks don't re-render screens. */
+  /** The single camera (the hat cam, or the laptop's own: see CAMERA_MODE), for <CameraView>. Stable between renders, so hold ticks don't re-render screens. */
   camera: HatCam
   /** Gesture reading, for the "gestures aren't working" note and the dev tag. Changes rarely, unlike hold progress. */
   gestures: GestureStatus
+  /** A dialog is open on the screen: gestures and the keys wait until it closes, so a stray one doesn't act behind it. */
+  setDialogOpen: (open: boolean) => void
   /** The voice could not be prepared (any error kind), so the prep screen offers "Try again". */
   voiceFailed: boolean
 }
@@ -53,6 +55,7 @@ export { CookingContext, DetectionContext, HoldProgressContext, NO_HOLD, useCook
 export type { DetectionReading } from './context.ts'
 
 export { DEMO_RECIPE_TEXT } from './demoRecipe.ts'
+export { CAMERA_MODE, switchCamera, type CameraMode } from './cameraChoice.ts'
 export { CookingProvider } from './CookingProvider.tsx'
 export { canCheck, canStart, currentStep, gesturesEnabled, isLastStep, stepLabel } from './selectors.ts'
 export { filledSteps, scaledIngredients } from './uiSelectors.ts'

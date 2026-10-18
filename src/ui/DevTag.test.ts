@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { describeSetup } from './DevTag.tsx'
 
 const ready = { status: 'ready', error: null } as const
-const live = { mock: false, anyCam: false, status: 'live', error: null, cooking: true, gestures: ready, reading: null } as const
+const live = { mock: false, laptop: false, status: 'live', error: null, cooking: true, gestures: ready, reading: null } as const
 const reading = (label: string, score: number, handPresent = true) => ({ label, score, handPresent })
 
 describe('describeSetup', () => {
@@ -21,11 +21,11 @@ describe('describeSetup', () => {
   it('says how to use the laptop camera when the Logitech is not found', () => {
     const { camera } = describeSetup({ ...live, status: 'error', error: 'not_found' })
     expect(camera.ok).toBe(false)
-    expect(camera.text).toContain('?cam=any')
+    expect(camera.text).toMatch(/laptop camera/i)
   })
 
-  it('names the laptop camera when ?cam=any is on', () => {
-    expect(describeSetup({ ...live, anyCam: true }).camera.text).toBe('Laptop camera: live')
+  it('names the laptop camera when it is the one in use', () => {
+    expect(describeSetup({ ...live, laptop: true }).camera.text).toBe('Laptop camera: live')
   })
 
   it('shows what the hand model reads right now, so a palm that does not register can be told from a blank camera', () => {

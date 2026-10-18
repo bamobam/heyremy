@@ -3,10 +3,10 @@
 import { CookingProvider } from './cooking/contract.ts'
 import { useCooking } from './cooking/context.ts'
 import { CookingScreen } from './ui/CookingScreen.tsx'
-import { ConsentNotice } from './ui/ConsentNotice.tsx'
 import { DevTag } from './ui/DevTag.tsx'
 import { DoneScreen } from './ui/DoneScreen.tsx'
 import { PrepReview } from './ui/PrepReview.tsx'
+import { PrivacyNotice, useNotice } from './ui/PrivacyNotice.tsx'
 import { RecipeInput } from './ui/RecipeInput.tsx'
 import './ui/tokens.css'
 import './ui/base.css'
@@ -16,19 +16,23 @@ import './ui/screens.css'
 
 function Screens() {
   const { state, controller, dispatch } = useCooking()
+  const notice = useNotice()
 
   if (state.phase === 'input' || state.phase === 'parsing') {
     return (
       <>
-        {state.phase === 'input' && <ConsentNotice />}
-        <RecipeInput
-          phase={state.phase}
-          recipeText={state.recipeText}
-          error={state.error}
-          onTextChange={text => dispatch({ type: 'recipeTextChanged', text })}
-          onSubmit={text => void controller.submitRecipe(text)}
-          onDismissError={() => dispatch({ type: 'errorDismissed' })}
-        />
+        {/* inert while the notice is up: nothing behind it can be focused, typed in or submitted */}
+        <div inert={notice.open && state.phase === 'input'}>
+          <RecipeInput
+            phase={state.phase}
+            recipeText={state.recipeText}
+            error={state.error}
+            onTextChange={text => dispatch({ type: 'recipeTextChanged', text })}
+            onSubmit={text => void controller.submitRecipe(text)}
+            onDismissError={() => dispatch({ type: 'errorDismissed' })}
+          />
+        </div>
+        {notice.open && state.phase === 'input' && <PrivacyNotice onAccept={notice.accept} />}
       </>
     )
   }

@@ -3,16 +3,9 @@
 // all plain windows; `primary` is for a page with no provider (the camera debug page), where a view
 // registers itself with the hook, and it is the one whose frames the keeper watches for freezes.
 import { useCallback, useEffect, useRef, type CSSProperties } from 'react'
-import { CAMERA_ERROR_MESSAGES } from '../camera/cameraMessages.ts'
 import type { HatCam } from '../camera/useHatCam.ts'
-
-const STATUS_TEXT: Record<HatCam['status'], string> = {
-  connecting: 'Connecting to the hat cam…',
-  live: 'Live',
-  reconnecting: 'Reconnecting…',
-  busy: 'Camera busy',
-  error: 'Hat cam offline',
-}
+import { CAMERA_MODE } from '../cooking/contract.ts'
+import { cameraProblemText, cameraStatusText } from './cameraHelp.ts'
 
 export function CameraView({ cam, primary = false, caption = "Remy's view", className = '', style }: { cam: HatCam; primary?: boolean; caption?: string; className?: string; style?: CSSProperties }) {
   const ref = useRef<HTMLVideoElement | null>(null)
@@ -41,12 +34,12 @@ export function CameraView({ cam, primary = false, caption = "Remy's view", clas
       {!live && (
         <div className="ui-cam__empty">
           <span className="ui-cam__spinner" aria-hidden />
-          <p>{cam.error ? CAMERA_ERROR_MESSAGES[cam.error] : STATUS_TEXT[cam.status]}</p>
+          <p>{cam.error ? cameraProblemText(CAMERA_MODE, cam.error) : cameraStatusText(CAMERA_MODE, cam.status)}</p>
         </div>
       )}
       <figcaption>
         <i className="ui-cam__dot" aria-hidden />
-        <span>{live ? caption : STATUS_TEXT[cam.status]}</span>
+        <span>{live ? caption : cameraStatusText(CAMERA_MODE, cam.status)}</span>
         {live && cam.label && <small className="ui-cam__label">{cam.label}</small>}
       </figcaption>
     </figure>

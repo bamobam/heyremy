@@ -49,7 +49,7 @@ The device's own built-in camera, used instead of the hat cam by cooks who don't
 _Avoid_: Webcam, any cam
 
 **Gesture**:
-A held hand shape the cook makes in view of the hat cam to control cooking mode (next, back, check).
+A held hand shape the cook makes in view of the camera to control cooking mode (next, back, check).
 
 **Check**:
 The cook asking Remy to look at the food for the current step's cue.

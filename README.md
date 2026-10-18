@@ -52,7 +52,7 @@ The dev server also reads `env/.env.local` as a fallback, for setups that keep k
 
 Two optional, public settings (set them in Vercel's environment variables, or in your local env file for a local run): `VITE_FEEDBACK_URL` is a link to a feedback form, shown as "Send feedback" when it is an `https` address; `VITE_MOCK_API=1` runs on the stand-in backend.
 
-No hat cam? On the camera check in prep, choose "Use this laptop's camera" (or open the app with `?cam=any`). The choice is remembered in the browser. A first-time visitor on the real backend sees a short notice about what Remy sends to Gemini and ElevenLabs.
+No hat cam? On the start screen or the camera check in prep, choose "Use this laptop's camera" (shown when the hat cam is missing or in trouble). The page reloads, your pasted recipe is kept, and the choice is remembered in the browser; `?cam=any` and `?cam=hat` still force one or the other. A first-time visitor on the real backend sees a short notice, which the screen behind it waits for, about what Remy sends to Gemini and ElevenLabs.
 
 ```bash
 npm run dev
@@ -63,7 +63,7 @@ npm run dev
 | Open | For |
 | --- | --- |
 | <http://localhost:5173/> | The app, with the Logitech hat cam |
-| <http://localhost:5173/?cam=any> | The app with any camera, e.g. the MacBook's (slower first load) |
+| <http://localhost:5173/?cam=any> | The app on the laptop's own camera (the same as choosing it in the app) |
 | <http://localhost:5173/?mock> | A stand-in backend: no API calls, no keys needed, **all voices are silent**. Also `?mock=slow` and `?mock=fail` |
 | <http://localhost:5173/?debug=api> | Try `/api/parse` and `/api/check` directly and see each answer, its timing and the exact photo sent |
 | <http://localhost:5173/?debug=camera> | Camera and gesture debugging: live hand tracking, a tally of recognised gestures, and saving a grabbed frame as a JPEG |

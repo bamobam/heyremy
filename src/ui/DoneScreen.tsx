@@ -1,6 +1,7 @@
 // DoneScreen (§9.2): Remy celebrating on the sage field, the session's stats, and one button.
 import type { CookingStats } from '../cooking/contract.ts'
 import { FeedbackLink } from './FeedbackLink.tsx'
+import { HomeLogo } from './HomeLogo.tsx'
 import { RemyBadge, SpeechBubble } from './Remy.tsx'
 import { SAY } from './say.ts'
 
@@ -14,6 +15,9 @@ function statsLine(stats: CookingStats): string {
 export function DoneScreen({ stats, title, onRestart }: { stats: CookingStats; title: string; onRestart: () => void }) {
   return (
     <div className="ui-full ui-enter" style={{ background: 'var(--sage)' }}>
+      <div className="ui-done__logo">
+        <HomeLogo light />
+      </div>
       <div className="ui-done__meet">
         <RemyBadge size={230} color="var(--sparkle)" form="burst" />
         <SpeechBubble>

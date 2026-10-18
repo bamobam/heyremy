@@ -2,27 +2,26 @@
 // URL flag (?mock, ?cam=any) or an env flag (VITE_MOCK_API) and neither shows anywhere else, so a
 // stand-in backend or the wrong camera looks like "the real thing is broken".
 import { isMockApi } from '../api/index.ts'
-import { LAPTOP_CAMERA } from './cameraChoice.ts'
 import type { CameraErrorKind } from '../camera/openHatCam.ts'
-import { useCooking, useDetectionReading, type DetectionReading, type GestureStatus, type HatCam } from '../cooking/contract.ts'
+import { CAMERA_MODE, useCooking, useDetectionReading, type DetectionReading, type GestureStatus, type HatCam } from '../cooking/contract.ts'
 
 type Part = { text: string; ok: boolean }
 
 /** What each part of the tag says, and whether it is what the cook (or the demo) expects. */
 export function describeSetup(setup: {
   mock: boolean
-  anyCam: boolean
+  laptop: boolean
   status: HatCam['status']
   error: CameraErrorKind | null
   cooking: boolean
   gestures: GestureStatus
   reading: DetectionReading | null
 }): { backend: Part; camera: Part; gestures: Part } {
-  const name = setup.anyCam ? 'Laptop camera' : 'Hat cam'
+  const name = setup.laptop ? 'Laptop camera' : 'Hat cam'
   let state: string = setup.status
   if (setup.status === 'live') state = 'live'
   else if (setup.error === 'not_found') {
-    state = setup.anyCam ? 'not found' : "Logitech not found, add ?cam=any to use this laptop's camera"
+    state = setup.laptop ? 'not found' : "Logitech not found, choose the laptop camera on the start screen"
   } else if (setup.error === 'denied') state = 'blocked in browser settings'
 
   const { gestures } = setup
@@ -46,7 +45,7 @@ export function DevTag() {
   const reading = useDetectionReading()
   const tag = describeSetup({
     mock: isMockApi(),
-    anyCam: LAPTOP_CAMERA,
+    laptop: CAMERA_MODE === 'laptop',
     status: camera.status,
     error: camera.error,
     cooking: state.phase === 'cooking',

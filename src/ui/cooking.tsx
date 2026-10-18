@@ -6,6 +6,7 @@ import { CameraView } from './CameraView.tsx'
 import { fieldFor, VERDICT_FIELDS } from './fields.ts'
 import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
 import { SAY, GESTURE_HINTS } from './say.ts'
+import { STEP_TEXT_SIZE } from './fitText.ts'
 import { upcomingSteps } from './upNext.ts'
 import { useFitText } from './useFitText.ts'
 import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes.ts'
@@ -31,19 +32,18 @@ export function UpNext({ steps, index }: { steps: readonly FilledStep[]; index: 
   const { items, more } = upcomingSteps(steps, index, 3)
   if (items.length === 0) return null
   return (
-    <nav className="ui-upnext" aria-label="Coming up">
+    <div className="ui-upnext" role="group" aria-label="Coming up">
       <span className="ui-upnext__label">Up next</span>
       <ol>
         {items.map(item => (
           <li key={item.id}>
             <b>{item.number}</b>
             <span className="ui-upnext__title">{item.title}</span>
-            {item.headsUp && <i aria-label="has a heads-up">🔥</i>}
           </li>
         ))}
       </ol>
       {more > 0 && <span className="ui-upnext__more">+{more} more</span>}
-    </nav>
+    </div>
   )
 }
 
@@ -83,7 +83,7 @@ export function StepCard({
   // The text column shrinks to fit the card, so a long step is never cut off.
   const card = useRef<HTMLElement>(null)
   const column = useRef<HTMLDivElement>(null)
-  useFitText({ limit: card, box: column }, { min: 22, max: 38 }, `${step.text}|${step.headsUp}|${step.cue}|${step.checkable}`)
+  useFitText({ limit: card, box: column }, STEP_TEXT_SIZE, `${step.text}|${step.headsUp}|${step.cue}|${step.checkable}`)
   const cardVars = { '--card': field.card, '--back': field.back, '--fg': field.fg, '--accent': field.accent } as CSSProperties
   const n = index % STEP_SHAPES.length
 

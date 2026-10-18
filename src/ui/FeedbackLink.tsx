@@ -6,17 +6,18 @@ export function feedbackUrl(raw: string | undefined): string | null {
   const text = raw?.trim()
   if (!text) return null
   try {
-    return new URL(text).protocol === 'https:' ? text : null
+    const url = new URL(text)
+    return url.protocol === 'https:' ? url.href : null
   } catch {
     return null
   }
 }
 
-export function FeedbackLink({ className = '' }: { className?: string }) {
+export function FeedbackLink() {
   const url = feedbackUrl(import.meta.env.VITE_FEEDBACK_URL as string | undefined)
   if (!url) return null
   return (
-    <a className={`ui-feedback ${className}`} href={url} target="_blank" rel="noopener noreferrer">
+    <a className="ui-feedback" href={url} target="_blank" rel="noopener noreferrer">
       Send feedback
     </a>
   )

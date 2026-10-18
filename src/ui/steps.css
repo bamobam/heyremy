@@ -270,6 +270,11 @@
   }
 }
 
+/* When even the smallest text size would not fit the card (useFitText), the cue is the line left off. */
+.ui-card__text[data-tight] .ui-cue {
+  display: none;
+}
+
 .ui-cue {
   font-size: max(14px, 0.52em);
   opacity: 0.9;
@@ -442,7 +447,7 @@
   gap: 12px;
   min-width: 0;
   margin: 0 28px;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .ui-upnext ol {
@@ -474,10 +479,6 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.ui-upnext li i {
-  font-style: normal;
 }
 
 .ui-upnext__label,

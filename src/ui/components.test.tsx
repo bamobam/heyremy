@@ -206,19 +206,14 @@ describe('UpNext', () => {
     spoken: text,
     cue: null,
     checkable: false,
-    headsUp: i === 2 ? 'Turn the pan on.' : null,
+    headsUp: null,
   }))
 
   it('lists the next three steps by number and short title, and counts the rest', () => {
     render(<UpNext steps={steps} index={0} />)
-    expect(screen.getByRole('navigation', { name: /coming up/i })).toBeTruthy()
+    expect(screen.getByRole('group', { name: /coming up/i })).toBeTruthy()
     for (const title of ['Add the milk', 'Heat the pan', 'Pour a ladle']) expect(screen.getByText(new RegExp(title))).toBeTruthy()
     expect(screen.getByText('+2 more')).toBeTruthy()
-  })
-
-  it('marks a step that has a heads-up', () => {
-    render(<UpNext steps={steps} index={0} />)
-    expect(screen.getAllByLabelText('has a heads-up')).toHaveLength(1)
   })
 
   it('shows nothing on the last step', () => {

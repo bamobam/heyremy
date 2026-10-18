@@ -19,20 +19,39 @@ interface Refs {
 export function useFitText({ box, limit }: Refs, range: { min: number; max: number }, key: string): void {
   const { min, max } = range
   useLayoutEffect(() => {
+    let cancelled = false
+
     const fit = () => {
       const column = box.current
       const card = limit.current
       if (!column || !card) return
-      column.style.fontSize = `${fitFontSize(px => {
-        column.style.fontSize = `${px}px`
-        return column.scrollHeight <= card.clientHeight
-      }, { min, max })}px`
+      const best = () =>
+        fitFontSize(px => {
+          column.style.fontSize = `${px}px`
+          return column.scrollHeight <= card.clientHeight
+        }, { min, max })
+
+      column.removeAttribute('data-tight')
+      let px = best()
+      column.style.fontSize = `${px}px`
+      if (column.scrollHeight > card.clientHeight) {
+        // Even the smallest size is too tall. Leave off the least urgent line (the cue, see steps.css) and
+        // try again, so the step and its heads-up are not cut off.
+        column.setAttribute('data-tight', '')
+        px = best()
+      }
+      column.style.fontSize = `${px}px`
     }
 
     fit()
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit)
     if (limit.current) observer?.observe(limit.current)
-    void document.fonts?.ready.then(fit)
-    return () => observer?.disconnect()
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) fit()
+    })
+    return () => {
+      cancelled = true
+      observer?.disconnect()
+    }
   }, [box, limit, min, max, key])
 }

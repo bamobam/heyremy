@@ -5,5 +5,5 @@ Saved Versions, the Kitchen profile, the Cook log and the cook's settings live i
 ## Consequences
 
 - Clearing the browser or changing device loses the data, so export ships together with saving.
-- Every stored record carries a schema version, so a later move to accounts is a migration, not a rewrite.
+- Every stored record carries a schema version, so a later move to accounts is a migration, not a rewrite. Single-value preferences (the camera choice `remy.camera`, the notice `remy.notice`) are plain keys and need none; the notice carries a revision of its wording instead.
 - Nothing that needs sharing (public recipes, shared Versions) is built until accounts exist.

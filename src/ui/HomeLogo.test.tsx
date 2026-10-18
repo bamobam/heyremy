@@ -8,18 +8,19 @@ afterEach(cleanup)
 
 function renderAt(phase: Phase) {
   const restart = vi.fn()
-  const value = { state: { phase }, controller: { restart } } as unknown as CookingContextValue
+  const setDialogOpen = vi.fn()
+  const value = { state: { phase }, controller: { restart }, setDialogOpen } as unknown as CookingContextValue
   render(
     <CookingContext.Provider value={value}>
       <HomeLogo />
     </CookingContext.Provider>,
   )
-  return { restart, logo: screen.getByRole('button', { name: /back to the start/i }) }
+  return { restart, setDialogOpen, logo: screen.queryByRole('button', { name: /back to the start/i }) as HTMLElement }
 }
 
 describe('HomeLogo', () => {
-  it('is a button that says where it goes', () => {
-    expect(renderAt('input').logo).toBeTruthy()
+  it('is a button that says where it goes, once there is somewhere to go', () => {
+    expect(renderAt('prep').logo).toBeTruthy()
   })
 
   it('asks before leaving a recipe that is being cooked, and keeps the place on "Keep cooking"', () => {
@@ -54,10 +55,27 @@ describe('HomeLogo', () => {
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
-  it('does nothing on the start screen', () => {
-    const { restart, logo } = renderAt('input')
+  it('is not a button on the start screen, where there is nowhere to go', () => {
+    const { logo } = renderAt('input')
+    expect(logo).toBeNull()
+    expect(screen.getByText('REMY')).toBeTruthy()
+  })
+
+  it('says it is a modal question, and holds gestures while it is open', () => {
+    const { logo, setDialogOpen } = renderAt('cooking')
     fireEvent.click(logo)
-    expect(restart).not.toHaveBeenCalled()
+    expect(screen.getByRole('alertdialog').getAttribute('aria-modal')).toBe('true')
+    expect(setDialogOpen).toHaveBeenLastCalledWith(true)
+
+    fireEvent.click(screen.getByRole('button', { name: /keep cooking/i }))
+    expect(setDialogOpen).toHaveBeenLastCalledWith(false)
+  })
+
+  it('closes on Escape wherever the focus is, and hands the focus back to the logo', () => {
+    const { logo } = renderAt('cooking')
+    fireEvent.click(logo)
+    fireEvent.keyDown(document.body, { key: 'Escape' })
     expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(document.activeElement).toBe(logo)
   })
 })
