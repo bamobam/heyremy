@@ -37,6 +37,17 @@ describe('mock API', () => {
     expect(statuses).toEqual(['not_ready', 'unsure', 'ready', 'not_ready'])
   })
 
+  it('takes a burst of frames for a step whose cue changes with time, and answers as for one', async () => {
+    const api = createMockApi({ delayMs: 0 })
+    const statuses: string[] = []
+    for (const frames of [frame, [frame, frame, frame], frame]) {
+      const p = api.checkStep(frames, step)
+      await vi.advanceTimersByTimeAsync(0)
+      statuses.push((await p).status)
+    }
+    expect(statuses).toEqual(['not_ready', 'unsure', 'ready'])
+  })
+
   it('always says ready when asked to', async () => {
     const api = createMockApi({ delayMs: 0, verdicts: ['ready'] })
     for (let i = 0; i < 3; i++) {

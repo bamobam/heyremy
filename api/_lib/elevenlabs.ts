@@ -1,6 +1,6 @@
 // ElevenLabs text-to-speech (SYSTEM_DESIGN 10.5). Which voice speaks is chosen in voices.ts.
 
-import { ProviderError } from './gemini.js'
+import { BUSY_MESSAGE, ProviderError } from './gemini.js'
 import { DEFAULT_VOICE_ID } from './voices.js'
 
 export const VOICE_ID = DEFAULT_VOICE_ID
@@ -24,7 +24,7 @@ export async function synthesize(text: string, voiceId: string = VOICE_ID): Prom
     throw new ProviderError('upstream', timedOut ? 'ElevenLabs timed out.' : 'ElevenLabs request failed.')
   }
 
-  if (res.status === 429) throw new ProviderError('rate_limited', 'ElevenLabs rate limit hit.')
+  if (res.status === 429) throw new ProviderError('rate_limited', BUSY_MESSAGE)
   if (!res.ok) throw new ProviderError('upstream', `ElevenLabs returned ${res.status}.`)
 
   try {

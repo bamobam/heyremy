@@ -80,6 +80,11 @@ describe('currentStep', () => {
     expect(currentStep(cooking(1))?.text).toBe('Heat the pan on medium and melt 2 tbsp melted butter.')
   })
 
+  it('says whether the cue changes with time, for a check to send several frames', () => {
+    expect(currentStep(cooking(3))).toMatchObject({ text: 'Flip when bubbles form on top.', timeDependent: true })
+    expect(currentStep(cooking(0))?.timeDependent).toBeFalsy()
+  })
+
   it('is nothing on the done screen', () => {
     const done = run(cooking(4), { type: 'gestureNext' })
     expect(done.phase).toBe('done')

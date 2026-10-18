@@ -34,6 +34,7 @@ function isStep(v: unknown): v is Step {
     isTextOrNull(v.cue) &&
     isTextOrNull(v.headsUp) &&
     typeof v.checkable === 'boolean' &&
+    (v.timeDependent === undefined || typeof v.timeDependent === 'boolean') &&
     // A step can only be checked if there is something to look for.
     (!v.checkable || typeof v.cue === 'string')
   )

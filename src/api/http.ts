@@ -6,7 +6,7 @@ const KINDS = new Set<string>(['bad_request', 'unprocessable', 'upstream', 'rate
 const isAbort = (error: unknown) => typeof error === 'object' && error !== null && (error as { name?: unknown }).name === 'AbortError'
 
 /** The error a failed response describes: the server's own if it sent one, else one worked out from the status. */
-async function errorFromResponse(response: Response): Promise<ApiError> {
+export async function errorFromResponse(response: Response): Promise<ApiError> {
   try {
     const body = (await response.json()) as { error?: { kind?: unknown; message?: unknown } }
     const { kind, message } = body.error ?? {}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GestureEvent, HoldProgress } from '../types.ts'
-import { DEFAULT_FILTER_CONFIG, idleFilter, stepFilter, type FilterConfig, type FilterState } from './gestureFilter.ts'
-import { mapDetection, MAPPING, type Mapping } from './gestureMapper.ts'
+import { DEFAULT_FILTER_CONFIG, idleFilter, minScoreFor, stepFilter, type FilterConfig, type FilterState } from './gestureFilter.ts'
+import { MAPPING, readGesture, type Mapping } from './gestureMapper.ts'
 import { initialPresence, stepPresence, type Presence } from './handPresence.ts'
 import type { Detection } from './recognizer.ts'
 import { useDetection, type DetectionDeps, type DetectionStatus } from './useDetection.ts'
@@ -89,12 +89,16 @@ export function useGestures(
       presence.current = stepPresence(presence.current, detection.handPresent, t)
       setHandVisible(presence.current.visible)
 
-      const intent = mapDetection(detection, mapping)
+      // MediaPipe's label where it is sure, else the hand's shape: the filter judges the score of whichever was used.
+      const reading = readGesture(detection, mapping, config)
+      const intent = reading?.intent ?? null
+      const score = reading?.score ?? 0
 
       if (pausedRef.current) {
         // Keep watching the hand but never fire. A gesture held through the pause must be let go
-        // before it can fire again, so remember it as "waiting for release".
-        const held = intent !== null && detection.score >= config.minScore
+        // before it can fire again, so remember it as "waiting for release". "Held" is judged by the same
+        // score the filter would have asked for, so a palm it would have counted is not missed here.
+        const held = intent !== null && score >= minScoreFor(intent, config)
         if (held) filter.current = { kind: 'rearm', intent, misses: 0 }
         else if (filter.current.kind === 'rearm') filter.current = stepFilter(filter.current, { intent: null, score: 0, t }, config).state
         else filter.current = idleFilter
@@ -103,7 +107,7 @@ export function useGestures(
         return
       }
 
-      const out = stepFilter(filter.current, { intent, score: detection.score, t }, config)
+      const out = stepFilter(filter.current, { intent, score, t }, config)
       filter.current = out.state
       setHoldProgress((prev) =>
         prev.intent === out.progress.intent && prev.progress === out.progress.progress ? prev : out.progress,

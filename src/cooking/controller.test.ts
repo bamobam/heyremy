@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ParsedRecipe, PersonaId, Verdict } from '../types.ts'
+import { ApiError } from '../api/errors.ts'
 import { createController } from './controller.ts'
 import { pancakes } from './fixtures.ts'
 import type { ApiClient, CameraPort } from './ports.ts'
@@ -38,11 +39,12 @@ function setup({ recipe = pancakes, settings }: { recipe?: ParsedRecipe; setting
 
   const api = {
     parseRecipe: vi.fn(async (_text: string) => recipe),
-    checkStep: vi.fn(async (_frame: Blob, _step: { text: string; cue: string }, _opts?: { signal?: AbortSignal; persona?: PersonaId }) => ready),
+    checkStep: vi.fn(async (_frame: Blob | Blob[], _step: { text: string; cue: string }, _opts?: { signal?: AbortSignal; persona?: PersonaId }) => ready),
   } satisfies ApiClient
 
   const camera = {
     grabForCheck: vi.fn(async () => ({ blob: new Blob(['jpeg']) })),
+    grabBurstForCheck: vi.fn(async () => ({ blobs: [new Blob(['one']), new Blob(['two']), new Blob(['three'])] })),
     isHolding: vi.fn(() => false),
   } satisfies CameraPort
 
@@ -96,6 +98,14 @@ describe('submitting a recipe', () => {
       recipeText: 'my recipe',
       error: { kind: 'unprocessable', message: 'bad recipe' },
     })
+  })
+
+  it("shows the server's own words when the daily cap stops the parse", async () => {
+    const h = setup()
+    const message = "Remy has reached today's limit. Try again tomorrow."
+    h.api.parseRecipe.mockRejectedValueOnce(new ApiError('rate_limited', { message, status: 429 }))
+    await h.controller.submitRecipe('x')
+    expect(h.state).toMatchObject({ phase: 'input', error: { kind: 'rate_limited', message } })
   })
 
   it('reports an unknown error for something that is not an API error', async () => {
@@ -340,6 +350,106 @@ describe('checking a step', () => {
     h.controller.restart()
     await checked
     expect(h.state.error).toBeNull()
+  })
+})
+
+describe('checking a step whose cue changes with time', () => {
+  /** On pancake step 4, "Flip when bubbles form on top", which is marked timeDependent. */
+  async function onTimeDependentStep(): Promise<Harness> {
+    const h = await onCooking()
+    for (let i = 0; i < 3; i++) await h.controller.onGesture({ intent: 'next', at: 0 })
+    expect(h.state.stepIndex).toBe(3)
+    return h
+  }
+
+  it('takes a burst of frames and sends them all, in order, with the step', async () => {
+    const h = await onTimeDependentStep()
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+
+    expect(h.camera.grabBurstForCheck).toHaveBeenCalledTimes(1)
+    expect(h.camera.grabForCheck).not.toHaveBeenCalled()
+    expect(h.api.checkStep).toHaveBeenCalledTimes(1)
+    const [frames, step, opts] = h.api.checkStep.mock.calls[0]
+    expect(Array.isArray(frames)).toBe(true)
+    expect((frames as Blob[]).map((f) => f.size)).toEqual([3, 3, 5]) // 'one', 'two', 'three'
+    expect(step).toEqual({ text: 'Flip when bubbles form on top.', cue: 'Bubbles on top and the edges look set' })
+    expect(opts).toEqual({ signal: expect.any(AbortSignal), persona: 'remy' }) // the Persona rides along with the burst
+    expect(h.state).toMatchObject({ mode: 'verdict', verdict: ready })
+    expect(h.state.stats.checks).toBe(1)
+  })
+
+  it('takes one frame, as before, on a step whose cue does not change with time', async () => {
+    const h = await onCooking()
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+    expect(h.camera.grabForCheck).toHaveBeenCalledTimes(1)
+    expect(h.camera.grabBurstForCheck).not.toHaveBeenCalled()
+    expect(h.api.checkStep.mock.calls[0][0]).toBeInstanceOf(Blob)
+  })
+
+  it('takes one frame on a step with no timeDependent field at all', async () => {
+    const steps = pancakes.steps.map(({ timeDependent: _dropped, ...step }) => step)
+    const h = await onCooking(setup({ recipe: { ...pancakes, steps } }))
+    for (let i = 0; i < 3; i++) await h.controller.onGesture({ intent: 'next', at: 0 })
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+    expect(h.camera.grabForCheck).toHaveBeenCalledTimes(1)
+    expect(h.camera.grabBurstForCheck).not.toHaveBeenCalled()
+  })
+
+  it('shows the state as checking, and ignores gestures, while the burst is taken', async () => {
+    const h = await onTimeDependentStep()
+    const burst = deferred<{ blobs: Blob[] }>()
+    h.camera.grabBurstForCheck.mockReturnValueOnce(burst.promise)
+    const checked = h.controller.onGesture({ intent: 'check', at: 0 })
+    await flush()
+    expect(h.state.mode).toBe('checking')
+
+    await h.controller.onGesture({ intent: 'next', at: 0 })
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+    expect(h.state.stepIndex).toBe(3)
+    expect(h.camera.grabBurstForCheck).toHaveBeenCalledTimes(1)
+    expect(h.api.checkStep).not.toHaveBeenCalled()
+
+    burst.resolve({ blobs: [new Blob(['a']), new Blob(['b'])] })
+    await checked
+    expect(h.state.mode).toBe('verdict')
+    expect(h.api.checkStep.mock.calls[0][0]).toHaveLength(2)
+  })
+
+  it('goes back to idle with a camera error, and sends nothing, if the burst cannot be taken', async () => {
+    const h = await onTimeDependentStep()
+    h.camera.grabBurstForCheck.mockRejectedValueOnce(new Error('camera_unavailable'))
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+    expect(h.state).toMatchObject({ mode: 'idle', error: { kind: 'camera' } })
+    expect(h.api.checkStep).not.toHaveBeenCalled()
+  })
+
+  it('goes back to idle with an error if the check fails', async () => {
+    const h = await onTimeDependentStep()
+    h.api.checkStep.mockRejectedValueOnce(Object.assign(new Error('slow'), { kind: 'timeout' }))
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+    expect(h.state).toMatchObject({ mode: 'idle', error: { kind: 'timeout' } })
+  })
+
+  it('drops the verdict if the cook starts over while the burst is being taken', async () => {
+    const h = await onTimeDependentStep()
+    const burst = deferred<{ blobs: Blob[] }>()
+    h.camera.grabBurstForCheck.mockReturnValueOnce(burst.promise)
+    const checked = h.controller.onGesture({ intent: 'check', at: 0 })
+    await flush()
+
+    h.controller.restart()
+    burst.resolve({ blobs: [new Blob(['a']), new Blob(['b'])] })
+    await checked
+    expect(h.state).toMatchObject({ phase: 'input', error: null })
+  })
+
+  it('moves on by itself after a ready verdict, like any other check', async () => {
+    const h = await onTimeDependentStep()
+    h.setClock(1000)
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+    expect(h.state.autoAdvanceAt).not.toBeNull()
+    await h.advance(2100)
+    expect(h.state.stepIndex).toBe(4)
   })
 })
 

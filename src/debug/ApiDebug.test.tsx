@@ -16,7 +16,7 @@ const verdict: Verdict = { status: 'ready', feedback: 'Looks smooth. Next step.'
 function fakeApi() {
   return {
     parseRecipe: vi.fn(async (_text: string) => pancakes),
-    checkStep: vi.fn(async (_frame: Blob, _step: { text: string; cue: string }, _opts?: { signal?: AbortSignal }) => verdict),
+    checkStep: vi.fn(async (_frame: Blob | Blob[], _step: { text: string; cue: string }, _opts?: { signal?: AbortSignal }) => verdict),
   } satisfies ApiClient
 }
 
@@ -154,6 +154,18 @@ describe('photo check', () => {
     expect(photo).toBeInstanceOf(Blob)
     expect(step.text).toContain('batter')
     expect(step.cue.length).toBeGreaterThan(0)
+  })
+
+  it('sends 3 frames, about 700 ms apart, from the burst button, and shows how many and their size', async () => {
+    const { api } = await open()
+    await live()
+    fireEvent.click(screen.getByRole('button', { name: 'Check with 3 frames' }))
+
+    expect(await screen.findByTestId('verdict-status', undefined, { timeout: 5_000 })).toHaveTextContent('Ready')
+    expect(api.checkStep).toHaveBeenCalledTimes(1)
+    const [frames] = api.checkStep.mock.calls[0]
+    expect(Array.isArray(frames) && frames.every((f) => f instanceof Blob) && frames.length).toBe(3)
+    expect(screen.getByTestId('photo-size')).toHaveTextContent('3 frames, 360 KB sent')
   })
 
   it('shows the verdict, its words, the photo that was sent and its size, and the time', async () => {

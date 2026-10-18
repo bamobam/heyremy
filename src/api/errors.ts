@@ -19,8 +19,15 @@ const MESSAGES: Record<ApiErrorKind, string> = {
   unknown: 'Something went wrong.',
 }
 
-/** What the cook should read for an error of this kind. */
-export const userMessage = (kind: ApiErrorKind): string => MESSAGES[kind]
+/**
+ * What the cook should read for an error of this kind. A rate limit shows the server's own words when it
+ * sent some: "wait a minute" and "try again tomorrow" (the daily cap) are different advice. Other kinds
+ * keep their plain message, whatever the server wrote.
+ */
+export function userMessage(kind: ApiErrorKind, serverMessage?: string): string {
+  const sent = serverMessage?.trim()
+  return kind === 'rate_limited' && sent ? sent : MESSAGES[kind]
+}
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind

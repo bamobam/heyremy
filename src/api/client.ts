@@ -8,6 +8,10 @@ import { postJson } from './http.ts'
 const MAX_RECIPE_CHARS = 10_000
 const PARSE_TIMEOUT_MS = 20_000
 const CHECK_TIMEOUT_MS = 8_000
+// Several frames are more to upload and for the model to read.
+const CHECK_BURST_TIMEOUT_MS = 10_000
+/** The server takes 2 to 4 frames; a list of one is sent as a single image. */
+const MAX_CHECK_FRAMES = 4
 
 /** The real client: talks to /api/parse and /api/check. Pass a fetch to test it. */
 export function createApiClient(fetchFn?: typeof fetch): ApiClient {
@@ -22,13 +26,16 @@ export function createApiClient(fetchFn?: typeof fetch): ApiClient {
     },
 
     async checkStep(frame, step, opts) {
-      const image = await blobToBase64(frame)
+      const frames = Array.isArray(frame) ? frame : [frame]
+      if (frames.length === 0 || frames.length > MAX_CHECK_FRAMES) throw new ApiError('bad_request')
+      const images = await Promise.all(frames.map(blobToBase64))
+      const burst = images.length > 1
       // Remy's is the default the server assumes, so his request is the one it always was.
       const persona = opts?.persona !== undefined && opts.persona !== DEFAULT_PERSONA ? { persona: opts.persona } : {}
       const data = await postJson<unknown>(
         '/api/check',
-        { image, cue: step.cue, step: step.text, ...persona },
-        { timeoutMs: CHECK_TIMEOUT_MS, signal: opts?.signal },
+        burst ? { images, cue: step.cue, step: step.text, ...persona } : { image: images[0], cue: step.cue, step: step.text, ...persona },
+        { timeoutMs: burst ? CHECK_BURST_TIMEOUT_MS : CHECK_TIMEOUT_MS, signal: opts?.signal },
         fetchFn,
       )
       if (!isVerdict(data)) throw new ApiError('unprocessable')

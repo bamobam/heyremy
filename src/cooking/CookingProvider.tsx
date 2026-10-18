@@ -21,6 +21,7 @@ import { canCheck, currentStep, gesturesEnabled } from './selectors.ts'
 import { loadSettings, saveSettings } from './settings.ts'
 import { pageStorage } from './storage.ts'
 import { cookingReducer, initialState, type Action } from './state.ts'
+import { toReading } from './reading.ts'
 import { CookingContext, DetectionContext, HoldProgressContext, type DetectionReading } from './context.ts'
 import type { Controller, CookingContextValue, GestureStatus } from './contract.ts'
 
@@ -73,6 +74,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   const flow = useMemo(() => {
     const port: CameraPort = {
       grabForCheck: () => cameraRef.current.grabForCheck(),
+      grabBurstForCheck: async () => ({ blobs: (await cameraRef.current.grabBurstForCheck()).map((frame) => frame.blob) }),
       isHolding: () => cameraRef.current.holdProgress.intent !== null,
     }
     return createController({
@@ -276,10 +278,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
 
   const { detectionStatus, detectionError, detection } = camera
   const gestures = useMemo<GestureStatus>(() => ({ status: detectionStatus, error: detectionError }), [detectionStatus, detectionError])
-  const reading = useMemo<DetectionReading | null>(
-    () => (detection ? { label: detection.label, score: detection.score, handPresent: detection.handPresent } : null),
-    [detection],
-  )
+  const reading = useMemo<DetectionReading | null>(() => (detection ? toReading(detection) : null), [detection])
 
   const value = useMemo<CookingContextValue>(
     () => ({ state, controller, dispatch, camera: cameraSlice, gestures, setDialogOpen, voiceFailed }),

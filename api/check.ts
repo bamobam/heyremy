@@ -1,19 +1,32 @@
 // POST /api/check { image, cue, step, persona? } → Verdict (SYSTEM_DESIGN 10.7). `persona` only words `feedback`.
+// For a step whose cue changes with time, `images` (2 to 4 JPEGs in time order) is sent in place of `image`.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { PersonaId, Verdict } from '../src/types.js'
 import { ProviderError, generateJson } from './_lib/gemini.js'
-import { guard, sendError, sendJson } from './_lib/http.js'
-import { MAX_CHECK_BODY_BYTES, MAX_CUE_CHARS, MAX_STEP_CHARS, checkJpegBase64, checkText } from './_lib/limits.js'
+import { guard, rateLimit, sendError, sendJson } from './_lib/http.js'
+import {
+  MAX_CHECK_BODY_BYTES,
+  MAX_CHECK_BURST_BODY_BYTES,
+  MAX_CUE_CHARS,
+  MAX_STEP_CHARS,
+  checkJpegBase64,
+  checkJpegList,
+  checkText,
+} from './_lib/limits.js'
 import { log } from './_lib/log.js'
+import type { LimitReason } from './_lib/ratelimit.js'
 import { checkPersona } from './_lib/persona.js'
 import { ValidationError, validateVerdict, verdictSchema } from './_lib/schemas.js'
-import { CHECK_MAX_TOKENS, CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.js'
+import { CHECK_MAX_TOKENS, CHECK_TEMPERATURE, buildCheckParts, buildCheckSystem } from './_prompts/check.js'
 import { withPersona } from './_prompts/persona.js'
 
 // The client gives up at 8 s. No retry after a timeout: two slow attempts would outlast it,
 // but a fast 503/429 still gets one try on the fallback model.
 const GEMINI_TIMEOUT_MS = 7_000
+// Several frames are more to upload and to read, so they get 2 s more. The client waits 10 s for them
+// (src/api/client.ts), and the function may run 15 s (vercel.json).
+const GEMINI_BURST_TIMEOUT_MS = 9_000
 
 /** Request size from content-length, or the parsed body re-serialised when the header is missing. */
 function bodySize(req: VercelRequest): number {
@@ -27,25 +40,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let model: string | undefined
   let attempts: number | undefined
   let verdict: Verdict | undefined
+  let limit: LimitReason | undefined
+  let frames: number | undefined
   try {
     if (!guard(req, res, { method: 'POST', contentType: 'application/json' })) return
-    if (bodySize(req) > MAX_CHECK_BODY_BYTES) return sendError(res, 'bad_request', 'Request is over 1.5 MB.')
+    limit = rateLimit(req, res, 'check')
+    if (limit) return
+    const size = bodySize(req)
+    if (size > MAX_CHECK_BURST_BODY_BYTES) return sendError(res, 'bad_request', 'Request is over 3 MB.')
     const body: unknown = req.body
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
       return sendError(res, 'bad_request', 'Send a JSON object.')
     }
-    const { image, cue, step, persona } = body as { image?: unknown; cue?: unknown; step?: unknown; persona?: unknown }
+    const { image, images, cue, step, persona } = body as { image?: unknown; images?: unknown; cue?: unknown; step?: unknown; persona?: unknown }
+    const burst = images !== undefined
+    if (burst && image !== undefined) return sendError(res, 'bad_request', 'Send image or images, not both.')
+    if (!burst && size > MAX_CHECK_BODY_BYTES) return sendError(res, 'bad_request', 'Request is over 1.5 MB.')
     const bad =
-      checkJpegBase64(image) ?? checkText(cue, 'cue', MAX_CUE_CHARS) ?? checkText(step, 'step', MAX_STEP_CHARS) ?? checkPersona(persona)
+      (burst ? checkJpegList(images) : checkJpegBase64(image)) ??
+      checkText(cue, 'cue', MAX_CUE_CHARS) ??
+      checkText(step, 'step', MAX_STEP_CHARS) ??
+      checkPersona(persona)
     if (bad !== null) return sendError(res, 'bad_request', bad)
 
+    const sent = burst ? (images as string[]) : (image as string)
+    frames = burst ? (images as string[]).length : 1
     const out = await generateJson({
-      system: withPersona(CHECK_SYSTEM, (persona ?? undefined) as PersonaId | undefined),
-      parts: buildCheckParts(image as string, (cue as string).trim(), (step as string).trim()),
+      system: withPersona(buildCheckSystem(frames), (persona ?? undefined) as PersonaId | undefined),
+      parts: buildCheckParts(sent, (cue as string).trim(), (step as string).trim()),
       schema: verdictSchema,
       temperature: CHECK_TEMPERATURE,
       maxOutputTokens: CHECK_MAX_TOKENS,
-      timeoutMs: GEMINI_TIMEOUT_MS,
+      timeoutMs: burst ? GEMINI_BURST_TIMEOUT_MS : GEMINI_TIMEOUT_MS,
     })
     modelMs = out.modelMs
     model = out.model
@@ -60,6 +86,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
     else sendError(res, 'unknown', 'Something went wrong.')
   } finally {
-    log({ route: '/api/check', status: res.statusCode, latencyMs: Date.now() - started, modelMs, model, attempts, verdict: verdict?.status })
+    log({ route: '/api/check', status: res.statusCode, latencyMs: Date.now() - started, modelMs, model, attempts, verdict: verdict?.status, limit, frames })
   }
 }

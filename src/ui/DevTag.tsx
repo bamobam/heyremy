@@ -30,6 +30,7 @@ export function describeSetup(setup: {
   else if (gestures.status === 'error') gesture = { text: `Gestures: failed${gestures.error ? ` (${gestures.error})` : ''}`, ok: false }
   else if (gestures.status === 'loading') gesture = { text: 'Gestures: loading the hand model', ok: false }
   else if (!setup.reading?.handPresent) gesture = { text: 'Gestures: ready, no hand in view', ok: true }
+  else if (setup.reading.shape) gesture = { text: `Gestures: ${setup.reading.shape.name} (shape ${setup.reading.shape.score.toFixed(2)})`, ok: true }
   else if (setup.reading.label === 'None') gesture = { text: 'Gestures: hand seen, no gesture', ok: true }
   else gesture = { text: `Gestures: ${setup.reading.label} ${setup.reading.score.toFixed(2)}`, ok: true }
 

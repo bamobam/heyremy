@@ -2,6 +2,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { ApiErrorBody, ApiErrorKind } from '../../src/types.js'
+import { LIMIT_MESSAGES, clientKey, limitsFromEnv, sharedLimiter, type LimitReason, type LimitedRoute } from './ratelimit.js'
 
 const STATUS: Record<ApiErrorKind, number> = {
   bad_request: 400,
@@ -53,4 +54,19 @@ export function guard(
     return false
   }
   return true
+}
+
+/**
+ * Counts the request against the route's limits (see ratelimit.ts). Returns undefined when it may
+ * proceed; otherwise sends 429 with Retry-After and returns why, for the log. Call it right after guard,
+ * so refused methods and content types don't use up anyone's allowance.
+ */
+export function rateLimit(req: VercelRequest, res: VercelResponse, route: LimitedRoute): LimitReason | undefined {
+  const config = limitsFromEnv(process.env)
+  if (config.off) return undefined
+  const result = sharedLimiter.take(route, clientKey(req.headers), config.routes[route])
+  if (result.ok) return undefined
+  res.setHeader('Retry-After', String(result.retryAfterSec))
+  sendError(res, 'rate_limited', LIMIT_MESSAGES[result.reason])
+  return result.reason
 }

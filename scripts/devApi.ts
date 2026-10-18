@@ -7,10 +7,11 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { loadEnv, type Plugin } from 'vite'
-import { handleApiRequest, syncEnvKeys, type ApiHandler } from './devApiCore.ts'
+import { applyDevDefaults, handleApiRequest, syncEnvKeys, type ApiHandler } from './devApiCore.ts'
 
 const KEYS = ['GEMINI_API_KEY', 'ELEVENLABS_API_KEY']
-const MAX_BODY_BYTES = 2 * 1024 * 1024
+// The biggest body any route takes: a check with several frames (MAX_CHECK_BURST_BODY_BYTES in api/_lib/limits.ts).
+const MAX_BODY_BYTES = 3 * 1024 * 1024
 
 /** The keys this plugin has put in process.env, so a restart can replace them (see syncEnvKeys). */
 const setByUs = new Set<string>()
@@ -40,6 +41,10 @@ export function devApi(): Plugin {
 
       server.middlewares.use('/api', async (req, res) => {
         const started = Date.now()
+        // Here, not in config(): Vitest also runs this plugin, and its tests must see the real defaults.
+        if (applyDevDefaults(process.env)) {
+          server.config.logger.info('  Rate limits are off in the dev server. Start it with RATE_LIMIT_OFF=0 to try them.')
+        }
         const route = (req.url ?? '').split('?')[0].replace(/^\//, '')
 
         const chunks: Buffer[] = []

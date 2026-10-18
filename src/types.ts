@@ -26,7 +26,10 @@ export interface Step {
   spokenIntermediate?: string
   /** `spoken` at the master Level: terse, trusts the cook. Missing means read `spoken`. */
   spokenMaster?: string
-  /** The cue changes with time (boiling, browning, rising), so one photo can't judge it. Only ever true on a checkable step. */
+  /**
+   * The cue changes with time (boiling, browning, rising), so one photo can't judge it: a check sends
+   * several frames. Optional so older recipes still validate; missing means false.
+   */
   timeDependent?: boolean
 }
 
@@ -76,8 +79,15 @@ export interface HoldProgress {
 
 /** POST /api/parse */
 export type ParseRequest = { recipe: string }
-/** POST /api/check. `image` is a base64 JPEG with no data: prefix. `persona` only changes how `feedback` is worded. */
-export type CheckRequest = { image: string; cue: string; step: string; persona?: PersonaId }
+/**
+ * POST /api/check. `image` is a base64 JPEG with no data: prefix. For a step whose cue changes with time,
+ * send `images` instead: 2 to 4 such JPEGs in time order (oldest first), a couple of seconds in all.
+ * `persona` only changes how `feedback` is worded.
+ */
+export type CheckRequest = { cue: string; step: string; persona?: PersonaId } & (
+  | { image: string; images?: never }
+  | { images: string[]; image?: never }
+)
 /** POST /api/speak. The response is audio/mpeg. `persona` picks the voice (the default voice when none is set up). */
 export type SpeakRequest = { text: string; persona?: PersonaId }
 
