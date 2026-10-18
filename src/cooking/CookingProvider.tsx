@@ -19,6 +19,7 @@ import { stepClipId } from './scaling.ts'
 import { canCheck, currentStep, gesturesEnabled } from './selectors.ts'
 import { cookingReducer, initialState, type Action, type CookingState } from './state.ts'
 import { filledSteps } from './uiSelectors.ts'
+import { toReading } from './reading.ts'
 import { CookingContext, DetectionContext, HoldProgressContext, type DetectionReading } from './context.ts'
 import type { Controller, CookingContextValue, GestureStatus } from './contract.ts'
 
@@ -264,10 +265,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
 
   const { detectionStatus, detectionError, detection } = camera
   const gestures = useMemo<GestureStatus>(() => ({ status: detectionStatus, error: detectionError }), [detectionStatus, detectionError])
-  const reading = useMemo<DetectionReading | null>(
-    () => (detection ? { label: detection.label, score: detection.score, handPresent: detection.handPresent } : null),
-    [detection],
-  )
+  const reading = useMemo<DetectionReading | null>(() => (detection ? toReading(detection) : null), [detection])
 
   const value = useMemo<CookingContextValue>(
     () => ({ state, controller, dispatch, camera: cameraSlice, gestures, setDialogOpen, voiceFailed }),

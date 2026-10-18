@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import type { GestureEvent } from '../types.ts'
 import { FALLBACK_MAPPING, type Mapping } from './gestureMapper.ts'
+import type { HandShape } from './handShape.ts'
 import type { Detection, Recognizer } from './recognizer.ts'
 import type { DetectionDeps } from './useDetection.ts'
 import { useGestures } from './useGestures.ts'
@@ -12,6 +13,14 @@ const det = (label: string, score = 0.9, handPresent = true): Detection => ({
   score,
   handPresent,
   landmarks: handPresent ? [] : null,
+})
+/** A reading MediaPipe did not name (or named wrongly) whose landmarks make a plain hand shape. */
+const shaped = (shape: HandShape, confidence: number, label = 'None', score = 0): Detection => ({
+  label,
+  score,
+  handPresent: true,
+  landmarks: [],
+  shape: { shape, confidence },
 })
 const none = det('None', 0, false)
 const thumbsUp = det('Thumb_Up')
@@ -147,6 +156,108 @@ describe('useGestures', () => {
       expect(second).toHaveBeenCalledTimes(1)
       expect(onGesture).not.toHaveBeenCalled()
       expect(s.deps.createRecognizer).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('hand shape, for the backs of hands MediaPipe misses', () => {
+    it.each([
+      ['open', 'check'],
+      ['thumb_up', 'next'],
+      ['thumb_down', 'back'],
+    ] as const)('fires %s as %s once the shape has been held, though MediaPipe saw nothing', async (shape, intent) => {
+      const { s, onGesture } = await mount()
+      s.holdFor(0, 933, shaped(shape, 0.9))
+      expect(onGesture).not.toHaveBeenCalled()
+      s.holdFor(1000, 1100, shaped(shape, 0.9))
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent }))
+    })
+
+    it('fires a thumbs-up that MediaPipe called a closed fist', async () => {
+      const { s, onGesture } = await mount()
+      s.holdFor(0, 1100, shaped('thumb_up', 0.85, 'Closed_Fist', 0.95))
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent: 'next' }))
+    })
+
+    it('judges the shape by its own confidence, thumbs from 0.7 and the open hand from 0.6', async () => {
+      const { s, onGesture } = await mount()
+      s.holdFor(0, 2000, shaped('thumb_up', 0.65))
+      expect(onGesture).not.toHaveBeenCalled()
+      s.holdFor(2100, 3200, shaped('open', 0.65))
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent: 'check' }))
+    })
+
+    it('does not use MediaPipe\'s score for a shape reading', async () => {
+      const { s, onGesture } = await mount()
+      // The label is not one that maps and its score is high; the shape is weak.
+      s.holdFor(0, 2000, shaped('thumb_up', 0.4, 'Closed_Fist', 0.99))
+      expect(onGesture).not.toHaveBeenCalled()
+    })
+
+    it('prefers MediaPipe when it is sure of a gesture the shape disagrees with', async () => {
+      const { s, onGesture } = await mount()
+      s.holdFor(0, 1100, shaped('open', 0.95, 'Thumb_Up', 0.9))
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent: 'next' }))
+    })
+
+    it('ignores a shape that is other', async () => {
+      const { s, onGesture } = await mount()
+      s.holdFor(0, 3000, shaped('other', 0.95))
+      expect(onGesture).not.toHaveBeenCalled()
+    })
+
+    it('shows the hold ring for a shape gesture, like any other', async () => {
+      const { s } = await mount()
+      s.at(0, shaped('open', 0.9))
+      s.at(500, shaped('open', 0.9))
+      expect(screen.getByTestId('progress')).toHaveTextContent('check:0.50')
+    })
+
+    it('restarts the hold when the shape flickers to something else', async () => {
+      const { s, onGesture } = await mount()
+      s.holdFor(0, 600, shaped('open', 0.9))
+      s.holdFor(667, 1000, shaped('other', 0.9)) // a few dropped frames is fine, this is longer
+      s.holdFor(1067, 1900, shaped('open', 0.9))
+      expect(onGesture).not.toHaveBeenCalled()
+    })
+
+    it('fires only once for one long hold of a shape', async () => {
+      const { s, onGesture } = await mount()
+      s.holdFor(0, 8000, shaped('thumb_up', 0.9))
+      expect(onGesture).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not fire on resume for a shape that was already being held, until it is let go', async () => {
+      const { s, onGesture, el, view } = await mount()
+      s.holdFor(0, 600, shaped('open', 0.9))
+
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} paused />)
+      s.holdFor(667, 1500, shaped('open', 0.9)) // palm still up during the check
+
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} />)
+      s.holdFor(1567, 4000, shaped('open', 0.9))
+      expect(onGesture).not.toHaveBeenCalled()
+
+      s.holdFor(4067, 4400, none)
+      s.holdFor(4467, 5600, shaped('open', 0.9))
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent: 'check' }))
+    })
+
+    it('counts a held open palm at 0.65 as held through a pause, as the filter does', async () => {
+      // 0.65 is enough for a check (0.6) though under the thumbs' 0.7: held through a pause, it must not re-fire.
+      const { s, onGesture, el, view } = await mount()
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} paused />)
+      s.holdFor(0, 1500, shaped('open', 0.65))
+      view.rerender(<Harness video={el} deps={s.deps} onGesture={onGesture} />)
+      s.holdFor(1567, 4000, shaped('open', 0.65))
+      expect(onGesture).not.toHaveBeenCalled()
+    })
+
+    it('respects the mapping: no thumbs from the shape under the hour-1 fallback', async () => {
+      const { s, onGesture } = await mount({ mapping: FALLBACK_MAPPING })
+      s.holdFor(0, 2000, shaped('thumb_up', 0.95))
+      expect(onGesture).not.toHaveBeenCalled()
+      s.holdFor(2100, 3200, shaped('open', 0.95))
+      expect(onGesture).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ intent: 'check' }))
     })
   })
 

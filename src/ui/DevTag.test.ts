@@ -4,6 +4,7 @@ import { describeSetup } from './DevTag.tsx'
 const ready = { status: 'ready', error: null } as const
 const live = { mock: false, laptop: false, status: 'live', error: null, cooking: true, gestures: ready, reading: null } as const
 const reading = (label: string, score: number, handPresent = true) => ({ label, score, handPresent })
+const shaped = (name: 'open' | 'thumb_up' | 'thumb_down', score: number, label = 'None') => ({ ...reading(label, 0.2), shape: { name, score } })
 
 describe('describeSetup', () => {
   it('names the real backend and a live hat cam as fine', () => {
@@ -31,6 +32,12 @@ describe('describeSetup', () => {
   it('shows what the hand model reads right now, so a palm that does not register can be told from a blank camera', () => {
     expect(describeSetup({ ...live, reading: reading('Open_Palm', 0.93) }).gestures.text).toBe('Gestures: Open_Palm 0.93')
     expect(describeSetup({ ...live, reading: reading('Thumb_Up', 0.8) }).gestures.text).toBe('Gestures: Thumb_Up 0.80')
+  })
+
+  it('says so when the hand shape, not the label, is what fired', () => {
+    expect(describeSetup({ ...live, reading: shaped('open', 0.91) }).gestures).toEqual({ text: 'Gestures: open (shape 0.91)', ok: true })
+    expect(describeSetup({ ...live, reading: shaped('thumb_up', 0.8, 'Closed_Fist') }).gestures.text).toBe('Gestures: thumb_up (shape 0.80)')
+    expect(describeSetup({ ...live, reading: shaped('thumb_down', 0.756) }).gestures.text).toBe('Gestures: thumb_down (shape 0.76)')
   })
 
   it('tells a hand with no known gesture from no hand at all', () => {
