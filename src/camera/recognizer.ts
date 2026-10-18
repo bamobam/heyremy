@@ -1,4 +1,5 @@
 import { FilesetResolver, GestureRecognizer, type GestureRecognizerResult } from '@mediapipe/tasks-vision'
+import { classifyHandShape, type HandShapeReading } from './handShape.ts'
 
 // Served from the app (public/), not a CDN: venue Wi-Fi is slow.
 export const WASM_PATH = '/wasm'
@@ -19,6 +20,11 @@ export interface Detection {
   handPresent: boolean
   /** The 21 hand landmarks, or null with no hand. */
   landmarks: Landmark[] | null
+  /**
+   * What the landmarks' geometry says the hand is doing, whatever MediaPipe's label says (it reads backs of
+   * hands poorly). Absent with no hand, and on readings built by hand without landmarks.
+   */
+  shape?: HandShapeReading
 }
 
 export interface Recognizer {
@@ -26,17 +32,22 @@ export interface Recognizer {
   close(): void
 }
 
-/** Reads the first hand of a MediaPipe result. Never returns null, so later stages have one shape. */
-export function toDetection(result: GestureRecognizerResult): Detection {
+/**
+ * Reads the first hand of a MediaPipe result. Never returns null, so later stages have one shape.
+ * `aspect` is the frame's width over height, which the hand shape needs to measure angles true (default square).
+ */
+export function toDetection(result: GestureRecognizerResult, aspect = 1): Detection {
   const hand = result.landmarks[0]
   if (!hand) return { label: 'None', score: 0, handPresent: false, landmarks: null }
 
   const top = result.gestures[0]?.[0]
+  const landmarks = hand.map(({ x, y }) => ({ x, y }))
   return {
     label: top?.categoryName ?? 'None',
     score: top?.score ?? 0,
     handPresent: true,
-    landmarks: hand.map(({ x, y }) => ({ x, y })),
+    landmarks,
+    shape: classifyHandShape(landmarks, { aspect }),
   }
 }
 
@@ -49,7 +60,8 @@ export async function createRecognizer(): Promise<Recognizer> {
   })
   return {
     // MediaPipe needs strictly increasing timestamps; the frame loop's are.
-    recognize: (video, timestampMs) => toDetection(recognizer.recognizeForVideo(video, timestampMs)),
+    recognize: (video, timestampMs) =>
+      toDetection(recognizer.recognizeForVideo(video, timestampMs), video.videoHeight > 0 ? video.videoWidth / video.videoHeight : 1),
     close: () => recognizer.close(),
   }
 }

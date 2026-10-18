@@ -1,5 +1,6 @@
 // React contexts behind useCooking() / useHoldProgress(). Any provider (the fake today, Nam's later) fills these.
 import { createContext, useContext } from 'react'
+import type { HandShape } from '../camera/handShape.ts'
 import type { HoldProgress } from '../types.ts'
 import type { CookingContextValue } from './contract.ts'
 
@@ -11,6 +12,8 @@ export interface DetectionReading {
   label: string
   score: number
   handPresent: boolean
+  /** Set only when the hand's shape, not MediaPipe's label, is what the gesture came from (the back of a hand it misses). */
+  shape?: { name: Exclude<HandShape, 'other'>; score: number }
 }
 
 export const DetectionContext = createContext<DetectionReading | null>(null)
