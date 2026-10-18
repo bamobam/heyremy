@@ -1,6 +1,7 @@
 // Plays Remy's voice: cached step clips, live verdict speech, and the browser-speech
 // fallback. One voice at a time: every play first stops whatever is playing.
 
+import type { PersonaId } from '../types.ts'
 import { createBrowserSpeech, type BrowserSpeech } from './browserSpeech.ts'
 import { silentWavUrl } from './silence.ts'
 import { clipCache, type ClipCache, type ObjectUrls } from './clipCache.ts'
@@ -10,7 +11,7 @@ export interface AudioPlayer {
   preload(id: string, blob: Blob): void
   play(id: string, fallbackText?: string): Promise<void> // cached clip, or browser speech if missing
   playBlob(blob: Blob): Promise<void>
-  speakLive(text: string): Promise<void> // api.speak → playBlob; on failure, browser speech
+  speakLive(text: string, persona?: PersonaId): Promise<void> // api.speak (in the Persona's voice) → playBlob; on failure, browser speech
   stop(): void // stops both <audio> and speechSynthesis
 }
 
@@ -24,8 +25,8 @@ export interface AudioElement {
 }
 
 export interface AudioPlayerDeps {
-  /** Text → speech audio, e.g. the API client's `speak`. Injected so audio doesn't depend on it. */
-  speak(text: string): Promise<Blob>
+  /** Text → speech audio, e.g. the API client's `speak`. Injected so audio doesn't depend on it. `persona` picks the voice. */
+  speak(text: string, persona?: PersonaId): Promise<Blob>
   cache?: ClipCache
   speech?: BrowserSpeech
   /** Defaults to one <audio> for the whole page, shared by every player (see pageAudio). */
@@ -171,11 +172,11 @@ export function createAudioPlayer(deps: AudioPlayerDeps): AudioPlayer {
       await playBlobAs(blob, begin())
     },
 
-    async speakLive(text) {
+    async speakLive(text, persona) {
       const t = begin()
       let blob: Blob
       try {
-        blob = await deps.speak(text)
+        blob = await deps.speak(text, persona)
       } catch {
         return sayIfCurrent(text, t)
       }

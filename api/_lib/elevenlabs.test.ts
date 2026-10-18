@@ -53,3 +53,14 @@ describe('synthesize', () => {
     expect(await kindOf(synthesize('hi'))).toBe('upstream')
   })
 })
+
+describe('synthesize with a voice', () => {
+  it('speaks in the voice it is given, and in the default voice when it is given none', async () => {
+    const fetch = vi.fn().mockImplementation(async () => new Response(new Uint8Array([1]), { status: 200 }))
+    vi.stubGlobal('fetch', fetch)
+    await synthesize('Hello.', 'abcDEF1234567890xyz9')
+    await synthesize('Hello.')
+    expect(fetch.mock.calls[0][0]).toBe('https://api.elevenlabs.io/v1/text-to-speech/abcDEF1234567890xyz9?output_format=mp3_44100_64')
+    expect(fetch.mock.calls[1][0]).toBe(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_64`)
+  })
+})

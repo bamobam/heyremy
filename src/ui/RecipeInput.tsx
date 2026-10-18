@@ -1,7 +1,8 @@
 // RecipeInput (§9.2): the welcome split, and the parsing field while Remy reads the recipe.
-import { DEMO_RECIPE_TEXT, type CookingError } from '../cooking/contract.ts'
+import { DEMO_RECIPE_TEXT, useCooking, type CookingError } from '../cooking/contract.ts'
 import { RemyBadge, RemyLoader, SpeechBubble } from './Remy.tsx'
-import { SAY } from './say.ts'
+import { sayFor } from './say.ts'
+import { CookSettings } from './CookSettings.tsx'
 import { injectShapeKeyframes } from './shapes.ts'
 import { ErrorBanner } from './prep.tsx'
 import { CameraSwitch } from './CameraSwitch.tsx'
@@ -28,10 +29,11 @@ export function RecipeInput({
   onSubmit: (text: string) => void
   onDismissError: () => void
 }) {
+  const say = sayFor(useCooking().state.settings.persona)
   if (phase === 'parsing') {
     return (
       <div className="ui-full ui-enter" style={{ background: 'var(--slate)' }}>
-        <RemyLoader size={250} label={SAY.reading} />
+        <RemyLoader size={250} label={say.reading} />
         <div className="ui-ticker">
           {TICKER.map(line => (
             <span key={line}>{line}</span>
@@ -59,6 +61,7 @@ export function RecipeInput({
             <span>👎 back</span>
             <span>✋ is it ready?</span>
           </div>
+          <CookSettings />
           <FeedbackLink />
           <CameraSwitch />
         </div>
@@ -67,9 +70,9 @@ export function RecipeInput({
         <div className="ui-welcome__meet">
           <RemyBadge size={200} color="var(--pink)" form="sunny" />
           <SpeechBubble>
-            <b>{SAY.hello}</b>
+            <b>{say.hello}</b>
             <br />
-            {SAY.ask}
+            {say.ask}
           </SpeechBubble>
         </div>
         <textarea

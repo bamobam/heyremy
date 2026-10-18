@@ -1,13 +1,15 @@
-// POST /api/check { image, cue, step } → Verdict (SYSTEM_DESIGN 10.7).
+// POST /api/check { image, cue, step, persona? } → Verdict (SYSTEM_DESIGN 10.7). `persona` only words `feedback`.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { Verdict } from '../src/types.js'
+import type { PersonaId, Verdict } from '../src/types.js'
 import { ProviderError, generateJson } from './_lib/gemini.js'
 import { guard, sendError, sendJson } from './_lib/http.js'
 import { MAX_CHECK_BODY_BYTES, MAX_CUE_CHARS, MAX_STEP_CHARS, checkJpegBase64, checkText } from './_lib/limits.js'
 import { log } from './_lib/log.js'
+import { checkPersona } from './_lib/persona.js'
 import { ValidationError, validateVerdict, verdictSchema } from './_lib/schemas.js'
 import { CHECK_MAX_TOKENS, CHECK_SYSTEM, CHECK_TEMPERATURE, buildCheckParts } from './_prompts/check.js'
+import { withPersona } from './_prompts/persona.js'
 
 // The client gives up at 8 s. No retry after a timeout: two slow attempts would outlast it,
 // but a fast 503/429 still gets one try on the fallback model.
@@ -32,12 +34,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
       return sendError(res, 'bad_request', 'Send a JSON object.')
     }
-    const { image, cue, step } = body as { image?: unknown; cue?: unknown; step?: unknown }
-    const bad = checkJpegBase64(image) ?? checkText(cue, 'cue', MAX_CUE_CHARS) ?? checkText(step, 'step', MAX_STEP_CHARS)
+    const { image, cue, step, persona } = body as { image?: unknown; cue?: unknown; step?: unknown; persona?: unknown }
+    const bad =
+      checkJpegBase64(image) ?? checkText(cue, 'cue', MAX_CUE_CHARS) ?? checkText(step, 'step', MAX_STEP_CHARS) ?? checkPersona(persona)
     if (bad !== null) return sendError(res, 'bad_request', bad)
 
     const out = await generateJson({
-      system: CHECK_SYSTEM,
+      system: withPersona(CHECK_SYSTEM, (persona ?? undefined) as PersonaId | undefined),
       parts: buildCheckParts(image as string, (cue as string).trim(), (step as string).trim()),
       schema: verdictSchema,
       temperature: CHECK_TEMPERATURE,

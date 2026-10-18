@@ -5,7 +5,7 @@ import { useCooking, useHoldProgress, type FilledStep } from '../cooking/contrac
 import { CameraView } from './CameraView.tsx'
 import { fieldFor, VERDICT_FIELDS } from './fields.ts'
 import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
-import { SAY, GESTURE_HINTS } from './say.ts'
+import { SAY, GESTURE_HINTS, type Say } from './say.ts'
 import { STEP_TEXT_SIZE } from './fitText.ts'
 import { upcomingSteps } from './upNext.ts'
 import { useFitText } from './useFitText.ts'
@@ -185,7 +185,7 @@ export function GestureFallbackNote() {
  * view above it. `ready` celebrates and counts down to the next step; the other two wait for the
  * cook, who can always check again (✋) or move on (👍) (§9.3).
  */
-export function VerdictPopup({ verdict }: { verdict: { status: 'ready' | 'not_ready' | 'unsure'; feedback: string } }) {
+export function VerdictPopup({ verdict, say = SAY }: { verdict: { status: 'ready' | 'not_ready' | 'unsure'; feedback: string }; say?: Say }) {
   const ready = verdict.status === 'ready'
 
   return (
@@ -202,7 +202,7 @@ export function VerdictPopup({ verdict }: { verdict: { status: 'ready' | 'not_re
         {ready ? <RemyFlipbook pose="cheer" className="ui-verdict__mascot" /> : <img src={HEAD_SRC} alt="" className="ui-verdict__head" />}
       </div>
       <div className="ui-verdict__body">
-        <div className="ui-verdict__catchline">{SAY.verdict[verdict.status]}</div>
+        <div className="ui-verdict__catchline">{say.verdict[verdict.status]}</div>
         <p className="ui-verdict__text">{verdict.feedback}</p>
         {ready ? (
           // No number: the move waits for Remy to finish speaking, so a count would sit frozen mid-verdict.

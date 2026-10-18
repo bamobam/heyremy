@@ -1,5 +1,5 @@
 // A sample recipe in the shape /api/parse returns. Used by tests, and as the
-// dev mock before the backend exists.
+// dev mock before the backend exists. Each step is narrated at the three Levels (beginner is `spoken`).
 
 import type { ParsedRecipe } from '../types.ts'
 
@@ -19,6 +19,8 @@ export const pancakes: ParsedRecipe = {
       id: 1,
       text: 'Whisk {flour}, {milk} and {egg} into a batter.',
       spoken: 'Step 1. Whisk {flour}, {milk} and {egg} into a batter.',
+      spokenIntermediate: 'Step 1. Whisk {flour}, {milk} and {egg}.',
+      spokenMaster: 'Step 1. Whisk {flour}, {milk}, {egg}.',
       cue: 'Batter is smooth with no dry flour streaks',
       checkable: true,
       headsUp: 'Next step needs a hot pan. Turn it on now.',
@@ -27,14 +29,19 @@ export const pancakes: ParsedRecipe = {
       id: 2,
       text: 'Heat the pan on medium and melt {butter}.',
       spoken: 'Step 2. Heat the pan on medium and melt {butter}.',
+      spokenIntermediate: 'Step 2. Pan on medium, melt {butter}.',
+      spokenMaster: 'Step 2. Medium heat, {butter}.',
       cue: 'Butter is melted and foaming',
       checkable: true,
       headsUp: null,
+      timeDependent: true,
     },
     {
       id: 3,
       text: 'Pour a ladle of batter into the pan.',
       spoken: 'Step 3. Pour a ladle of batter into the pan.',
+      spokenIntermediate: 'Step 3. Pour a ladle of batter.',
+      spokenMaster: 'Step 3. Pour a ladle.',
       cue: null,
       checkable: false,
       headsUp: null,
@@ -43,14 +50,19 @@ export const pancakes: ParsedRecipe = {
       id: 4,
       text: 'Flip when bubbles form on top.',
       spoken: 'Step 4. Flip when bubbles form on top.',
+      spokenIntermediate: 'Step 4. Flip at the bubbles.',
+      spokenMaster: 'Step 4. Flip on bubbles.',
       cue: 'Bubbles on top and the edges look set',
       checkable: true,
       headsUp: null,
+      timeDependent: true,
     },
     {
       id: 5,
       text: 'Serve with butter and syrup.',
       spoken: 'Step 5. Serve with butter and syrup.',
+      // No spokenIntermediate: a step saved before Levels existed (or a model that skipped one) reads `spoken`.
+      spokenMaster: 'Step 5. Serve.',
       cue: null,
       checkable: false,
       headsUp: null,

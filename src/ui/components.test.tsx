@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { CheckBadge, GestureLegend, HoldPill, UpNext, VerdictPopup } from './cooking.tsx'
 import { ErrorBanner, HeadsUpBanner, ServingsStepper, VoicingProgress } from './prep.tsx'
-import { SAY } from './say.ts'
+import { SAY, sayFor } from './say.ts'
 import { HoldProgressContext } from '../cooking/context.ts'
 import type { HoldProgress } from '../types.ts'
 
@@ -69,6 +69,17 @@ describe('VerdictPopup', () => {
       expect(screen.getByText(SAY.verdict[status])).toBeTruthy()
       expect(screen.getByText('because')).toBeTruthy()
       unmount()
+    }
+  })
+
+  it('puts the catchline in the Persona\'s words when given one, and keeps Remy\'s when not', () => {
+    for (const persona of ['grandma', 'sergeant'] as const) {
+      for (const status of ['ready', 'not_ready', 'unsure'] as const) {
+        const { unmount } = render(<VerdictPopup verdict={{ status, feedback: 'because' }} say={sayFor(persona)} />)
+        expect(screen.getByText(sayFor(persona).verdict[status])).toBeTruthy()
+        expect(screen.queryByText(SAY.verdict[status])).toBeNull()
+        unmount()
+      }
     }
   })
 

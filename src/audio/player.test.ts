@@ -192,13 +192,22 @@ describe('AudioPlayer', () => {
     it('fetches speech and plays it', async () => {
       const { player, audio, urls, speak, said } = setup()
       const speaking = player.speakLive('Smooth batter, moving on.')
-      expect(speak).toHaveBeenCalledWith('Smooth batter, moving on.')
+      expect(speak).toHaveBeenCalledWith('Smooth batter, moving on.', undefined)
       await tick()
       expect(audio.paused).toBe(false)
       expect(await urls.blobs.get(audio.src)?.text()).toBe('Smooth batter, moving on.')
       audio.finish()
       await speaking
       expect(said()).toEqual([])
+    })
+
+    it('asks for the Persona\'s voice when it is given one', async () => {
+      const { player, audio, speak } = setup()
+      const speaking = player.speakLive('Not quite yet, dear.', 'grandma')
+      expect(speak).toHaveBeenCalledWith('Not quite yet, dear.', 'grandma')
+      await tick()
+      audio.finish()
+      await speaking
     })
 
     it('falls back to browser speech when the request fails', async () => {

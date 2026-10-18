@@ -6,22 +6,27 @@ import type { HatCam } from '../camera/useHatCam.ts'
 import type { DetectionStatus } from '../camera/useDetection.ts'
 import type { GestureEvent } from '../types.ts'
 import type { Controller as FlowController } from './controller.ts'
+import type { CookSettings } from './settings.ts'
 import type { Action, CookingState } from './state.ts'
 
-export type { GestureEvent, GestureIntent, HoldProgress, Ingredient, ParsedRecipe, Step, Verdict } from '../types.ts'
+export type { GestureEvent, GestureIntent, HoldProgress, Ingredient, Level, ParsedRecipe, PersonaId, Step, Verdict } from '../types.ts'
 export type { HatCam } from '../camera/useHatCam.ts'
 export type { ShownStep } from './selectors.ts'
 export type { Action, AppError as CookingError, CookMode, CookingState, Phase } from './state.ts'
 export { AUTO_ADVANCE_MS, MAX_SERVINGS, MIN_SERVINGS } from './state.ts'
+export { DEFAULT_SETTINGS, LEVELS, PERSONAS, summarizeSettings } from './settings.ts'
+export type { CookSettings, SettingOption } from './settings.ts'
 export type CookingStats = CookingState['stats']
 export type Voicing = CookingState['voicing']
 
 /** The actions screens may dispatch directly. Everything else goes through the controller. */
 export type UiAction = Extract<Action, { type: 'recipeTextChanged' | 'screenTapped' | 'errorDismissed' }>
 
-/** Nam's controller, plus the voice retry (the "Try again" button on the prep screen). */
+/** Nam's controller, plus the voice retry (the "Try again" button on the prep screen) and the Cook settings. */
 export interface Controller extends FlowController {
   retryVoicing(): void
+  /** Changes the Level and/or Persona (start and prep screens only), remembers them, and voices again if clips were made. */
+  setSettings(change: Partial<CookSettings>): void
   onGesture(e: GestureEvent): Promise<void>
 }
 

@@ -129,7 +129,8 @@ export function createController({ getState, dispatch, api, camera, now, voice }
     }
 
     try {
-      const verdict = await api.checkStep(frame.blob, { text: step.text, cue: step.cue ?? '' }, { signal: abort.signal })
+      // The Persona only changes how the verdict is worded; the step and cue sent are the same at every Level and Persona.
+      const verdict = await api.checkStep(frame.blob, { text: step.text, cue: step.cue ?? '' }, { signal: abort.signal, persona: started.settings.persona })
       if (stale()) return
       dispatch({ type: 'checkSucceeded', requestId: id, verdict, now: now() })
       if (verdict.status === 'ready') startAutoAdvance(id)

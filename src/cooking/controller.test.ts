@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ParsedRecipe, Verdict } from '../types.ts'
+import type { ParsedRecipe, PersonaId, Verdict } from '../types.ts'
 import { createController } from './controller.ts'
 import { pancakes } from './fixtures.ts'
 import type { ApiClient, CameraPort } from './ports.ts'
 import { canStart } from './selectors.ts'
+import type { CookSettings } from './settings.ts'
 import { cookingReducer, initialState, type Action, type CookingState } from './state.ts'
 
 beforeEach(() => {
@@ -28,8 +29,8 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-function setup({ recipe = pancakes }: { recipe?: ParsedRecipe } = {}) {
-  let state: CookingState = initialState('my recipe')
+function setup({ recipe = pancakes, settings }: { recipe?: ParsedRecipe; settings?: CookSettings } = {}) {
+  let state: CookingState = initialState('my recipe', settings)
   const dispatch = (a: Action) => {
     state = cookingReducer(state, a)
   }
@@ -37,7 +38,7 @@ function setup({ recipe = pancakes }: { recipe?: ParsedRecipe } = {}) {
 
   const api = {
     parseRecipe: vi.fn(async (_text: string) => recipe),
-    checkStep: vi.fn(async (_frame: Blob, _step: { text: string; cue: string }, _opts?: { signal?: AbortSignal }) => ready),
+    checkStep: vi.fn(async (_frame: Blob, _step: { text: string; cue: string }, _opts?: { signal?: AbortSignal; persona?: PersonaId }) => ready),
   } satisfies ApiClient
 
   const camera = {
@@ -196,6 +197,26 @@ describe('checking a step', () => {
     )
     expect(h.state).toMatchObject({ mode: 'verdict', verdict: ready })
     expect(h.state.stats.checks).toBe(1)
+  })
+
+  it('tells the server which Persona to word the verdict in, and nothing else about the settings', async () => {
+    const h = await onCooking(setup({ settings: { level: 'master', persona: 'grandma' } }))
+    await h.controller.onGesture({ intent: 'check', at: 0 })
+    expect(h.api.checkStep).toHaveBeenCalledWith(
+      expect.any(Blob),
+      { text: 'Whisk 1 cup flour, 1 cup milk and 2 eggs into a batter.', cue: 'Batter is smooth with no dry flour streaks' },
+      { signal: expect.any(AbortSignal), persona: 'grandma' },
+    )
+  })
+
+  it('sends the same step text and cue at every Level: Level changes only what is said', async () => {
+    const seen: unknown[] = []
+    for (const level of ['beginner', 'intermediate', 'master'] as const) {
+      const h = await onCooking(setup({ settings: { level, persona: 'remy' } }))
+      await h.controller.onGesture({ intent: 'check', at: 0 })
+      seen.push(h.api.checkStep.mock.calls[0][1])
+    }
+    expect(new Set(seen.map((s) => JSON.stringify(s))).size).toBe(1)
   })
 
   it('sends the step text at the chosen servings', async () => {

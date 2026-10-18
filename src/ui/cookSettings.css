@@ -1,0 +1,180 @@
+/* Cook settings. A one-line summary button, and a panel over the page with Level and Persona as two rows
+   of option cards. The panel is a white card with ink text wherever it opens (the umber start panel or the
+   light prep column), so the cards read the same on both. */
+
+/* --- The summary line: "COOK SETTINGS  Beginner · Remy  Change". It takes the colour of where it sits. --- */
+.ui-settings-pop {
+  position: relative;
+}
+
+.ui-settings-pop__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px 16px;
+  border: 2px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  color: inherit;
+  cursor: pointer;
+  font: 500 15px var(--font);
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.ui-settings-pop__btn:hover,
+.ui-settings-pop__btn[aria-expanded='true'] {
+  border-color: currentColor;
+}
+
+.ui-settings-pop__btn:focus-visible {
+  outline: 3px solid var(--sparkle);
+  outline-offset: 2px;
+}
+
+.ui-settings-pop__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.ui-settings-pop__value {
+  font-weight: 800;
+}
+
+.ui-settings-pop__change {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- The panel: opens upward from the line, over whatever is above it. --- */
+.ui-settings-pop__panel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  box-sizing: border-box;
+  width: min(540px, calc(100vw - 72px));
+  padding: 16px 18px 18px;
+  border: var(--edge) solid var(--ink);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--lift-lg);
+  color: var(--ink);
+}
+
+/* On prep the line is the foot of the recipe card, where there is room (the header and the right column are full). */
+.ui-prep__card .ui-settings-pop {
+  margin-top: auto;
+}
+
+.ui-settings-pop__done {
+  padding: 8px 22px;
+  font-size: 16px;
+}
+
+/* --- The groups inside the panel. --- */
+.ui-settings {
+  --on-bg: var(--ink);
+  --on-fg: var(--cream);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  color: inherit;
+}
+
+.ui-settings__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ui-settings__title span {
+  margin-left: 8px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.75;
+}
+
+.ui-settings__group {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.ui-settings__legend {
+  padding-top: 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ui-settings__options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ui-opt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 11px 8px;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  cursor: pointer;
+  line-height: 1.2;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.ui-opt:hover {
+  border-color: currentColor;
+}
+
+/* The real radio covers the card, so the whole card is the click target and the focus target. */
+.ui-opt input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ui-opt__name {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ui-opt__desc {
+  font-size: 12.5px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.ui-opt:has(input:checked) {
+  border-color: var(--on-bg);
+  background: var(--on-bg);
+  color: var(--on-fg);
+}
+
+.ui-opt:has(input:focus-visible) {
+  outline: 3px solid var(--slate);
+  outline-offset: 2px;
+}

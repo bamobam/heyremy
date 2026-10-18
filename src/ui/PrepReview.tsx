@@ -2,7 +2,8 @@
 // setup check. The Start button only comes alive once every clip for the chosen servings is cached.
 import { canStart, scaledIngredients, useCooking } from '../cooking/contract.ts'
 import { HEAD_SRC, RemyBadge, SpeechBubble } from './Remy.tsx'
-import { SAY } from './say.ts'
+import { sayFor } from './say.ts'
+import { CookSettings } from './CookSettings.tsx'
 import { CameraSetup, ErrorBanner, IngredientList, PrepChecklist, ServingsStepper, VoicingProgress } from './prep.tsx'
 import { FeedbackLink } from './FeedbackLink.tsx'
 import { HomeLogo } from './HomeLogo.tsx'
@@ -40,6 +41,7 @@ export function PrepReview() {
             </div>
           </div>
           <IngredientList ingredients={scaledIngredients(state)} />
+          <CookSettings />
         </section>
 
         <section className="ui-prep__side">
@@ -49,7 +51,7 @@ export function PrepReview() {
           </div>
           <div className="ui-remy-line ui-remy-line--small">
             <img src={HEAD_SRC} alt="" />
-            <SpeechBubble small>{SAY.prep}</SpeechBubble>
+            <SpeechBubble small>{sayFor(state.settings.persona).prep}</SpeechBubble>
           </div>
           <button type="button" className="ui-btn ui-btn--wide" onClick={controller.start} disabled={!canStart(state)}>
             Remy, let's cook!

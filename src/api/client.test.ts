@@ -24,6 +24,31 @@ describe('parseRecipe', () => {
     expect(lastBody(fetchFn)).toEqual({ recipe: 'pancakes' })
   })
 
+  it('hands back the narration at every Level and timeDependent as the server sent them', async () => {
+    const fetchFn = fakeFetch(async () => json(pancakes))
+    const recipe = await createApiClient(fetchFn).parseRecipe('pancakes')
+    expect(recipe.steps[0].spokenIntermediate).toBe(pancakes.steps[0].spokenIntermediate)
+    expect(recipe.steps[0].spokenMaster).toBe(pancakes.steps[0].spokenMaster)
+    expect(recipe.steps[3].timeDependent).toBe(true)
+  })
+
+  it('accepts a recipe from before Levels existed, with no other narrations', async () => {
+    const old = structuredClone(pancakes)
+    for (const step of old.steps) {
+      delete step.spokenIntermediate
+      delete step.spokenMaster
+      delete step.timeDependent
+    }
+    const fetchFn = fakeFetch(async () => json(old))
+    await expect(createApiClient(fetchFn).parseRecipe('pancakes')).resolves.toEqual(old)
+  })
+
+  it('does not send the Level or Persona with a recipe: one parse serves every Level', async () => {
+    const fetchFn = fakeFetch(async () => json(pancakes))
+    await createApiClient(fetchFn).parseRecipe('pancakes')
+    expect(lastBody(fetchFn)).toEqual({ recipe: 'pancakes' })
+  })
+
   it('refuses empty text without calling the server', async () => {
     const fetchFn = fakeFetch(async () => json({}))
     await expect(createApiClient(fetchFn).parseRecipe('   ')).rejects.toMatchObject({ kind: 'bad_request' })
@@ -77,6 +102,26 @@ describe('checkStep', () => {
     expect(verdict).toEqual({ status: 'not_ready', feedback: 'Still lumpy.' })
     expect(fetchFn.mock.calls[0][0]).toBe('/api/check')
     expect(lastBody(fetchFn)).toEqual({ image: '/9j/4AAQ', cue: 'Batter is smooth', step: step.text })
+  })
+
+  it('sends the Persona so the verdict is worded in character, unless it is Remy\'s', async () => {
+    for (const persona of ['grandma', 'sergeant'] as const) {
+      const fetchFn = fakeFetch(async () => json({ status: 'ready', feedback: 'Perfect.' }))
+      const result = createApiClient(fetchFn).checkStep(frame, step, { persona })
+      await vi.advanceTimersByTimeAsync(10)
+      await result
+      expect(lastBody(fetchFn)).toEqual({ image: '/9j/4AAQ', cue: 'Batter is smooth', step: step.text, persona })
+    }
+  })
+
+  it('sends no persona for Remy or when none is given, so the request is the one it always was', async () => {
+    for (const opts of [{ persona: 'remy' as const }, {}, undefined]) {
+      const fetchFn = fakeFetch(async () => json({ status: 'ready', feedback: 'Perfect.' }))
+      const result = createApiClient(fetchFn).checkStep(frame, step, opts)
+      await vi.advanceTimersByTimeAsync(10)
+      await result
+      expect(lastBody(fetchFn)).toEqual({ image: '/9j/4AAQ', cue: 'Batter is smooth', step: step.text })
+    }
   })
 
   it('rejects an answer that is not a verdict, as unprocessable', async () => {

@@ -1,6 +1,6 @@
 // @vitest-environment node -- server code runs on Node, not in the browser
 import { describe, expect, it } from 'vitest'
-import { placeholders, slugify, validateRecipe, validateVerdict, ValidationError } from './schemas.js'
+import { placeholders, recipeSchema, slugify, validateRecipe, validateVerdict, ValidationError } from './schemas.js'
 
 const step = (over: Record<string, unknown> = {}) => ({
   id: 1,
@@ -164,6 +164,138 @@ describe('validateRecipe', () => {
       prep: [],
       steps: [{ id: 1, text: 'Toast it.', spoken: 'Step 1. Toast it.', cue: 'Golden brown', checkable: true, headsUp: null }],
     })
+  })
+})
+
+describe('the response schema', () => {
+  const stepSchema = recipeSchema.properties.steps.items
+
+  it('asks for the narration at the other two Levels and for timeDependent, on every step', () => {
+    expect(stepSchema.properties.spokenIntermediate).toEqual({ type: 'STRING' })
+    expect(stepSchema.properties.spokenMaster).toEqual({ type: 'STRING' })
+    expect(stepSchema.properties.timeDependent).toEqual({ type: 'BOOLEAN' })
+    expect(stepSchema.required).toEqual(expect.arrayContaining(['spokenIntermediate', 'spokenMaster', 'timeDependent']))
+  })
+
+  it('lists every property once in the ordering, with the three narrations together', () => {
+    const { propertyOrdering, properties, required } = stepSchema
+    expect([...propertyOrdering].sort()).toEqual(Object.keys(properties).sort())
+    expect([...required].sort()).toEqual(Object.keys(properties).sort())
+    const at = (k: string) => propertyOrdering.indexOf(k)
+    expect(at('spokenIntermediate')).toBe(at('spoken') + 1)
+    expect(at('spokenMaster')).toBe(at('spoken') + 2)
+  })
+})
+
+describe('validateRecipe: Levels and timeDependent', () => {
+  const withIngredients = (steps: unknown[]) => ({
+    ingredients: [
+      { id: 'flour', amount: 1, unit: 'cup', name: 'flour' },
+      { id: 'milk', amount: 1, unit: 'cup', name: 'milk' },
+    ],
+    steps,
+  })
+  const leveled = (over: Record<string, unknown> = {}) =>
+    step({
+      text: 'Whisk {flour} and {milk} until smooth.',
+      spoken: 'Step 1. Whisk {flour} and {milk} until smooth. A few lumps are fine.',
+      spokenIntermediate: 'Step 1. Whisk {flour} and {milk} until smooth.',
+      spokenMaster: 'Step 1. Whisk {flour}, {milk}.',
+      ...over,
+    })
+
+  it('keeps the narration at all three Levels', () => {
+    const [s] = validateRecipe(withIngredients([leveled()])).steps
+    expect(s.spoken).toBe('Step 1. Whisk {flour} and {milk} until smooth. A few lumps are fine.')
+    expect(s.spokenIntermediate).toBe('Step 1. Whisk {flour} and {milk} until smooth.')
+    expect(s.spokenMaster).toBe('Step 1. Whisk {flour}, {milk}.')
+  })
+
+  it('trims them', () => {
+    const [s] = validateRecipe(withIngredients([leveled({ spokenIntermediate: '  Step 1. Whisk.  ', spokenMaster: '\nStep 1. Whisk.\n' })])).steps
+    expect(s.spokenIntermediate).toBe('Step 1. Whisk.')
+    expect(s.spokenMaster).toBe('Step 1. Whisk.')
+  })
+
+  it('leaves a narration out when the model gave none or only blanks, so it reads the beginner one', () => {
+    for (const bad of [undefined, null, '', '   ', 7, ['Step 1.'], {}]) {
+      const [s] = validateRecipe(withIngredients([leveled({ spokenIntermediate: bad, spokenMaster: bad })])).steps
+      expect(s, String(bad)).not.toHaveProperty('spokenIntermediate')
+      expect(s, String(bad)).not.toHaveProperty('spokenMaster')
+    }
+  })
+
+  it('does not fail the recipe over a Level narration with an ingredient the recipe does not have; it leaves that one out', () => {
+    const [s] = validateRecipe(withIngredients([leveled({ spokenIntermediate: 'Step 1. Whisk {sugar}.' })])).steps
+    expect(s).not.toHaveProperty('spokenIntermediate')
+    expect(s.spokenMaster).toBe('Step 1. Whisk {flour}, {milk}.')
+    expect(s.spoken).toContain('{flour}')
+  })
+
+  it('renames placeholders in a Level narration the same way as everywhere else', () => {
+    const r = validateRecipe({
+      ingredients: [{ id: 'Brown Sugar', amount: 2, unit: 'tbsp', name: 'brown sugar' }],
+      steps: [
+        step({
+          text: 'Add {Brown Sugar}.',
+          spoken: 'Step 1. Add {Brown Sugar}.',
+          spokenIntermediate: 'Step 1. Add {Brown Sugar}.',
+          spokenMaster: 'Step 1. {Brown Sugar}.',
+        }),
+      ],
+    })
+    expect(r.steps[0].spokenIntermediate).toBe('Step 1. Add {brown-sugar}.')
+    expect(r.steps[0].spokenMaster).toBe('Step 1. {brown-sugar}.')
+  })
+
+  it('turns an ingredient the step text does not use into its plain name in a Level narration, as it does in spoken', () => {
+    const [s] = validateRecipe(
+      withIngredients([leveled({ text: 'Whisk {flour} until smooth.', spoken: 'Step 1. Whisk {flour} until smooth.', spokenMaster: 'Step 1. Whisk {flour} into the {milk}.' })]),
+    ).steps
+    expect(s.spokenMaster).toBe('Step 1. Whisk {flour} into the milk.')
+    expect(placeholders(s.spokenMaster!).every((p) => placeholders(s.text).includes(p))).toBe(true)
+  })
+
+  it('accepts a terse narration that leaves an amount out', () => {
+    const [s] = validateRecipe(withIngredients([leveled({ spokenMaster: 'Step 1. Whisk until smooth.' })])).steps
+    expect(s.spokenMaster).toBe('Step 1. Whisk until smooth.')
+  })
+
+  it('never changes the shown text or beginner narration because of a Level narration (Level changes only what is said)', () => {
+    const base = validateRecipe(withIngredients([leveled()])).steps[0]
+    const without = validateRecipe(withIngredients([leveled({ spokenIntermediate: undefined, spokenMaster: undefined })])).steps[0]
+    const odd = validateRecipe(withIngredients([leveled({ spokenIntermediate: 'Step 1. Just {milk}.', spokenMaster: 'Step 1. {sugar}' })])).steps[0]
+    for (const s of [base, odd]) {
+      expect(s.text).toBe(without.text)
+      expect(s.spoken).toBe(without.spoken)
+      expect(s.cue).toBe(without.cue)
+      expect(s.checkable).toBe(without.checkable)
+    }
+  })
+
+  it('keeps timeDependent when it is true on a checkable step', () => {
+    const [s] = validateRecipe(withIngredients([leveled({ cue: 'Simmering, small bubbles', checkable: true, timeDependent: true })])).steps
+    expect(s.timeDependent).toBe(true)
+  })
+
+  it('leaves timeDependent out when false, missing, not a boolean, or on a step that cannot be checked', () => {
+    const cases = [
+      { cue: 'Simmering', checkable: true, timeDependent: false },
+      { cue: 'Simmering', checkable: true },
+      { cue: 'Simmering', checkable: true, timeDependent: 'true' },
+      { cue: 'Simmering', checkable: true, timeDependent: 1 },
+      { cue: 'Simmering', checkable: false, timeDependent: true },
+      { cue: null, checkable: true, timeDependent: true },
+    ]
+    for (const c of cases) {
+      const [s] = validateRecipe(withIngredients([leveled(c)])).steps
+      expect(s, JSON.stringify(c)).not.toHaveProperty('timeDependent')
+    }
+  })
+
+  it('still accepts a step with none of the new fields, as before', () => {
+    const [s] = validateRecipe({ steps: [step()] }).steps
+    expect(s).toEqual({ id: 1, text: 'Whisk the batter.', spoken: 'Step 1. Whisk the batter.', cue: null, checkable: false, headsUp: null })
   })
 })
 

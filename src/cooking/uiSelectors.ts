@@ -1,10 +1,10 @@
 // Selectors the screens need beyond selectors.ts: every step with its amounts filled in (for the
 // carousel), and each ingredient split into amount and name (for the prep tiles). Pure.
 import type { CookingState } from './state.ts'
-import { describeIngredient, fillPlaceholders, scaleFactor } from './scaling.ts'
+import { describeIngredient, fillPlaceholders, narrationFor, scaleFactor } from './scaling.ts'
 import type { ShownStep } from './selectors.ts'
 
-/** A step with its placeholders filled in at the chosen servings. */
+/** A step with its placeholders filled in at the chosen servings; `spoken` is the chosen Level's narration. */
 export interface FilledStep extends ShownStep {
   id: number
 }
@@ -31,7 +31,7 @@ export function filledSteps(s: CookingState): FilledStep[] {
   return s.recipe.steps.map(step => ({
     id: step.id,
     text: fillPlaceholders(step.text, ingredients, factor, 'screen'),
-    spoken: fillPlaceholders(step.spoken, ingredients, factor, 'spoken'),
+    spoken: fillPlaceholders(narrationFor(step, s.settings.level), ingredients, factor, 'spoken'),
     cue: step.cue,
     checkable: step.checkable,
     headsUp: step.headsUp,

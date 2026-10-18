@@ -5,7 +5,8 @@
 // Steps hold placeholders like {flour} instead of "1 cup flour", and they are
 // filled in here at the chosen servings.
 
-import type { Ingredient, Step } from '../types.ts'
+import type { Ingredient, Level, PersonaId, Step } from '../types.ts'
+import { DEFAULT_LEVEL, DEFAULT_PERSONA, personaSuffix } from './settings.ts'
 
 export type Form = 'screen' | 'spoken'
 
@@ -252,9 +253,25 @@ export function fillPlaceholders(text: string, ingredients: Ingredient[], factor
 }
 
 /**
- * The id of a step's audio clip. A clip with amounts in it is different at every
- * servings, so it carries the servings; any other clip is the same at all of them
- * and survives a servings change.
+ * What a step says aloud at a Level, still with its {placeholders}. Beginner is `spoken`; a step
+ * with no narration of its own for the Level (saved before Levels existed) reads `spoken`.
  */
-export const stepClipId = (step: Step, servings: number) =>
-  hasPlaceholders(step.spoken) ? `step-${step.id}@${servings}` : `step-${step.id}`
+export function narrationFor(step: Step, level: Level): string {
+  if (level === 'intermediate') return step.spokenIntermediate ?? step.spoken
+  if (level === 'master') return step.spokenMaster ?? step.spoken
+  return step.spoken
+}
+
+/**
+ * The id of a step's audio clip. A clip with amounts in it is different at every servings, so it
+ * carries the servings; any other clip is the same at all of them and survives a servings change.
+ * A Level whose narration is different text is a different clip (a Level with the same words as
+ * beginner shares its clip), and so is another Persona's voice. The default Level and Persona add
+ * nothing, so their ids are the ones that were cached before settings existed.
+ */
+export function stepClipId(step: Step, servings: number, level: Level = DEFAULT_LEVEL, persona: PersonaId = DEFAULT_PERSONA): string {
+  const narration = narrationFor(step, level)
+  const levelPart = narration === step.spoken ? '' : `.${level}`
+  const servingsPart = hasPlaceholders(narration) ? `@${servings}` : ''
+  return `step-${step.id}${levelPart}${personaSuffix(persona)}${servingsPart}`
+}

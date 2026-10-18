@@ -1,4 +1,5 @@
 import type { ApiClient } from '../cooking/ports.ts'
+import { DEFAULT_PERSONA } from '../cooking/settings.ts'
 import { blobToBase64 } from './base64.ts'
 import { ApiError } from './errors.ts'
 import { isParsedRecipe, isVerdict } from './guards.ts'
@@ -22,9 +23,11 @@ export function createApiClient(fetchFn?: typeof fetch): ApiClient {
 
     async checkStep(frame, step, opts) {
       const image = await blobToBase64(frame)
+      // Remy's is the default the server assumes, so his request is the one it always was.
+      const persona = opts?.persona !== undefined && opts.persona !== DEFAULT_PERSONA ? { persona: opts.persona } : {}
       const data = await postJson<unknown>(
         '/api/check',
-        { image, cue: step.cue, step: step.text },
+        { image, cue: step.cue, step: step.text, ...persona },
         { timeoutMs: CHECK_TIMEOUT_MS, signal: opts?.signal },
         fetchFn,
       )

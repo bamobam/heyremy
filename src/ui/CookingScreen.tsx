@@ -4,18 +4,18 @@ import { canCheck, currentStep, filledSteps, useCooking, type ShownStep } from '
 import { GestureFallbackNote, GestureLegend, HoldPill, StepCard, StepProgress, UpNext, VerdictPopup } from './cooking.tsx'
 import { fieldFor } from './fields.ts'
 import { HEAD_SRC, SpeechBubble } from './Remy.tsx'
-import { SAY } from './say.ts'
+import { sayFor, type Say } from './say.ts'
 import { ErrorBanner } from './prep.tsx'
 import { HomeLogo } from './HomeLogo.tsx'
 
 /** What Remy says on the cooking screen, in priority order (§9.2). */
-function bubbleFor(step: ShownStep | null, index: number, checking: boolean) {
-  if (checking) return <b>{SAY.look}</b>
+function bubbleFor(say: Say, step: ShownStep | null, index: number, checking: boolean) {
+  if (checking) return <b>{say.look}</b>
   if (!step) return null
   return (
     <>
-      {index === 0 && <b>{SAY.go} </b>}
-      {step.headsUp && <b>{SAY.headsUp} </b>}
+      {index === 0 && <b>{say.go} </b>}
+      {step.headsUp && <b>{say.headsUp} </b>}
       {step.text}
     </>
   )
@@ -26,6 +26,7 @@ export function CookingScreen() {
   const steps = filledSteps(state)
   const field = fieldFor(state.stepIndex)
   const checking = state.mode === 'checking'
+  const say = sayFor(state.settings.persona)
 
   return (
     <div
@@ -52,7 +53,7 @@ export function CookingScreen() {
       <div className="ui-cook__remy">
         <div className="ui-remy-line">
           <img src={HEAD_SRC} alt="" />
-          <SpeechBubble small>{bubbleFor(currentStep(state), state.stepIndex, checking)}</SpeechBubble>
+          <SpeechBubble small>{bubbleFor(say, currentStep(state), state.stepIndex, checking)}</SpeechBubble>
         </div>
       </div>
 
@@ -60,7 +61,7 @@ export function CookingScreen() {
       <HoldPill canCheck={canCheck(state)} />
 
       {state.mode === 'verdict' && state.verdict && (
-        <VerdictPopup verdict={state.verdict} />
+        <VerdictPopup verdict={state.verdict} say={say} />
       )}
     </div>
   )

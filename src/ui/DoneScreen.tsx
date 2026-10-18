@@ -1,9 +1,9 @@
 // DoneScreen (§9.2): Remy celebrating on the sage field, the session's stats, and one button.
-import type { CookingStats } from '../cooking/contract.ts'
+import { useCooking, type CookingStats } from '../cooking/contract.ts'
 import { FeedbackLink } from './FeedbackLink.tsx'
 import { HomeLogo } from './HomeLogo.tsx'
 import { RemyBadge, SpeechBubble } from './Remy.tsx'
-import { SAY } from './say.ts'
+import { sayFor } from './say.ts'
 
 /** "You checked 3 times and never touched the screen." */
 function statsLine(stats: CookingStats): string {
@@ -13,6 +13,7 @@ function statsLine(stats: CookingStats): string {
 }
 
 export function DoneScreen({ stats, title, onRestart }: { stats: CookingStats; title: string; onRestart: () => void }) {
+  const say = sayFor(useCooking().state.settings.persona)
   return (
     <div className="ui-full ui-enter" style={{ background: 'var(--sage)' }}>
       <div className="ui-done__logo">
@@ -21,7 +22,7 @@ export function DoneScreen({ stats, title, onRestart }: { stats: CookingStats; t
       <div className="ui-done__meet">
         <RemyBadge size={230} color="var(--sparkle)" form="burst" />
         <SpeechBubble>
-          <b>{SAY.done}</b>
+          <b>{say.done}</b>
           <br />
           All done with the {title.toLowerCase()}.
         </SpeechBubble>

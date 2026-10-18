@@ -3,7 +3,9 @@
 // arrives as an action, and the reducer is the only writer.
 
 import type { ApiErrorKind, ParsedRecipe, Verdict } from '../types.ts'
+import { wantedClips } from './clips.ts'
 import { DEMO_RECIPE_TEXT } from './demoRecipe.ts'
+import { DEFAULT_SETTINGS, mergeSettings, type CookSettings } from './settings.ts'
 
 /** After a "ready" verdict, move on by itself this long later unless the cook says back. */
 export const AUTO_ADVANCE_MS = 2000
@@ -50,9 +52,11 @@ export interface CookingState {
   /** For the done screen. */
   stats: { checks: number; taps: number }
   error: AppError | null
+  /** The Level and Persona the cook chose. Changeable on the start and prep screens only, never mid-cook. */
+  settings: CookSettings
 }
 
-export function initialState(recipeText: string = DEMO_RECIPE_TEXT): CookingState {
+export function initialState(recipeText: string = DEMO_RECIPE_TEXT, settings: CookSettings = DEFAULT_SETTINGS): CookingState {
   return {
     phase: 'input',
     recipeText,
@@ -66,6 +70,7 @@ export function initialState(recipeText: string = DEMO_RECIPE_TEXT): CookingStat
     voicing: { ready: [], total: 0, servings: 0 },
     stats: { checks: 0, taps: 0 },
     error: null,
+    settings,
   }
 }
 
@@ -75,6 +80,8 @@ export type Action =
   | { type: 'parseSucceeded'; recipe: ParsedRecipe }
   | { type: 'parseFailed'; error: AppError }
   | { type: 'servingsChanged'; servings: number }
+  /** The Level and/or Persona changed. Only the fields given change. */
+  | { type: 'settingsChanged'; settings: Partial<CookSettings> }
   | { type: 'voicingStarted'; servings: number; total: number }
   | { type: 'clipReady'; id: string; servings: number }
   | { type: 'voicingFailed'; error: AppError }
@@ -134,6 +141,18 @@ export function cookingReducer(state: CookingState, action: Action): CookingStat
         servings,
         voicing: { ...state.voicing, ready: state.voicing.ready.filter((id) => !isScaledClip(id)), servings },
       }
+    }
+
+    case 'settingsChanged': {
+      // Not once Remy is reading the steps: a Level or Persona switch mid-cook is not supported yet.
+      if (state.phase !== 'input' && state.phase !== 'prep') return state
+      const settings = mergeSettings(state.settings, action.settings)
+      if (settings === state.settings) return state
+      const next = { ...state, settings }
+      if (state.phase !== 'prep') return next
+      // The clips made for the old settings are not the ones Start waits for now; those that are still wanted stay.
+      const wanted = new Set(wantedClips(next).map((clip) => clip.id))
+      return { ...next, voicing: { ...next.voicing, ready: next.voicing.ready.filter((id) => wanted.has(id)) } }
     }
 
     case 'voicingStarted':
@@ -225,7 +244,7 @@ export function cookingReducer(state: CookingState, action: Action): CookingStat
       return state.error === null ? state : { ...state, error: null }
 
     case 'restart':
-      return initialState(state.recipeText)
+      return initialState(state.recipeText, state.settings)
 
     default:
       return state

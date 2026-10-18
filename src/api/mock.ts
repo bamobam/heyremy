@@ -3,13 +3,27 @@
 
 import { pancakes } from '../cooking/fixtures.ts'
 import type { ApiClient } from '../cooking/ports.ts'
-import type { Verdict } from '../types.ts'
+import { DEFAULT_PERSONA } from '../cooking/settings.ts'
+import type { PersonaId, Verdict } from '../types.ts'
 import { ApiError } from './errors.ts'
 
-const FEEDBACK: Record<Verdict['status'], string> = {
-  not_ready: 'Still some dry flour streaks. Keep whisking.',
-  unsure: "I can't see the bowl. Tilt your head down.",
-  ready: 'Looks smooth. Next step.',
+// What each Persona would say. The server words the real verdict in character; this shows the same on ?mock.
+const FEEDBACK: Record<PersonaId, Record<Verdict['status'], string>> = {
+  remy: {
+    not_ready: 'Still some dry flour streaks. Keep whisking.',
+    unsure: "I can't see the bowl. Tilt your head down.",
+    ready: 'Looks smooth. Next step.',
+  },
+  grandma: {
+    not_ready: 'Not quite yet, dear. A little more whisking.',
+    unsure: "I can't see the bowl, dear. Tilt your head down.",
+    ready: 'Lovely and smooth, dear. On we go.',
+  },
+  sergeant: {
+    not_ready: 'Not yet, cook! Keep whisking!',
+    unsure: "Can't see the bowl! Head down!",
+    ready: 'Smooth. Good. Move on.',
+  },
 }
 
 export interface MockOptions {
@@ -50,7 +64,7 @@ export function createMockApi({ delayMs = 800, verdicts = ['not_ready', 'unsure'
       await wait(delayMs, opts?.signal)
       if (fail) throw new ApiError('upstream')
       const status = verdicts[checks++ % verdicts.length]
-      return { status, feedback: FEEDBACK[status] }
+      return { status, feedback: FEEDBACK[opts?.persona ?? DEFAULT_PERSONA][status] }
     },
   }
 }

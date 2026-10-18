@@ -39,12 +39,15 @@ export const recipeSchema = {
           id: { type: 'INTEGER' },
           text: { type: 'STRING' },
           spoken: { type: 'STRING' },
+          spokenIntermediate: { type: 'STRING' },
+          spokenMaster: { type: 'STRING' },
           cue: nullableString,
           checkable: { type: 'BOOLEAN' },
+          timeDependent: { type: 'BOOLEAN' },
           headsUp: nullableString,
         },
-        required: ['id', 'text', 'spoken', 'cue', 'checkable', 'headsUp'],
-        propertyOrdering: ['id', 'text', 'spoken', 'cue', 'checkable', 'headsUp'],
+        required: ['id', 'text', 'spoken', 'spokenIntermediate', 'spokenMaster', 'cue', 'checkable', 'timeDependent', 'headsUp'],
+        propertyOrdering: ['id', 'text', 'spoken', 'spokenIntermediate', 'spokenMaster', 'cue', 'checkable', 'timeDependent', 'headsUp'],
       },
     },
   },
@@ -124,6 +127,23 @@ function rewrite(text: string, rename: Map<string, string>): string {
   })
 }
 
+/**
+ * A narration at another Level (intermediate or master), made safe to read next to the step's `text`, or
+ * undefined to leave it out (the cook then hears the beginner `spoken`). It never changes `text`: Level
+ * changes only what is said. Missing, blank or non-text is left out; an ingredient the recipe does not have
+ * leaves it out too (an optional extra is not worth failing the whole recipe over); an ingredient the shown
+ * text does not use becomes its plain name, as in `spoken`. A terse narration may leave an amount out.
+ */
+function levelNarration(raw: unknown, rename: Map<string, string>, ids: Set<string>, text: string, ingredients: Ingredient[]): string | undefined {
+  const given = optText(raw)
+  if (given === null) return undefined
+  const narration = rewrite(given, rename)
+  const used = placeholders(narration)
+  if (used.some((p) => !ids.has(p))) return undefined
+  const shown = placeholders(text)
+  return toPlainName(narration, used.filter((p) => !shown.includes(p)), ingredients)
+}
+
 /** Replaces these placeholders with the ingredient's name, without its amount. */
 function toPlainName(s: string, ids: string[], ingredients: Ingredient[]): string {
   if (ids.length === 0) return s
@@ -169,7 +189,21 @@ export function validateRecipe(x: unknown): ParsedRecipe {
     spoken = toPlainName(spoken, inSpoken.filter((p) => !inText.includes(p)), ingredients)
 
     const cue = optText(s.cue)
-    return { id: n, text, spoken, cue, checkable: cue !== null && s.checkable === true, headsUp: optText(s.headsUp) }
+    const checkable = cue !== null && s.checkable === true
+    const spokenIntermediate = levelNarration(s.spokenIntermediate, rename, ids, text, ingredients)
+    const spokenMaster = levelNarration(s.spokenMaster, rename, ids, text, ingredients)
+    return {
+      id: n,
+      text,
+      spoken,
+      ...(spokenIntermediate === undefined ? {} : { spokenIntermediate }),
+      ...(spokenMaster === undefined ? {} : { spokenMaster }),
+      cue,
+      checkable,
+      headsUp: optText(s.headsUp),
+      // Only a step the camera can check has a cue that changes over time worth watching.
+      ...(checkable && s.timeDependent === true ? { timeDependent: true } : {}),
+    }
   })
 
   const prep = Array.isArray(x.prep) ? x.prep.map(optText).filter((p): p is string => p !== null) : []

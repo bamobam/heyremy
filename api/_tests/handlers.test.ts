@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProviderError, generateJson } from '../_lib/gemini.js'
 import { synthesize } from '../_lib/elevenlabs.js'
 import { FetchRecipeError, fetchRecipeText } from '../_lib/fetchRecipe.js'
+import { DEFAULT_VOICE_ID as VOICE_ID } from '../_lib/voices.js'
+import { CHECK_SYSTEM } from '../_prompts/check.js'
+import { PERSONA_STYLE } from '../_prompts/persona.js'
 import check from '../check.js'
 import parse from '../parse.js'
 import speak from '../speak.js'
@@ -186,6 +189,34 @@ describe('/api/parse', () => {
     expect(res.statusCode).toBe(422)
     expect(oneLog().status).toBe(422)
   })
+  it('sends each step\'s narration at all three Levels, and timeDependent, as the model wrote them', async () => {
+    const leveled = {
+      ...RECIPE,
+      steps: [
+        {
+          ...RECIPE.steps[0],
+          spoken: 'Step 1. Whisk {flour} until smooth. A few lumps are fine.',
+          spokenIntermediate: 'Step 1. Whisk {flour} until smooth.',
+          spokenMaster: 'Step 1. Whisk {flour}.',
+          timeDependent: true,
+        },
+      ],
+    }
+    gen.mockResolvedValue({ data: leveled, modelMs: 1, model: 'gemini-test', attempts: 1 })
+    const res = await call(parse, { recipe: RECIPE_TEXT })
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toEqual(leveled)
+    // The model is asked for these fields through the response schema, not only the prompt.
+    const step = (gen.mock.calls[0][0].schema as { properties: { steps: { items: { required: string[] } } } }).properties.steps.items
+    expect(step.required).toEqual(expect.arrayContaining(['spokenIntermediate', 'spokenMaster', 'timeDependent']))
+    expect(gen.mock.calls[0][0].system).toContain('"spokenMaster"')
+  })
+  it('still works when the model leaves the other Levels out, which the client reads as the beginner narration', async () => {
+    gen.mockResolvedValue({ data: RECIPE, modelMs: 1, model: 'gemini-test', attempts: 1 })
+    const res = await call(parse, { recipe: RECIPE_TEXT })
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toEqual(RECIPE)
+  })
 })
 
 describe('/api/check', () => {
@@ -230,6 +261,43 @@ describe('/api/check', () => {
     expect((await call(check, CHECK_BODY)).statusCode).toBe(422)
     expect(oneLog().verdict).toBeUndefined()
   })
+  describe('persona', () => {
+    const answer = { data: { status: 'not_ready', feedback: 'Not quite yet, dear. Keep whisking.' }, modelMs: 1, model: 'gemini-test', attempts: 1 }
+
+    it('uses the plain prompt with no persona, and for Remy', async () => {
+      gen.mockResolvedValue(answer)
+      await call(check, CHECK_BODY)
+      await call(check, { ...CHECK_BODY, persona: 'remy' })
+      expect(gen.mock.calls[0][0].system).toBe(CHECK_SYSTEM)
+      expect(gen.mock.calls[1][0].system).toBe(CHECK_SYSTEM)
+    })
+    it.each(['grandma', 'sergeant'] as const)('words feedback as %s, with the same photo, cue and schema', async (persona) => {
+      gen.mockResolvedValue(answer)
+      const plain = await call(check, CHECK_BODY)
+      const res = await call(check, { ...CHECK_BODY, persona })
+      expect(res.statusCode).toBe(200)
+      expect(res.body).toEqual({ status: 'not_ready', feedback: 'Not quite yet, dear. Keep whisking.' })
+      const [first, second] = gen.mock.calls.map((c) => c[0])
+      expect(second.system).toBe(`${CHECK_SYSTEM}\n\n${PERSONA_STYLE[persona]}`)
+      expect(second.parts).toEqual(first.parts)
+      expect(second.schema).toBe(first.schema)
+      expect(second.temperature).toBe(first.temperature)
+      expect(plain.statusCode).toBe(200)
+    })
+    it('400 on a persona it does not know, without calling Gemini', async () => {
+      for (const persona of ['gordon', 7, {}, '']) {
+        const res = await call(check, { ...CHECK_BODY, persona })
+        expect(res.statusCode).toBe(400)
+        expect(res.body).toEqual({ error: { kind: 'bad_request', message: 'persona must be remy, grandma or sergeant.' } })
+      }
+      expect(gen).not.toHaveBeenCalled()
+    })
+    it('does not log the persona or the feedback', async () => {
+      gen.mockResolvedValue(answer)
+      await call(check, { ...CHECK_BODY, persona: 'grandma' })
+      expect(JSON.stringify(oneLog())).not.toMatch(/grandma|dear/)
+    })
+  })
 })
 
 describe('/api/speak', () => {
@@ -238,8 +306,51 @@ describe('/api/speak', () => {
     const res = await call(speak, { text: '  Step 1. Whisk.  ' })
     expect(res.statusCode).toBe(200)
     expect(res.headers['Content-Type']).toBe('audio/mpeg')
-    expect(synth).toHaveBeenCalledWith('Step 1. Whisk.')
+    expect(synth).toHaveBeenCalledWith('Step 1. Whisk.', VOICE_ID)
     expect(oneLog()).toMatchObject({ route: '/api/speak', status: 200 })
+  })
+  describe('persona', () => {
+    const GRANDMA = 'GrandmaVoice1234567890'
+    const SERGEANT = 'SergeantVoice123456789'
+    afterEach(() => vi.unstubAllEnvs())
+
+    it('speaks in the default voice for Remy and when no persona is given', async () => {
+      synth.mockResolvedValue(Buffer.from([1]))
+      vi.stubEnv('ELEVENLABS_VOICE_GRANDMA', GRANDMA)
+      await call(speak, { text: 'Hello.' })
+      await call(speak, { text: 'Hello.', persona: 'remy' })
+      expect(synth.mock.calls).toEqual([['Hello.', VOICE_ID], ['Hello.', VOICE_ID]])
+    })
+    it('speaks in the persona\'s own voice once the owner has set it up', async () => {
+      synth.mockResolvedValue(Buffer.from([1]))
+      vi.stubEnv('ELEVENLABS_VOICE_GRANDMA', GRANDMA)
+      vi.stubEnv('ELEVENLABS_VOICE_SERGEANT', SERGEANT)
+      await call(speak, { text: 'Hello.', persona: 'grandma' })
+      await call(speak, { text: 'Hello.', persona: 'sergeant' })
+      expect(synth.mock.calls).toEqual([['Hello.', GRANDMA], ['Hello.', SERGEANT]])
+    })
+    it('falls back to the default voice for a persona whose voice is not set up, so nothing changes until it is', async () => {
+      synth.mockResolvedValue(Buffer.from([1]))
+      vi.stubEnv('ELEVENLABS_VOICE_GRANDMA', '')
+      vi.stubEnv('ELEVENLABS_VOICE_SERGEANT', '')
+      expect((await call(speak, { text: 'Hello.', persona: 'grandma' })).statusCode).toBe(200)
+      expect((await call(speak, { text: 'Hello.', persona: 'sergeant' })).statusCode).toBe(200)
+      expect(synth.mock.calls).toEqual([['Hello.', VOICE_ID], ['Hello.', VOICE_ID]])
+    })
+    it('400 on a persona it does not know, without calling ElevenLabs', async () => {
+      for (const persona of ['gordon', 7, {}, '']) {
+        const res = await call(speak, { text: 'Hello.', persona })
+        expect(res.statusCode).toBe(400)
+        expect(res.body).toEqual({ error: { kind: 'bad_request', message: 'persona must be remy, grandma or sergeant.' } })
+      }
+      expect(synth).not.toHaveBeenCalled()
+    })
+    it('does not log the persona, the text or the voice id', async () => {
+      synth.mockResolvedValue(Buffer.from([1]))
+      vi.stubEnv('ELEVENLABS_VOICE_GRANDMA', GRANDMA)
+      await call(speak, { text: 'Secret words.', persona: 'grandma' })
+      expect(JSON.stringify(oneLog())).not.toMatch(/grandma|Secret|GrandmaVoice/i)
+    })
   })
   it('400 on a missing or too-long text', async () => {
     expect((await call(speak, {})).statusCode).toBe(400)

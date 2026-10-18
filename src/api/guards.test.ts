@@ -68,6 +68,40 @@ describe('isParsedRecipe', () => {
     expect(pancakes.steps.some((s) => s.cue === null && s.headsUp === null && !s.checkable)).toBe(true)
   })
 
+  it('accepts steps with no Level narration or timeDependent, as in recipes saved before Levels existed', () => {
+    const r = copy() as any
+    for (const step of r.steps) {
+      delete step.spokenIntermediate
+      delete step.spokenMaster
+      delete step.timeDependent
+    }
+    expect(isParsedRecipe(r)).toBe(true)
+  })
+
+  it('accepts a step with all three narrations and timeDependent set either way', () => {
+    const r = copy() as any
+    r.steps[0].spokenIntermediate = 'Step 1. Whisk {flour}.'
+    r.steps[0].spokenMaster = 'Step 1. Whisk.'
+    r.steps[0].timeDependent = false
+    r.steps[1].timeDependent = true
+    expect(isParsedRecipe(r)).toBe(true)
+  })
+
+  it.each([
+    ['an intermediate narration that is a number', (r: any) => (r.steps[0].spokenIntermediate = 4)],
+    ['an intermediate narration that is blank', (r: any) => (r.steps[0].spokenIntermediate = '  ')],
+    ['an intermediate narration that is null', (r: any) => (r.steps[0].spokenIntermediate = null)],
+    ['a master narration that is a number', (r: any) => (r.steps[0].spokenMaster = 4)],
+    ['a master narration that is blank', (r: any) => (r.steps[0].spokenMaster = '')],
+    ['a timeDependent that is not a boolean', (r: any) => (r.steps[0].timeDependent = 'yes')],
+    ['an intermediate narration with an ingredient the recipe does not have', (r: any) => (r.steps[0].spokenIntermediate = 'Step 1. Whisk {mystery}.')],
+    ['a master narration with an ingredient the recipe does not have', (r: any) => (r.steps[0].spokenMaster = 'Step 1. Whisk {mystery}.')],
+  ])('rejects %s', (_name, damage) => {
+    const r = copy()
+    damage(r)
+    expect(isParsedRecipe(r)).toBe(false)
+  })
+
   it('rejects a step that uses an ingredient id the recipe does not have', () => {
     const r = copy() as any
     r.steps[0].text = 'Whisk {mystery} into a batter.'

@@ -5,20 +5,22 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { createApi } from '../api/index.ts'
 import { clipCache } from '../audio/clipCache.ts'
 import { createAudioPlayer } from '../audio/player.ts'
-import { DONE_CLIP, FIXED_LINES, LOOKING_CLIP } from '../audio/lines.ts'
+import { DONE_CLIP, LOOKING_CLIP, fixedClipId, fixedLine } from '../audio/lines.ts'
 import { speak } from '../audio/speak.ts'
 import { useCamera } from '../camera/useCamera.ts'
 import type { HatCam } from '../camera/useHatCam.ts'
 import { useAnyCam } from '../camera/useAnyCam.ts'
 import type { GestureEvent } from '../types.ts'
 import { CAMERA_MODE } from './cameraChoice.ts'
+import { wantedClips } from './clips.ts'
 import { takeDraft } from './draft.ts'
 import { createController, toAppError } from './controller.ts'
 import type { CameraPort } from './ports.ts'
 import { stepClipId } from './scaling.ts'
 import { canCheck, currentStep, gesturesEnabled } from './selectors.ts'
-import { cookingReducer, initialState, type Action, type CookingState } from './state.ts'
-import { filledSteps } from './uiSelectors.ts'
+import { loadSettings, saveSettings } from './settings.ts'
+import { pageStorage } from './storage.ts'
+import { cookingReducer, initialState, type Action } from './state.ts'
 import { CookingContext, DetectionContext, HoldProgressContext, type DetectionReading } from './context.ts'
 import type { Controller, CookingContextValue, GestureStatus } from './contract.ts'
 
@@ -27,14 +29,9 @@ const REVOICE_DEBOUNCE_MS = 600
 /** How many clips are made at once (§6.8). */
 const VOICE_CONCURRENCY = 2
 
-/** Every clip the recipe needs at the chosen servings: the two fixed lines, then one per step. */
-function wantedClips(s: CookingState): { id: string; text: string }[] {
-  const steps = filledSteps(s).map((step, i) => ({ id: stepClipId(s.recipe!.steps[i], s.servings), text: step.spoken }))
-  return [{ id: LOOKING_CLIP, text: FIXED_LINES[LOOKING_CLIP] }, { id: DONE_CLIP, text: FIXED_LINES[DONE_CLIP] }, ...steps]
-}
-
 export function CookingProvider({ children }: { children: React.ReactNode }) {
-  const [state, rawDispatch] = useReducer(cookingReducer, undefined, () => initialState())
+  // The Level and Persona the cook chose last time come back (beginner and Remy when none, or when storage is blocked).
+  const [state, rawDispatch] = useReducer(cookingReducer, undefined, () => initialState(undefined, loadSettings(pageStorage())))
 
   // The controller reads state straight after it dispatches, so the ref is updated in the same call
   // (the reducer is pure, so applying it here as well as in React gives the same state).
@@ -98,7 +95,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   const [voiceFailed, setVoiceFailed] = useState(false)
 
   const voiceFlow = useCallback(async () => {
-    const { recipe, servings } = stateRef.current
+    const { recipe, servings, settings } = stateRef.current
     if (!recipe) return
     const run = ++voiceRun.current
     const current = () => run === voiceRun.current
@@ -114,7 +111,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
         try {
           // A clip already made for these servings is reused: 4 → 2 → 4 costs nothing.
           if (!clipCache.has(clip.id)) {
-            const blob = await speak(clip.text)
+            const blob = await speak(clip.text, settings.persona)
             if (!current()) return // after a restart or a servings change the clip is not wanted
             audio.preload(clip.id, blob)
           }
@@ -136,7 +133,7 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
     const s = stateRef.current
     const step = s.recipe?.steps[s.stepIndex]
     const shown = currentStep(s)
-    if (step && shown) void audio.play(stepClipId(step, s.servings), shown.spoken)
+    if (step && shown) void audio.play(stepClipId(step, s.servings, s.settings.level, s.settings.persona), shown.spoken)
   }, [audio])
 
   const controller = useMemo<Controller>(
@@ -150,6 +147,20 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
 
       setServings(n) {
         flow.setServings(n)
+        if (revoiceTimer.current !== null) clearTimeout(revoiceTimer.current)
+        revoiceTimer.current = window.setTimeout(() => void voiceFlow(), REVOICE_DEBOUNCE_MS)
+      },
+
+      setSettings(change) {
+        const before = stateRef.current.settings
+        dispatch({ type: 'settingsChanged', settings: change })
+        const after = stateRef.current
+        if (after.settings === before) return // nothing changed, or not a time when it can (mid-cook)
+        saveSettings(pageStorage(), after.settings)
+        if (after.phase !== 'prep') return
+        // The clips Start waits for are different now. Stop the run in flight (it was making the old ones)
+        // and voice again, after a pause so clicking through the options starts one run, not one per click.
+        voiceRun.current++
         if (revoiceTimer.current !== null) clearTimeout(revoiceTimer.current)
         revoiceTimer.current = window.setTimeout(() => void voiceFlow(), REVOICE_DEBOUNCE_MS)
       },
@@ -205,15 +216,16 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
 
   // A new step (or the first one) is read aloud, from the cache, never the network (§1).
   const { phase, stepIndex, mode, verdict } = state
+  const { persona } = state.settings
   useEffect(() => {
     if (phase === 'cooking') {
       audio.stop()
       playStep()
     } else if (phase === 'done') {
       audio.stop()
-      void audio.play(DONE_CLIP, FIXED_LINES[DONE_CLIP])
+      void audio.play(fixedClipId(DONE_CLIP, persona), fixedLine(DONE_CLIP, persona))
     }
-  }, [phase, stepIndex, audio, playStep])
+  }, [phase, stepIndex, persona, audio, playStep])
 
   // A check: "hold still" while it looks, then the verdict in Remy's voice. A check that fails or is
   // dropped cuts the "hold still" off rather than letting it finish.
@@ -221,16 +233,16 @@ export function CookingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const was = previousMode.current
     previousMode.current = mode
-    if (mode === 'checking') void audio.play(LOOKING_CLIP, FIXED_LINES[LOOKING_CLIP])
+    if (mode === 'checking') void audio.play(fixedClipId(LOOKING_CLIP, persona), fixedLine(LOOKING_CLIP, persona))
     else if (mode === 'verdict' && verdict) {
       const run = ++verdictRun.current
       verdictSpeaking.current = true
-      void audio.speakLive(verdict.feedback).finally(() => {
+      void audio.speakLive(verdict.feedback, persona).finally(() => {
         if (run === verdictRun.current) verdictSpeaking.current = false
       })
     }
     else if (was === 'checking' && mode === 'idle') audio.stop()
-  }, [mode, verdict, audio])
+  }, [mode, verdict, audio, persona])
 
   // ---------- Gestures: the camera's, plus the keyboard as a stand-in (N next, B back, Space check) ----------
 

@@ -19,6 +19,23 @@ describe('filledSteps', () => {
   })
 })
 
+describe('filledSteps at each Level', () => {
+  const at = (level: 'beginner' | 'intermediate' | 'master'): CookingState => ({ ...prep(8), settings: { level, persona: 'remy' } })
+
+  it('voices the chosen Level, and shows the same text, cue and heads-up at all three', () => {
+    const [b, i, m] = (['beginner', 'intermediate', 'master'] as const).map((level) => filledSteps(at(level))[0])
+    expect(b.spoken).toBe('Step 1. Whisk two cups of flour, two cups of milk and four eggs into a batter.')
+    expect(i.spoken).toBe('Step 1. Whisk two cups of flour, two cups of milk and four eggs.')
+    expect(m.spoken).toBe('Step 1. Whisk two cups of flour, two cups of milk, four eggs.')
+    for (const step of [i, m]) expect({ ...step, spoken: '' }).toEqual({ ...b, spoken: '' })
+  })
+
+  it('falls back to the beginner narration for a step without one for that Level', () => {
+    expect(filledSteps(at('intermediate')).at(-1)?.spoken).toBe('Step 5. Serve with butter and syrup.')
+    expect(filledSteps(at('master')).at(-1)?.spoken).toBe('Step 5. Serve.')
+  })
+})
+
 describe('scaledIngredients', () => {
   it('splits a measured ingredient into amount and name', () => {
     const flour = scaledIngredients(prep()).find(i => i.id === 'flour')!

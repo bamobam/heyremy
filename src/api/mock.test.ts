@@ -57,6 +57,42 @@ describe('mock API', () => {
     }
   })
 
+  it('words the verdict in the Persona\'s voice when asked, with the same status and under 15 words', async () => {
+    const said: Record<string, string[]> = {}
+    for (const persona of ['remy', 'grandma', 'sergeant'] as const) {
+      const api = createMockApi({ delayMs: 0 })
+      said[persona] = []
+      for (let i = 0; i < 3; i++) {
+        const p = api.checkStep(frame, step, { persona })
+        await vi.advanceTimersByTimeAsync(0)
+        const verdict = await p
+        expect(verdict.feedback.split(/\s+/).length).toBeLessThan(15)
+        said[persona].push(`${verdict.status}: ${verdict.feedback}`)
+      }
+    }
+    expect(said.grandma.map((l) => l.split(':')[0])).toEqual(said.remy.map((l) => l.split(':')[0]))
+    expect(said.sergeant.map((l) => l.split(':')[0])).toEqual(said.remy.map((l) => l.split(':')[0]))
+    expect(said.grandma).not.toEqual(said.remy)
+    expect(said.sergeant).not.toEqual(said.grandma)
+  })
+
+  it('gives Remy\'s wording when no Persona is asked for', async () => {
+    const api = createMockApi({ delayMs: 0, verdicts: ['not_ready'] })
+    const p = api.checkStep(frame, step)
+    await vi.advanceTimersByTimeAsync(0)
+    expect((await p).feedback).toBe('Still some dry flour streaks. Keep whisking.')
+  })
+
+  it('serves a recipe with the narration at all three Levels, so the Levels can be tried with ?mock', async () => {
+    const api = createMockApi({ delayMs: 0 })
+    const p = api.parseRecipe('anything')
+    await vi.advanceTimersByTimeAsync(0)
+    const recipe = await p
+    expect(recipe.steps.some((s) => s.spokenIntermediate !== undefined)).toBe(true)
+    expect(recipe.steps.every((s) => s.spokenMaster !== undefined)).toBe(true)
+    expect(recipe.steps.some((s) => s.timeDependent)).toBe(true)
+  })
+
   it('fails every request when asked to, like a backend that is down', async () => {
     const api = createMockApi({ delayMs: 0, fail: true })
     const parse = api.parseRecipe('x').catch((e: unknown) => e)

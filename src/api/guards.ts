@@ -28,6 +28,9 @@ function isStep(v: unknown): v is Step {
     typeof v.id === 'number' &&
     isText(v.text) &&
     isText(v.spoken) &&
+    (v.spokenIntermediate === undefined || isText(v.spokenIntermediate)) &&
+    (v.spokenMaster === undefined || isText(v.spokenMaster)) &&
+    (v.timeDependent === undefined || typeof v.timeDependent === 'boolean') &&
     isTextOrNull(v.cue) &&
     isTextOrNull(v.headsUp) &&
     typeof v.checkable === 'boolean' &&
@@ -50,5 +53,9 @@ export function isParsedRecipe(v: unknown): v is ParsedRecipe {
   if (!Array.isArray(v.steps) || v.steps.length === 0 || !v.steps.every(isStep)) return false
 
   const ids = new Set((v.ingredients as Ingredient[]).map((i) => i.id))
-  return (v.steps as Step[]).every((s) => placeholdersKnown(s.text, ids) && placeholdersKnown(s.spoken, ids))
+  return (v.steps as Step[]).every(
+    (s) =>
+      placeholdersKnown(s.text, ids) &&
+      [s.spoken, s.spokenIntermediate, s.spokenMaster].every((spoken) => spoken === undefined || placeholdersKnown(spoken, ids)),
+  )
 }

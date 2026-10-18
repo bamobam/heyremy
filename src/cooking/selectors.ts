@@ -1,10 +1,10 @@
 // Values worked out from the cooking state. Pure; the screens read these
 // instead of digging into the state themselves.
 
-import { describeIngredient, fillPlaceholders, scaleFactor, stepClipId } from './scaling.ts'
+import { describeIngredient, fillPlaceholders, narrationFor, scaleFactor, stepClipId } from './scaling.ts'
 import type { CookingState } from './state.ts'
 
-/** The step being cooked, with amounts filled in at the chosen servings. */
+/** The step being cooked, with amounts filled in at the chosen servings and `spoken` at the chosen Level. */
 export interface ShownStep {
   text: string
   spoken: string
@@ -23,18 +23,18 @@ export function currentStep(s: CookingState): ShownStep | null {
   const factor = factorOf(s)
   return {
     text: fillPlaceholders(step.text, s.recipe.ingredients, factor, 'screen'),
-    spoken: fillPlaceholders(step.spoken, s.recipe.ingredients, factor, 'spoken'),
+    spoken: fillPlaceholders(narrationFor(step, s.settings.level), s.recipe.ingredients, factor, 'spoken'),
     cue: step.cue,
     checkable: step.checkable,
     headsUp: step.headsUp,
   }
 }
 
-/** The id of the audio clip for the step being cooked, at the chosen servings. */
+/** The id of the audio clip for the step being cooked, at the chosen servings, Level and Persona. */
 export function currentClipId(s: CookingState): string | null {
   if (s.phase !== 'cooking' || !s.recipe) return null
   const step = s.recipe.steps[s.stepIndex]
-  return step ? stepClipId(step, s.servings) : null
+  return step ? stepClipId(step, s.servings, s.settings.level, s.settings.persona) : null
 }
 
 export const isLastStep = (s: CookingState) => !!s.recipe && s.stepIndex === s.recipe.steps.length - 1

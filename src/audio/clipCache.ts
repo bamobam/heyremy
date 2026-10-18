@@ -1,5 +1,7 @@
 // Voice clips by id, kept as object URLs so playing one never touches the network.
-// Ids: `step-<id>`, `step-<id>@<servings>` (steps with placeholders), `looking`, `done`.
+// Ids: `step-<id>`, `step-<id>@<servings>` (steps with placeholders), `looking`, `done`. A Level whose words
+// differ adds `.<level>` and a Persona other than Remy adds `~<persona>` (its voice differs), before the `@`:
+// `step-3.master~grandma@4`, `looking~grandma` (see stepClipId in cooking/scaling.ts and fixedClipId in audio/lines.ts).
 
 export interface ObjectUrls {
   createObjectURL(blob: Blob): string

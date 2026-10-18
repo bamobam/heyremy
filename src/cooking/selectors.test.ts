@@ -12,6 +12,7 @@ import {
   scaledIngredients,
   stepLabel,
 } from './selectors.ts'
+import type { CookSettings } from './settings.ts'
 import { cookingReducer, initialState, type Action, type CookingState } from './state.ts'
 
 const run = (state: CookingState, ...actions: Action[]) => actions.reduce(cookingReducer, state)
@@ -31,6 +32,18 @@ const cooking = (stepIndex = 0, servings?: number) => {
   return s
 }
 const checking = (stepIndex = 0) => run(cooking(stepIndex), { type: 'checkStarted' })
+/** Cooking at a step with the Level and Persona already chosen on the start screen. */
+const cookingAt = (settings: CookSettings, stepIndex = 0, servings?: number) => {
+  let s = run(
+    initialState(undefined, settings),
+    { type: 'parseStarted' },
+    { type: 'parseSucceeded', recipe: pancakes },
+    ...(servings === undefined ? [] : [{ type: 'servingsChanged', servings } as const]),
+    { type: 'startCooking' },
+  )
+  for (let i = 0; i < stepIndex; i++) s = run(s, { type: 'gestureNext' })
+  return s
+}
 
 describe('currentStep', () => {
   it('is nothing before cooking starts', () => {
@@ -88,6 +101,41 @@ describe('currentClipId', () => {
   it('is nothing outside cooking', () => {
     expect(currentClipId(initialState())).toBeNull()
     expect(currentClipId(prep())).toBeNull()
+  })
+
+  it('follows the chosen Level and Persona, since a different narration or voice is a different clip', () => {
+    expect(currentClipId(cookingAt({ level: 'master', persona: 'remy' }, 0))).toBe('step-1.master@4')
+    expect(currentClipId(cookingAt({ level: 'intermediate', persona: 'remy' }, 0))).toBe('step-1.intermediate@4')
+    expect(currentClipId(cookingAt({ level: 'beginner', persona: 'grandma' }, 0))).toBe('step-1~grandma@4')
+    expect(currentClipId(cookingAt({ level: 'master', persona: 'sergeant' }, 2))).toBe('step-3.master~sergeant')
+  })
+})
+
+describe('currentStep at each Level', () => {
+  it('reads the chosen Level\'s narration, at the chosen servings; the screen text is the same at every Level', () => {
+    const at = (level: 'beginner' | 'intermediate' | 'master') => currentStep(cookingAt({ level, persona: 'remy' }, 0, 2))
+    expect(at('beginner')?.spoken).toBe('Step 1. Whisk half a cup of flour, half a cup of milk and one egg into a batter.')
+    expect(at('intermediate')?.spoken).toBe('Step 1. Whisk half a cup of flour, half a cup of milk and one egg.')
+    expect(at('master')?.spoken).toBe('Step 1. Whisk half a cup of flour, half a cup of milk, one egg.')
+    for (const level of ['beginner', 'intermediate', 'master'] as const) {
+      expect(at(level)).toMatchObject({
+        text: 'Whisk ½ cup flour, ½ cup milk and 1 egg into a batter.',
+        cue: 'Batter is smooth with no dry flour streaks',
+        checkable: true,
+        headsUp: 'Next step needs a hot pan. Turn it on now.',
+      })
+    }
+  })
+
+  it('reads the beginner narration for a step with none of its own at that Level', () => {
+    expect(currentStep(cookingAt({ level: 'intermediate', persona: 'remy' }, 4))?.spoken).toBe('Step 5. Serve with butter and syrup.')
+    expect(currentStep(cookingAt({ level: 'master', persona: 'remy' }, 4))?.spoken).toBe('Step 5. Serve.')
+  })
+
+  it('does not change with the Persona: a Persona never rewrites step narration', () => {
+    const spoken = (persona: 'remy' | 'grandma' | 'sergeant') => currentStep(cookingAt({ level: 'master', persona }, 1))?.spoken
+    expect(spoken('grandma')).toBe(spoken('remy'))
+    expect(spoken('sergeant')).toBe(spoken('remy'))
   })
 })
 

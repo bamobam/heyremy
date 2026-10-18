@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Verdict } from '../types.ts'
 import { DEMO_RECIPE_TEXT } from './demoRecipe.ts'
 import { pancakes } from './fixtures.ts'
+import { DEFAULT_SETTINGS } from './settings.ts'
 import { AUTO_ADVANCE_MS, cookingReducer, initialState, type Action, type CookingState } from './state.ts'
 
 const run = (state: CookingState, ...actions: Action[]) => actions.reduce(cookingReducer, state)
@@ -38,11 +39,86 @@ describe('initial state', () => {
       voicing: { ready: [], total: 0, servings: 0 },
       stats: { checks: 0, taps: 0 },
       error: null,
+      settings: { level: 'beginner', persona: 'remy' },
     })
   })
 
   it('can start with other text', () => {
     expect(initialState('my recipe').recipeText).toBe('my recipe')
+  })
+
+  it('can start with the settings the cook saved, and keeps the demo text', () => {
+    const s = initialState(undefined, { level: 'master', persona: 'grandma' })
+    expect(s.settings).toEqual({ level: 'master', persona: 'grandma' })
+    expect(s.recipeText).toBe(DEMO_RECIPE_TEXT)
+  })
+})
+
+describe('cook settings', () => {
+  const choose = (s: CookingState, settings: Partial<typeof DEFAULT_SETTINGS>) => cookingReducer(s, { type: 'settingsChanged', settings })
+
+  it('change on the start screen, one field at a time', () => {
+    const s = run(initialState(), { type: 'settingsChanged', settings: { level: 'master' } }, { type: 'settingsChanged', settings: { persona: 'sergeant' } })
+    expect(s.settings).toEqual({ level: 'master', persona: 'sergeant' })
+  })
+
+  it('change on the prep screen, before Start', () => {
+    expect(choose(prep(), { level: 'intermediate' }).settings.level).toBe('intermediate')
+  })
+
+  it('leave the state alone when nothing changes or the value is not a Level or Persona', () => {
+    const s = prep()
+    expect(choose(s, {})).toBe(s)
+    expect(choose(s, { level: 'beginner', persona: 'remy' })).toBe(s)
+    expect(choose(s, { level: 'expert' as never })).toBe(s)
+  })
+
+  it('cannot change once Remy is reading the steps, or while the recipe is being read', () => {
+    for (const s of [parsing(), cooking(), run(cooking(4), { type: 'gestureNext' })]) {
+      expect(choose(s, { level: 'master' })).toBe(s)
+    }
+  })
+
+  it('do not touch the recipe, the servings or the step', () => {
+    const before = prep()
+    const after = choose(before, { level: 'master', persona: 'grandma' })
+    expect(after.recipe).toBe(before.recipe)
+    expect(after.servings).toBe(before.servings)
+    expect(after.stepIndex).toBe(before.stepIndex)
+  })
+
+  it('drop the clips that are no longer wanted, keep those that still are, and keep the total', () => {
+    const s = run(
+      prep(),
+      { type: 'voicingStarted', servings: 4, total: 7 },
+      // The default Level's clips: the two fixed lines, step 1 (has amounts), step 3 and 5 (same words at intermediate/master?).
+      { type: 'clipReady', id: 'looking', servings: 4 },
+      { type: 'clipReady', id: 'done', servings: 4 },
+      { type: 'clipReady', id: 'step-1@4', servings: 4 },
+      { type: 'clipReady', id: 'step-5', servings: 4 },
+    )
+    // Intermediate has its own words for step 1 but reads step 5 as beginner does.
+    const after = choose(s, { level: 'intermediate' })
+    expect(after.voicing.ready).toEqual(['looking', 'done', 'step-5'])
+    expect(after.voicing.total).toBe(7)
+    expect(after.voicing.servings).toBe(4)
+  })
+
+  it('drop every clip when the Persona changes, since the voice is different', () => {
+    const s = run(
+      prep(),
+      { type: 'voicingStarted', servings: 4, total: 7 },
+      { type: 'clipReady', id: 'looking', servings: 4 },
+      { type: 'clipReady', id: 'step-1@4', servings: 4 },
+    )
+    expect(choose(s, { persona: 'grandma' }).voicing.ready).toEqual([])
+  })
+
+  it('make Start wait until the clips for the new settings are ready', () => {
+    const everyClip = ['looking', 'done', 'step-1@4', 'step-2@4', 'step-3', 'step-4', 'step-5']
+    const voiced = run(prep(), { type: 'voicingStarted', servings: 4, total: 7 }, ...everyClip.map((id) => ({ type: 'clipReady', id, servings: 4 }) as const))
+    expect(voiced.voicing.ready).toHaveLength(7)
+    expect(choose(voiced, { level: 'master' }).voicing.ready.length).toBeLessThan(7)
   })
 })
 
@@ -368,6 +444,17 @@ describe('taps, errors and restart', () => {
       { type: 'restart' },
     )
     expect(s).toEqual(initialState('my recipe'))
+  })
+
+  it('keeps the Level and Persona the cook chose when it starts over', () => {
+    const s = run(
+      initialState('my recipe', { level: 'master', persona: 'sergeant' }),
+      { type: 'parseStarted' },
+      { type: 'parseSucceeded', recipe: pancakes },
+      { type: 'startCooking' },
+      { type: 'restart' },
+    )
+    expect(s).toEqual(initialState('my recipe', { level: 'master', persona: 'sergeant' }))
   })
 
   it('returns the same state for an action it does not know', () => {

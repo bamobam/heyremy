@@ -22,7 +22,19 @@ export interface Step {
   checkable: boolean
   /** Warning about something the next step needs ready, e.g. "Next step needs a hot pan. Turn it on now." */
   headsUp: string | null
+  /** `spoken` at the intermediate Level: shorter, drops the basics. Missing (old saved data) means read `spoken`. */
+  spokenIntermediate?: string
+  /** `spoken` at the master Level: terse, trusts the cook. Missing means read `spoken`. */
+  spokenMaster?: string
+  /** The cue changes with time (boiling, browning, rising), so one photo can't judge it. Only ever true on a checkable step. */
+  timeDependent?: boolean
 }
+
+/** How much guidance Remy speaks while reading steps (CONTEXT.md **Level**). `spoken` is the beginner one. */
+export type Level = 'beginner' | 'intermediate' | 'master'
+
+/** The character Remy speaks as (CONTEXT.md **Persona**): invented archetypes, never real chefs. */
+export type PersonaId = 'remy' | 'grandma' | 'sergeant'
 
 /** Returned by POST /api/parse { recipe: string }. */
 export interface ParsedRecipe {
@@ -64,10 +76,10 @@ export interface HoldProgress {
 
 /** POST /api/parse */
 export type ParseRequest = { recipe: string }
-/** POST /api/check. `image` is a base64 JPEG with no data: prefix. */
-export type CheckRequest = { image: string; cue: string; step: string }
-/** POST /api/speak. The response is audio/mpeg. */
-export type SpeakRequest = { text: string }
+/** POST /api/check. `image` is a base64 JPEG with no data: prefix. `persona` only changes how `feedback` is worded. */
+export type CheckRequest = { image: string; cue: string; step: string; persona?: PersonaId }
+/** POST /api/speak. The response is audio/mpeg. `persona` picks the voice (the default voice when none is set up). */
+export type SpeakRequest = { text: string; persona?: PersonaId }
 
 // ---------- API errors (the client and the server agree on these) ----------
 

@@ -5,6 +5,7 @@ import {
   fillPlaceholders,
   formatQuantity,
   hasPlaceholders,
+  narrationFor,
   scaleAmount,
   scaleFactor,
   stepClipId,
@@ -250,6 +251,83 @@ describe('stepClipId', () => {
   it('includes the servings when the spoken text has an amount, since the clip is different at each', () => {
     expect(stepClipId(step('Step 3. Whisk {flour}.'), 2)).toBe('step-3@2')
     expect(stepClipId(step('Step 3. Whisk {flour}.'), 4)).toBe('step-3@4')
+  })
+})
+
+describe('narrationFor', () => {
+  const leveled: Step = {
+    id: 3,
+    text: 'Whisk {flour}.',
+    spoken: 'Step 3. Whisk {flour} until smooth. A few lumps are fine.',
+    spokenIntermediate: 'Step 3. Whisk {flour} until smooth.',
+    spokenMaster: 'Step 3. Whisk {flour}.',
+    cue: null,
+    checkable: false,
+    headsUp: null,
+  }
+
+  it('is the beginner narration (spoken) at the beginner Level', () => {
+    expect(narrationFor(leveled, 'beginner')).toBe(leveled.spoken)
+  })
+
+  it('is the Level\'s own narration at the other two', () => {
+    expect(narrationFor(leveled, 'intermediate')).toBe('Step 3. Whisk {flour} until smooth.')
+    expect(narrationFor(leveled, 'master')).toBe('Step 3. Whisk {flour}.')
+  })
+
+  it('falls back to spoken for a step that has none, such as one saved before Levels existed', () => {
+    const old: Step = { id: 1, text: 'Heat the pan.', spoken: 'Step 1. Heat the pan.', cue: null, checkable: false, headsUp: null }
+    expect(narrationFor(old, 'intermediate')).toBe(old.spoken)
+    expect(narrationFor(old, 'master')).toBe(old.spoken)
+    expect(narrationFor({ ...leveled, spokenMaster: undefined }, 'master')).toBe(leveled.spoken)
+    expect(narrationFor({ ...leveled, spokenIntermediate: undefined }, 'intermediate')).toBe(leveled.spoken)
+  })
+})
+
+describe('stepClipId by Level and Persona', () => {
+  const step: Step = {
+    id: 3,
+    text: 'Whisk {flour}.',
+    spoken: 'Step 3. Whisk {flour} until smooth. A few lumps are fine.',
+    spokenIntermediate: 'Step 3. Whisk {flour} until smooth.',
+    spokenMaster: 'Step 3. Whisk the batter.',
+    cue: null,
+    checkable: false,
+    headsUp: null,
+  }
+
+  it('is the old id at the beginner Level with the default Persona, so nothing already cached is lost', () => {
+    expect(stepClipId(step, 4)).toBe('step-3@4')
+    expect(stepClipId(step, 4, 'beginner')).toBe('step-3@4')
+    expect(stepClipId(step, 4, 'beginner', 'remy')).toBe('step-3@4')
+  })
+
+  it('differs for each Level whose narration differs', () => {
+    const ids = (['beginner', 'intermediate', 'master'] as const).map((level) => stepClipId(step, 4, level))
+    expect(new Set(ids).size).toBe(3)
+  })
+
+  it('follows the narration of the Level for the servings: only a Level that has amounts in it carries the servings', () => {
+    expect(stepClipId(step, 4, 'intermediate')).toMatch(/@4$/)
+    expect(stepClipId(step, 4, 'master')).not.toContain('@')
+    expect(stepClipId(step, 8, 'master')).toBe(stepClipId(step, 2, 'master'))
+  })
+
+  it('is shared by Levels whose narration is the same text, so the clip is made once', () => {
+    const same = { ...step, spokenIntermediate: step.spoken, spokenMaster: undefined }
+    expect(stepClipId(same, 4, 'intermediate')).toBe(stepClipId(same, 4, 'beginner'))
+    expect(stepClipId(same, 4, 'master')).toBe(stepClipId(same, 4, 'beginner'))
+  })
+
+  it('differs for each Persona, because the same words in another voice are another clip', () => {
+    const ids = (['remy', 'grandma', 'sergeant'] as const).map((persona) => stepClipId(step, 4, 'beginner', persona))
+    expect(new Set(ids).size).toBe(3)
+    expect(stepClipId(step, 4, 'master', 'grandma')).not.toBe(stepClipId(step, 4, 'master', 'remy'))
+  })
+
+  it('keeps the servings marker last, which is what drops a clip when the servings change', () => {
+    expect(stepClipId(step, 4, 'intermediate', 'sergeant').endsWith('@4')).toBe(true)
+    expect(stepClipId(step, 4, 'master', 'sergeant').includes('@')).toBe(false)
   })
 })
 
