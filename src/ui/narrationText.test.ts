@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { bubbleText, levelCoverage, narrationTag } from './narrationText.ts'
+import { cardText, levelCoverage, narrationTag } from './narrationText.ts'
 
-describe('bubbleText', () => {
+describe('cardText', () => {
   it("drops the spoken 'Step N.' lead-in, which the card already shows", () => {
-    expect(bubbleText('Step 3. Pour a ladle of batter. A drop of water should sizzle first.', 'Pour a ladle.')).toBe(
+    expect(cardText('Step 3. Pour a ladle of batter. A drop of water should sizzle first.', 'Pour a ladle.')).toBe(
       'Pour a ladle of batter. A drop of water should sizzle first.',
     )
   })
 
   it('leaves narration without a lead-in alone', () => {
-    expect(bubbleText('Whisk until smooth.', 'x')).toBe('Whisk until smooth.')
+    expect(cardText('Whisk until smooth.', 'x')).toBe('Whisk until smooth.')
   })
 
-  it('falls back to the card text when the narration is empty or only the lead-in', () => {
-    expect(bubbleText('', 'Whisk the batter.')).toBe('Whisk the batter.')
-    expect(bubbleText('Step 2.', 'Whisk the batter.')).toBe('Whisk the batter.')
+  it('falls back to the plain text of the step when the narration is empty or only the lead-in', () => {
+    expect(cardText('', 'Whisk the batter.')).toBe('Whisk the batter.')
+    expect(cardText('Step 2.', 'Whisk the batter.')).toBe('Whisk the batter.')
   })
 })
 

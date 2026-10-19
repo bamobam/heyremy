@@ -9,4 +9,4 @@ A Persona changes the voice, the catchphrases, and the wording of the lines Remy
 - A Version holds three narrations per step and is independent of Level and Persona. Switching Level mid-cook is instant.
 - The parse output is larger, and only the chosen Level's clips are voiced.
 - A Persona reaches step narration only through the voice it is read in, so its character shows more in live lines than in steps.
-- Level changes only what is said. Steps, amounts and cues are the same at every Level.
+- Level changes the wording of the instruction, both said and shown: the step card's headline is the Level's narration (amounts as written on screen), so a beginner sees and hears fuller guidance and a master sees and hears a terse line. Steps, amounts and cues are the same at every Level. The up-next rail and Remy's bubble keep the short plain text.

@@ -55,6 +55,7 @@ describe('currentStep', () => {
     expect(currentStep(cooking(0))).toEqual({
       text: 'Whisk 1 cup flour, 1 cup milk and 2 eggs into a batter.',
       spoken: 'Step 1. Whisk one cup of flour, one cup of milk and two eggs into a batter.',
+      narration: 'Step 1. Whisk 1 cup flour, 1 cup milk and 2 eggs into a batter.',
       cue: 'Batter is smooth with no dry flour streaks',
       checkable: true,
       headsUp: 'Next step needs a hot pan. Turn it on now.',

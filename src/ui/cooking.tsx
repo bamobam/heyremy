@@ -7,6 +7,7 @@ import { fieldFor, VERDICT_FIELDS } from './fields.ts'
 import { HEAD_SRC, RemyFlipbook } from './Remy.tsx'
 import { SAY, GESTURE_HINTS, type Say } from './say.ts'
 import { STEP_TEXT_SIZE } from './fitText.ts'
+import { cardText } from './narrationText.ts'
 import { upcomingSteps } from './upNext.ts'
 import { useFitText } from './useFitText.ts'
 import { shape, STEP_SHAPES, VERDICT_SHAPE } from './shapes.ts'
@@ -83,7 +84,7 @@ export function StepCard({
   // The text column shrinks to fit the card, so a long step is never cut off.
   const card = useRef<HTMLElement>(null)
   const column = useRef<HTMLDivElement>(null)
-  useFitText({ limit: card, box: column }, STEP_TEXT_SIZE, `${step.text}|${step.headsUp}|${step.cue}|${step.checkable}`)
+  useFitText({ limit: card, box: column }, STEP_TEXT_SIZE, `${step.narration}|${step.headsUp}|${step.cue}|${step.checkable}`)
   const cardVars = { '--card': field.card, '--back': field.back, '--fg': field.fg, '--accent': field.accent } as CSSProperties
   const n = index % STEP_SHAPES.length
 
@@ -96,7 +97,7 @@ export function StepCard({
           </div>
           <CheckBadge checkable={step.checkable} />
         </div>
-        <h2>{step.text}</h2>
+        <h2>{cardText(step.narration, step.text)}</h2>
         <HeadsUpBanner text={step.headsUp} />
         <CueChip step={step} />
       </div>

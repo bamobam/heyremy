@@ -1,11 +1,11 @@
-// What Remy's speech bubble says on the cooking screen: the step's narration at the cook's Level, the
-// same words Remy speaks, so a Level is something the cook can see as well as hear. (The card keeps the
-// short instruction, which is the same at every Level.)
+// The instruction on a step card is the step's narration at the cook's Level, the same words Remy
+// says, so a Level is something the cook can see as well as hear: fuller for a beginner, terse for a
+// master. Steps, amounts and cues do not change with the Level; the wording does.
 
-/** The narration without its spoken "Step N." lead-in (the card shows the number); the card's own text if nothing is left. */
-export function bubbleText(spoken: string, cardText: string): string {
-  const text = spoken.replace(/^\s*Step\s+\d+\s*[.:]?\s*/i, '').trim()
-  return text || cardText
+/** The narration without its spoken "Step N." lead-in (the card shows the number); the step's plain text if nothing is left. */
+export function cardText(narration: string, plainText: string): string {
+  const text = narration.replace(/^\s*Step\s+\d+\s*[.:]?\s*/i, '').trim()
+  return text || plainText
 }
 
 /** How many steps have narration written for this Level; the rest read the beginner narration (the dev tag shows it). */

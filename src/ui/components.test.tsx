@@ -215,6 +215,7 @@ describe('UpNext', () => {
     id: i + 1,
     text,
     spoken: text,
+    narration: text,
     cue: null,
     checkable: false,
     headsUp: null,

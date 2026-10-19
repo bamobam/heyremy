@@ -77,7 +77,7 @@ _Avoid_: Alarm, countdown
 ## Cook settings
 
 **Level**:
-How much guidance Remy gives while reading steps: beginner explains technique and what to watch for, master is brief. It changes only what is said, never a Recipe's steps, amounts or cues.
+How much guidance Remy gives while reading steps: beginner explains technique and what to watch for, master is brief. It changes the wording of the instructions, both what Remy says and what the card shows, never a Recipe's steps, amounts or cues.
 _Avoid_: Difficulty, skill, mode
 
 **Persona**:

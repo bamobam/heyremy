@@ -7,7 +7,6 @@ import { HEAD_SRC, SpeechBubble } from './Remy.tsx'
 import { sayFor, type Say } from './say.ts'
 import { ErrorBanner } from './prep.tsx'
 import { HomeLogo } from './HomeLogo.tsx'
-import { bubbleText } from './narrationText.ts'
 
 /** What Remy says on the cooking screen, in priority order (§9.2). */
 function bubbleFor(say: Say, step: ShownStep | null, index: number, checking: boolean) {
@@ -17,7 +16,7 @@ function bubbleFor(say: Say, step: ShownStep | null, index: number, checking: bo
     <>
       {index === 0 && <b>{say.go} </b>}
       {step.headsUp && <b>{say.headsUp} </b>}
-      {bubbleText(step.spoken, step.text)}
+      {step.text}
     </>
   )
 }

@@ -7,7 +7,10 @@ import type { CookingState } from './state.ts'
 /** The step being cooked, with amounts filled in at the chosen servings and `spoken` at the chosen Level. */
 export interface ShownStep {
   text: string
+  /** The step as Remy says it at the chosen Level, amounts in spoken form ("two cups of flour"). */
   spoken: string
+  /** The same narration with amounts as written on screen ("2 cups flour"): what the card shows as the instruction. */
+  narration: string
   cue: string | null
   checkable: boolean
   headsUp: string | null
@@ -26,6 +29,7 @@ export function currentStep(s: CookingState): ShownStep | null {
   return {
     text: fillPlaceholders(step.text, s.recipe.ingredients, factor, 'screen'),
     spoken: fillPlaceholders(narrationFor(step, s.settings.level), s.recipe.ingredients, factor, 'spoken'),
+    narration: fillPlaceholders(narrationFor(step, s.settings.level), s.recipe.ingredients, factor, 'screen'),
     cue: step.cue,
     checkable: step.checkable,
     headsUp: step.headsUp,

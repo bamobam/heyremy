@@ -32,6 +32,7 @@ export function filledSteps(s: CookingState): FilledStep[] {
     id: step.id,
     text: fillPlaceholders(step.text, ingredients, factor, 'screen'),
     spoken: fillPlaceholders(narrationFor(step, s.settings.level), ingredients, factor, 'spoken'),
+    narration: fillPlaceholders(narrationFor(step, s.settings.level), ingredients, factor, 'screen'),
     cue: step.cue,
     checkable: step.checkable,
     headsUp: step.headsUp,
